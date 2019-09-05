@@ -2,67 +2,124 @@
 <!-- Matthias Müller, nvidia -->
 
 <!DOCTYPE html>
+<html>
+<head>
+<style>
+th, td {
+	padding: 2px;
+}
+body {
+	font-family: verdana; 
+	line-height: 1.5;
+	font-size: 15px;
+}
+h1 {
+	font-family: verdana; 
+}
+#gui {
+	padding: 10px;
+}
+.button {
+  background-color: #555555;
+  border: none;
+  color: white;
+  padding: 8px 8px;
+  border-radius: 5px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+}
+.slider {
+  -webkit-appearance: none;
+  width: 80px;
+  height: 6px;
+  border-radius: 5px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+.slider:hover {
+  opacity: 1;
+}
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #202020;
+  cursor: pointer;
+}
+</style>
+</head>
+
+
 <title>The Pendulum Challenge</title>
 <body>
 
-<font face="arial,helvetica">
-
-<font size="7">The Pendulum Challenge</font>
-<font size="4">&nbsp;&nbsp;Matthias M&uuml;ller, Nvidia</font>
+<h1>The Pendulum Challenge</h1>
+<p>Matthias M&uuml;ller, Nvidia</p>
 <p>
-Simulating a n-pendulum is a challenging task. The main reason is the fact that the links have to be treated infinitely stiff rods. The most popular solution  is to derive the equations of motions in reduced coordinates (the angles of the rods) so the lengths of the links are guaranteed to be constant. The appendix of this <a href=https://www.nickeyre.com/images/triplependulum.pdf" target="_blank">paper</a> shows the equations for a triple pendulum.
-
+Simulating a n-pendulum is a challenging task. The main reason is the fact that the links have to be treated as infinitely stiff rods. The most popular solution  is to derive the equations of motions using reduced coordinates (the angles between the rods) so the lengths of the links are guaranteed to be constant. While the equations for a double pendulum are reasonable short, the ones for the triple pendulum already cover an entire page.
 </p>
+The alternative is the use of cartesian coordinates in which all the links have to be simulated explicitly as rods with very high stiffness. This prevents explicit integration because the time step size of a stable simulation goes to zero with increasing stiffness. The second option is to use implicit solvers which are unconditionally stable. In this case, an expensive solve of a system of non-linear equations has performed at every time step. In a real-time setting, this prevents taking small time steps and as a result, all high-frequency effects are damped out.
+<p>
+Here we present our method called <b>Extended Position Based Dynamics</b> (XPBD). The main purpose of this simulation is to show that XPBD is - against many concerns in the community - physically correct. It takes and produces all quantities with physically correct units and it handles zero and non-zero compliance independent of the number of iterations. <b>In fact, we suspect that it is quite difficult to achieve the same fidelity and stability with any kind of implicit or explicit solver within the same time budget. The challenge for you is to prove us wrong!</b>
+The html document you see here is self-contained. It includes the GUI, the rendering and the complete simulation code. You can have a look at it <a href = "https://github.com/matthias-research/SimChallenges/blob/master/pendulum.html" target="_blank"> here</a>. The solver itself only takes 100 lines of  code. We encourage you to replace it with your own solution and see whether you can beat us in terms of accuracy, speed, simplicity or stability.</p>
 
+First and foremost however, have fun with playing with all the parameters provided. Also, use the mouse to drag the weights. As you will see, the method is simple, fast and stable across a large variety of parameters. For a description of the algorithm see below.</p>
 
 <table>
   <tr>
   <td>
-<canvas id="myCanvas" width="500" height="500" style="border:1px solid #d3d3d3;">
+<canvas id="myCanvas" width="500" height="500" style="border:3px solid #d3d3d3;">
 Your browser does not support the HTML5 canvas tag.</canvas>
 </td>
-<td>
+<td id = "gui">
 <p><span id = "ms">0.000</span> ms per frame, gravity = -10 m/s^2, time step = 1/60 s</p>
-<p>Number of segments: <input type = "range" min = "1" max = "4" value = "3" id = "segsSlider"> <span id = "numSegs">3</span></p>
-<p>Number of sub-steps: <input type = "range" min = "0" max = "6" value = "4" id = "stepsSlider"> <span id = "steps">50</span></p>
+<p>Number of segments: <input type = "range" min = "1" max = "4" value = "3" id = "segsSlider"  class = "slider"> <span id = "numSegs">3</span></p>
+<p>Number of sub-steps: <input type = "range" min = "0" max = "6" value = "4" id = "stepsSlider" class = "slider"> <span id = "steps">50</span></p>
 <p><table>
 <tr>
 <th>mass (kg)</th><th>length (m)</th><th>compliance (m/N)</th><th>uni</th>
 </tr>
 <tr>
-<td><input type = "range" min = "0" max = "4" value = "2" id = "mass1Slider"> <span id = "mass1">1.0</span></td>
-<td><input type = "range" min = "0" max = "2" value = "1" id = "radius1Slider"> <span id = "radius1">0.3</span></td>
-<td><input type = "range" min = "0" max = "2" value = "0" id = "compliance1Slider"> <span id = "compliance1">0.000</span></td>
+<td><input type = "range" min = "0" max = "4" value = "2" id = "mass1Slider" class = "slider"> <span id = "mass1">1.0</span></td>
+<td><input type = "range" min = "0" max = "2" value = "1" id = "radius1Slider" class = "slider"> <span id = "radius1">0.3</span></td>
+<td><input type = "range" min = "0" max = "2" value = "0" id = "compliance1Slider" class = "slider"> <span id = "compliance1">0.000</span></td>
 <td><input type = "checkbox" onclick = "onUnilateral(1)"></td>
 </tr>
 <tr>
-<td><input type = "range" min = "0" max = "4" value = "2" id = "mass2Slider"> <span id = "mass2">1.0</span></td>
-<td><input type = "range" min = "0" max = "2" value = "1" id = "radius2Slider"> <span id = "radius2">0.3</span></td>
-<td><input type = "range" min = "0" max = "2" value = "0" id = "compliance2Slider"> <span id = "compliance2">0.000</span></td>
+<td><input type = "range" min = "0" max = "4" value = "2" id = "mass2Slider" class = "slider"> <span id = "mass2">1.0</span></td>
+<td><input type = "range" min = "0" max = "2" value = "1" id = "radius2Slider" class = "slider"> <span id = "radius2">0.3</span></td>
+<td><input type = "range" min = "0" max = "2" value = "0" id = "compliance2Slider" class = "slider"> <span id = "compliance2">0.000</span></td>
 <td><input type = "checkbox" onclick = "onUnilateral(2)"></td>
 </tr>
 <tr>
-<td><input type = "range" min = "0" max = "4" value = "2" id = "mass3Slider"> <span id = "mass3">1.0</span></td>
-<td><input type = "range" min = "0" max = "2" value = "1" id = "radius3Slider"> <span id = "radius3">0.3</span></td>
-<td><input type = "range" min = "0" max = "2" value = "0" id = "compliance3Slider"> <span id = "compliance3">0.000</span></td>
+<td><input type = "range" min = "0" max = "4" value = "2" id = "mass3Slider"  class = "slider"> <span id = "mass3">1.0</span></td>
+<td><input type = "range" min = "0" max = "2" value = "1" id = "radius3Slider" class = "slider"> <span id = "radius3">0.3</span></td>
+<td><input type = "range" min = "0" max = "2" value = "0" id = "compliance3Slider" class = "slider"> <span id = "compliance3">0.000</span></td>
 <td><input type = "checkbox" onclick = "onUnilateral(3)"></td>
 </tr>
 <tr>
-<td><input type = "range" min = "0" max = "4" value = "2" id = "mass4Slider"> <span id = "mass4">1.0</span></td>
-<td><input type = "range" min = "0" max = "2" value = "1" id = "radius4Slider"> <span id = "radius4">0.3</span></td>
-<td><input type = "range" min = "0" max = "2" value = "0" id = "compliance4Slider"> <span id = "compliance4">0.000</span></td>
+<td><input type = "range" min = "0" max = "4" value = "2" id = "mass4Slider" class = "slider"> <span id = "mass4">1.0</span></td>
+<td><input type = "range" min = "0" max = "2" value = "1" id = "radius4Slider" class = "slider"> <span id = "radius4">0.3</span></td>
+<td><input type = "range" min = "0" max = "2" value = "0" id = "compliance4Slider" class = "slider"> <span id = "compliance4">0.000</span></td>
 <td><input type = "checkbox" onclick = "onUnilateral(4)"></td>
 </tr></p>
 <p><input type = "checkbox" onclick = "onEnergy()"> Enforce energy conservation</p>
 <p><input type = "checkbox" onclick = "onCollision()"> Collision handling</p>
 <p><input type = "checkbox" onclick = "onTrail()" checked> Show trail
 <input type = "checkbox" onclick = "onForces()"> Show forces</p>
-<p><button onclick="resetPos(false)">Start position</button>
-	<button onclick="resetPos(true)">Equilibrium position</button>
-	<button onclick="step()">Step</button>
-	<button onclick="run()">Run</button></p>
-<p>Edge damping coefficient (Ns/m) <input type = "range" min = "0" max = "2" value = "0" id = "edgeDampingSlider"> <span id = "edgeDamping">0.0</span></p>
-<p>Global damping coefficient (Ns/m) <input type = "range" min = "0" max = "3" value = "0" id = "globalDampingSlider"> <span id = "globalDamping">0.0</span></p>
+<p><button onclick="resetPos(false)" class="button">Start position</button>
+	<button onclick="resetPos(true)" class="button">Equilibrium position</button>
+	<button onclick="step()" class="button">Step</button>
+	<button onclick="run()" class="button">Run</button></p>
+<p>Edge damping coefficient (Ns/m) <input type = "range" min = "0" max = "2" value = "0" id = "edgeDampingSlider" class = "slider"> <span id = "edgeDamping">0.0</span></p>
+<p>Global damping coefficient (Ns/m) <input type = "range" min = "0" max = "3" value = "0" id = "globalDampingSlider" class = "slider"> <span id = "globalDamping">0.0</span></p>
 </td>
 </tr>
 </table>
@@ -479,7 +536,7 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 		} 		
 	}
 
-	// simulation
+	// animation
 	
 	var requestAnimationFrame = window.requestAnimationFrame ||
 		window.mozRequestAnimationFrame ||
