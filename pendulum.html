@@ -71,12 +71,12 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 
 	// global parameters
 	
-    var numSubsteps = 50;
+	var numSubsteps = 50;
 	var numPoints = 4;
 	var defaultRadius = 0.3;
-    var defaultMass = 1.0;
-    var gravity = 10;
-    var dt = 1 / 60;
+	var defaultMass = 1.0;
+	var gravity = 10;
+	var dt = 1 / 60;
 	var edgeDampingCoeff = 0;
 	var globalDampingCoeff = 0;
 	
@@ -92,8 +92,8 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 	var mouseCompliance = 0.001;
 	var mouseDampingCoeff = 100.0;
 	
-    var canvas = document.getElementById("myCanvas");
-    var c = canvas.getContext("2d");
+	var canvas = document.getElementById("myCanvas");
+	var c = canvas.getContext("2d");
 	var canvasOrig = { x : canvas.width / 2, y : canvas.height / 4};
 	var simWidth = 2.0;
 	var pointSize = 10;
@@ -256,23 +256,23 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 		}
 	}
 	
-    // pendulum definition
+	// pendulum definition
 	
-    var points = [];
+	var points = [];
 	for (i = 0; i < maxPoints; i++)
 		points.push(
 		{
-            invMass: i == 0 ? 0 : 1 / defaultMass,
-            radius: i == 0 ? 0 : defaultRadius,
+			invMass: i == 0 ? 0 : 1 / defaultMass,
+			radius: i == 0 ? 0 : defaultRadius,
 			size: 0,
-            pos: vec(0, 0),
-            prev: vec(0, 0),
-            vel: vec(0, 0), 
+			pos: vec(0, 0),
+			prev: vec(0, 0),
+			vel: vec(0, 0), 
 			compliance : 0,
 			unilateral : false,
 			force : 0,
 			elongation : 0,
-        });
+		});
 					
 	function resetPos(equilibrium) 
 	{
@@ -292,8 +292,8 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 	
 	// draw pendulum
 		
-    function draw() {
-        c.clearRect(0, 0, canvas.width, canvas.height);
+	function draw() {
+		c.clearRect(0, 0, canvas.width, canvas.height);
 
 		c.lineWidth = 3;
 		c.font = "15px Arial";
@@ -301,7 +301,7 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 		var x = canvasOrig.x;
 		var y = canvasOrig.y;
 
-        for (i = 1; i < numPoints; i++) {
+		for (i = 1; i < numPoints; i++) {
 			var avgX = x, avgY = y;
 			p = points[i];
 			if (p.compliance > 0) c.strokeStyle = "#0000FF";
@@ -309,16 +309,16 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 			else c.strokeStyle = "#000000";
 			c.beginPath();
 			c.moveTo(x, y);
-            x = canvasOrig.x + p.pos.x * drawScale;
-            y = canvasOrig.y - p.pos.y * drawScale;
-            c.lineTo(x, y);
+			x = canvasOrig.x + p.pos.x * drawScale;
+			y = canvasOrig.y - p.pos.y * drawScale;
+			c.lineTo(x, y);
 			c.stroke();
 			avgX = (avgX + x) / 2; avgY = (avgY + y) / 2;
 
 			if (showForces)			
 				c.fillText("  f=" + p.force.toFixed(0) + "N, dx=" + p.elongation.toFixed(2) + "m", avgX, avgY);
 			
-        }
+		}
 		c.lineWidth = 1;
 		
 		if (grabPointNr > 0) {
@@ -329,10 +329,10 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 			c.stroke();
 		}
 		
-        for (i = 1; i < numPoints; i++) {
+		for (i = 1; i < numPoints; i++) {
 			p = points[i];
-            x = canvasOrig.x + p.pos.x * drawScale;
-            y = canvasOrig.y - p.pos.y * drawScale;
+			x = canvasOrig.x + p.pos.x * drawScale;
+			y = canvasOrig.y - p.pos.y * drawScale;
 			c.beginPath();			
 			c.arc(x, y, pointSize * p.size, 0, Math.PI*2, true); 
 			c.closePath();
@@ -393,24 +393,24 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 		vecPlus(p.vel, n, dv);
 	}
 	
-    function simulate(dt) 
+	function simulate(dt) 
 	{
-        var sdt = dt / numSubsteps;
-        var step;
-        for (step = 0; step < numSubsteps; step++) {
+		var sdt = dt / numSubsteps;
+		var step;
+		for (step = 0; step < numSubsteps; step++) {
 
-            // predict
+			// predict
 
-            for (i = 1; i < numPoints; i++) {
-                p = points[i];
-                p.vel.y -= gravity * sdt;
+			for (i = 1; i < numPoints; i++) {
+				p = points[i];
+				p.vel.y -= gravity * sdt;
 				vecAssign(p.prev, p.pos);
 				vecPlus(p.pos, p.vel, sdt);
-            }
+			}
 
-            // solve positions
+			// solve positions
 
-            for (i = 0; i < numPoints - 1; i++) {
+			for (i = 0; i < numPoints - 1; i++) {
 				p = points[i + 1];
 				solveDistPos(points[i], p, p.radius, p.compliance, p.unilateral, sdt);
 			}
@@ -428,16 +428,16 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 				}
 			}
 			
-            // update velocities
+			// update velocities
 
-            for (i = 1; i < numPoints; i++) {
-                p = points[i];
+			for (i = 1; i < numPoints; i++) {
+				p = points[i];
 				p.vel = vecSub(p.pos, p.prev);
 				vecScale(p.vel, 1 / sdt);
 				solvePointVel(p, globalDampingCoeff, sdt);
-            }
+			}
 			
-            for (i = 0; i < numPoints - 1; i++) {
+			for (i = 0; i < numPoints - 1; i++) {
 				p = points[i + 1];
 				if (p.compliance > 0.0)
 					solveDistVel(points[i], p, edgeDampingCoeff, sdt);
@@ -447,8 +447,8 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 			
 			if (showTrail)
 				trailAdd(points[numPoints-1].pos);
-        }
-    }
+		}
+	}
 	
 	// ---------------------------------------------------------------------------------------
 	
@@ -457,7 +457,7 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 	function computeEnergy()
 	{
 		var E = 0;
-        for (i = 1; i < numPoints; i++) {
+		for (i = 1; i < numPoints; i++) {
 			p = points[i];
 			E += p.pos.y / p.invMass * gravity + 0.5 / p.invMass * vecLenSquared(p.vel);
 		}
@@ -479,25 +479,25 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 		} 		
 	}
 
-    // simulation
+	// simulation
 	
-    var requestAnimationFrame = window.requestAnimationFrame ||
-        window.mozRequestAnimationFrame ||
-        window.webkitRequestAnimationFrame ||
-        window.msRequestAnimationFrame;
+	var requestAnimationFrame = window.requestAnimationFrame ||
+		window.mozRequestAnimationFrame ||
+		window.webkitRequestAnimationFrame ||
+		window.msRequestAnimationFrame;
 
 	var timeFrames = 0;
 	var timeSum = 0;
 	var paused = false;
 
-    function timeStep() 
+	function timeStep() 
 	{
 		var prevE;
 		if (conserveEnergy)
 			prevE = computeEnergy();	
 		var startTime = performance.now();
 		
-        simulate(dt);
+		simulate(dt);
 
 		var endTime = performance.now();
 		if (conserveEnergy)
@@ -513,10 +513,10 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 			timeSum = 0;
 		}
 						
-        draw();
+		draw();
 		if (!paused)
 			requestAnimationFrame(timeStep);
-    }
+	}
 	
 	function step()
 	{
@@ -578,7 +578,7 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 	// main
 	
 	resetPos(false);
-    timeStep();
+	timeStep();
 
 </script> 
 </font>
