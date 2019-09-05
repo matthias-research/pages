@@ -1,1 +1,586 @@
+<!-- Pendulum Simulator -->
+<!-- Matthias Müller, nvidia -->
 
+<!DOCTYPE html>
+<title>The Pendulum Challenge</title>
+<body>
+
+<font face="arial,helvetica">
+
+<font size="7">The Pendulum Challenge</font>
+<font size="4">&nbsp;&nbsp;Matthias M&uuml;ller, Nvidia</font>
+<p>
+Simulating a n-pendulum is a challenging task. The main reason is the fact that the links have to be treated infinitely stiff rods. The most popular solution  is to derive the equations of motions in reduced coordinates (the angles of the rods) so the lengths of the links are guaranteed to be constant. The appendix of this <a href=https://www.nickeyre.com/images/triplependulum.pdf" target="_blank">paper</a> shows the equations for a triple pendulum.
+
+</p>
+
+
+<table>
+  <tr>
+  <td>
+<canvas id="myCanvas" width="500" height="500" style="border:1px solid #d3d3d3;">
+Your browser does not support the HTML5 canvas tag.</canvas>
+</td>
+<td>
+<p><span id = "ms">0.000</span> ms per frame, gravity = -10 m/s^2, time step = 1/60 s</p>
+<p>Number of segments: <input type = "range" min = "1" max = "4" value = "3" id = "segsSlider"> <span id = "numSegs">3</span></p>
+<p>Number of sub-steps: <input type = "range" min = "0" max = "6" value = "4" id = "stepsSlider"> <span id = "steps">50</span></p>
+<p><table>
+<tr>
+<th>mass (kg)</th><th>length (m)</th><th>compliance (m/N)</th><th>uni</th>
+</tr>
+<tr>
+<td><input type = "range" min = "0" max = "4" value = "2" id = "mass1Slider"> <span id = "mass1">1.0</span></td>
+<td><input type = "range" min = "0" max = "2" value = "1" id = "radius1Slider"> <span id = "radius1">0.3</span></td>
+<td><input type = "range" min = "0" max = "2" value = "0" id = "compliance1Slider"> <span id = "compliance1">0.000</span></td>
+<td><input type = "checkbox" onclick = "onUnilateral(1)"></td>
+</tr>
+<tr>
+<td><input type = "range" min = "0" max = "4" value = "2" id = "mass2Slider"> <span id = "mass2">1.0</span></td>
+<td><input type = "range" min = "0" max = "2" value = "1" id = "radius2Slider"> <span id = "radius2">0.3</span></td>
+<td><input type = "range" min = "0" max = "2" value = "0" id = "compliance2Slider"> <span id = "compliance2">0.000</span></td>
+<td><input type = "checkbox" onclick = "onUnilateral(2)"></td>
+</tr>
+<tr>
+<td><input type = "range" min = "0" max = "4" value = "2" id = "mass3Slider"> <span id = "mass3">1.0</span></td>
+<td><input type = "range" min = "0" max = "2" value = "1" id = "radius3Slider"> <span id = "radius3">0.3</span></td>
+<td><input type = "range" min = "0" max = "2" value = "0" id = "compliance3Slider"> <span id = "compliance3">0.000</span></td>
+<td><input type = "checkbox" onclick = "onUnilateral(3)"></td>
+</tr>
+<tr>
+<td><input type = "range" min = "0" max = "4" value = "2" id = "mass4Slider"> <span id = "mass4">1.0</span></td>
+<td><input type = "range" min = "0" max = "2" value = "1" id = "radius4Slider"> <span id = "radius4">0.3</span></td>
+<td><input type = "range" min = "0" max = "2" value = "0" id = "compliance4Slider"> <span id = "compliance4">0.000</span></td>
+<td><input type = "checkbox" onclick = "onUnilateral(4)"></td>
+</tr></p>
+<p><input type = "checkbox" onclick = "onEnergy()"> Enforce energy conservation</p>
+<p><input type = "checkbox" onclick = "onCollision()"> Collision handling</p>
+<p><input type = "checkbox" onclick = "onTrail()" checked> Show trail
+<input type = "checkbox" onclick = "onForces()"> Show forces</p>
+<p><button onclick="resetPos(false)">Start position</button>
+	<button onclick="resetPos(true)">Equilibrium position</button>
+	<button onclick="step()">Step</button>
+	<button onclick="run()">Run</button></p>
+<p>Edge damping coefficient (Ns/m) <input type = "range" min = "0" max = "2" value = "0" id = "edgeDampingSlider"> <span id = "edgeDamping">0.0</span></p>
+<p>Global damping coefficient (Ns/m) <input type = "range" min = "0" max = "3" value = "0" id = "globalDampingSlider"> <span id = "globalDamping">0.0</span></p>
+</td>
+</tr>
+</table>
+
+<script>
+
+	// global parameters
+	
+    var numSubsteps = 50;
+	var numPoints = 4;
+	var defaultRadius = 0.3;
+    var defaultMass = 1.0;
+    var gravity = 10;
+    var dt = 1 / 60;
+	var edgeDampingCoeff = 0;
+	var globalDampingCoeff = 0;
+	
+	var conserveEnergy = false;
+	var collisionHandling = false;
+	var showTrail = true;
+	var showForces = false;
+	var maxPoints = 5;
+	
+	var maxTrailLen = 1000;
+	var trailDist = 0.01;
+	
+	var mouseCompliance = 0.001;
+	var mouseDampingCoeff = 100.0;
+	
+    var canvas = document.getElementById("myCanvas");
+    var c = canvas.getContext("2d");
+	var canvasOrig = { x : canvas.width / 2, y : canvas.height / 4};
+	var simWidth = 2.0;
+	var pointSize = 10;
+	var drawScale = canvas.width / simWidth;
+	
+	var i,j;
+	
+	// GUI callbacks
+	
+	document.getElementById("stepsSlider").oninput = function() {
+		var steps = [1, 5, 10, 20, 50, 100, 1000];
+		numSubsteps = steps[Number(this.value)];
+		document.getElementById("steps").innerHTML = numSubsteps.toString();
+	}
+	document.getElementById("segsSlider").oninput = function() {
+		numPoints = Number(this.value) + 1;
+		document.getElementById("numSegs").innerHTML = this.value;
+		resetPos(false);
+	}
+
+	document.getElementById("edgeDampingSlider").oninput = function() {
+		var coeffs = ["0.0", "10.0", "100.0"];
+		var coeff = coeffs[Number(this.value)];
+		edgeDampingCoeff = Number(coeff);		
+		document.getElementById("edgeDamping").innerHTML = coeff;
+	}
+
+	document.getElementById("globalDampingSlider").oninput = function() {
+		var coeffs = ["0.0", "0.5", "1.0", "2.0"];
+		var coeff = coeffs[Number(this.value)];
+		globalDampingCoeff = Number(coeff);		
+		document.getElementById("globalDamping").innerHTML = coeff;
+	}
+	
+	function setupMass(value, output, pointNr) {
+		var masses = ["0.1", "0.5", "1.0", "2.0", "10"];
+		var m = masses[value];
+		document.getElementById(output).innerHTML = m;
+		points[pointNr].invMass = 1.0 / Number(m);
+		points[pointNr].size = Math.sqrt(Number(m));
+	}
+	
+	function setupRadius(value, output, pointNr) {
+		var lengths = ["0.2", "0.3", "0.4"];
+		var len = lengths[value];
+		document.getElementById(output).innerHTML = len;
+		points[pointNr].radius = Number(len);
+		resetPos(false);
+	}
+
+	function setupCompliance(value, output, pointNr) {
+		var values = ["0.000", "0.001", "0.010"];
+		var compliance = values[value];
+		document.getElementById(output).innerHTML = compliance;
+		points[pointNr].compliance = Number(compliance);
+	}
+	
+	document.getElementById("mass1Slider").oninput = function() {
+		setupMass(Number(this.value), "mass1", 1);
+	}
+	document.getElementById("mass2Slider").oninput = function() {
+		setupMass(Number(this.value), "mass2", 2);
+	}
+	document.getElementById("mass3Slider").oninput = function() {
+		setupMass(Number(this.value), "mass3", 3);
+	}
+	document.getElementById("mass4Slider").oninput = function() {
+		setupMass(Number(this.value), "mass4", 4);
+	}
+	document.getElementById("radius1Slider").oninput = function() {
+		setupRadius(Number(this.value), "radius1", 1);
+	}
+	document.getElementById("radius2Slider").oninput = function() {
+		setupRadius(Number(this.value), "radius2", 2);
+	}
+	document.getElementById("radius3Slider").oninput = function() {
+		setupRadius(Number(this.value), "radius3", 3);
+	}
+	document.getElementById("radius4Slider").oninput = function() {
+		setupRadius(Number(this.value), "radius4", 4);
+	}
+	document.getElementById("compliance1Slider").oninput = function() {
+		setupCompliance(Number(this.value), "compliance1", 1);
+	}
+	document.getElementById("compliance2Slider").oninput = function() {
+		setupCompliance(Number(this.value), "compliance2", 2);
+	}
+	document.getElementById("compliance3Slider").oninput = function() {
+		setupCompliance(Number(this.value), "compliance3", 3);
+	}
+	document.getElementById("compliance4Slider").oninput = function() {
+		setupCompliance(Number(this.value), "compliance4", 4);
+	}
+		
+	function onEnergy() {
+		conserveEnergy = !conserveEnergy;
+		resetPos(false);
+	}
+	
+	function onCollision() {
+		collisionHandling = !collisionHandling;
+		resetPos(false);
+	}
+
+	function onTrail() {
+		showTrail = !showTrail;
+		trail = [];
+		trailLast = 0;
+	}
+
+	function onForces() {
+		showForces = !showForces;
+	}
+	
+	function onUnilateral(nr) {
+		points[nr].unilateral = !points[nr].unilateral;
+	}
+	
+	// vector functions
+	
+	function vec(x, y) { return { x : x, y : y }; }	
+	function vecCopy(v) { return {x : v.x, y : v.y }; }
+	function vecAssign(v0, v1) { v0.x = v1.x; v0.y = v1.y; }
+	
+	function vecAdd(v0, v1, s = 1) { return { x : v0.x + s * v1.x, y : v0.y + s * v1.y }; }
+	function vecSub(v0, v1, s = 1) { return { x : v0.x - s * v1.x, y : v0.y - s * v1.y }; }
+	function vecPlus(v0, v1, s = 1) { v0.x += s * v1.x; v0.y += s * v1.y; }
+	function vecMinus(v0, v1, s = 1) { v0.x -= s * v1.x; v0.y -= s * v1.y; }
+	function vecScale(v, s) { v.x *= s; v.y *= s; }
+	function vecDot(v0, v1) { return v0.x * v1.x + v0.y * v1.y; }
+
+	function vecNormalize(v) { 
+		var d = Math.sqrt(v.x * v.x + v.y * v.y);
+		if (d > 0) { v.x /= d; v.y /= d; } else v.x = 1;
+		return d;
+	}
+	
+	function vecLenSquared(v) { return v.x * v.x + v.y * v.y; }
+	function vecDistSquared(v0, v1) { 
+		return (v0.x - v1.x) * (v0.x - v1.x) + (v0.y - v1.y) * (v0.y - v1.y);
+	}
+		
+	// trail
+	
+	var trailLast = 0;
+	var trail = [];
+
+	function trailAdd(p) {
+		if (trail.length == 0)
+			trail.push(vecCopy(p));
+		else {
+			var d2 = vecDistSquared(trail[trailLast], p);
+			if (d2 > trailDist * trailDist) {
+				trailLast = (trailLast + 1) % maxTrailLen;
+				if (trail.length < maxTrailLen)
+					trail.push(vecCopy(p));
+				else 
+					vecAssign(trail[trailLast], p);
+			}
+		}
+	}
+	
+    // pendulum definition
+	
+    var points = [];
+	for (i = 0; i < maxPoints; i++)
+		points.push(
+		{
+            invMass: i == 0 ? 0 : 1 / defaultMass,
+            radius: i == 0 ? 0 : defaultRadius,
+			size: 0,
+            pos: vec(0, 0),
+            prev: vec(0, 0),
+            vel: vec(0, 0), 
+			compliance : 0,
+			unilateral : false,
+			force : 0,
+			elongation : 0,
+        });
+					
+	function resetPos(equilibrium) 
+	{
+		var pos = equilibrium ? vec(0, 0) : vec(points[1].radius, - points[1].radius);
+
+		for (i = 1; i < points.length; i++) {
+			p = points[i];
+			p.size = Math.sqrt(1.0 / p.invMass);
+			pos.y = equilibrium ? pos.y - p.radius : pos.y + p.radius;
+			vecAssign(p.pos, pos); vecAssign(p.prev, pos); 
+			p.vel.x = 0; p.vel.y = 0;
+		}		
+		trail = [];
+		trailLast = 0;
+		draw();
+	}
+	
+	// draw pendulum
+		
+    function draw() {
+        c.clearRect(0, 0, canvas.width, canvas.height);
+
+		c.lineWidth = 3;
+		c.font = "15px Arial";
+
+		var x = canvasOrig.x;
+		var y = canvasOrig.y;
+
+        for (i = 1; i < numPoints; i++) {
+			var avgX = x, avgY = y;
+			p = points[i];
+			if (p.compliance > 0) c.strokeStyle = "#0000FF";
+			else if (p.unilateral) c.strokeStyle = "#00FF00";
+			else c.strokeStyle = "#000000";
+			c.beginPath();
+			c.moveTo(x, y);
+            x = canvasOrig.x + p.pos.x * drawScale;
+            y = canvasOrig.y - p.pos.y * drawScale;
+            c.lineTo(x, y);
+			c.stroke();
+			avgX = (avgX + x) / 2; avgY = (avgY + y) / 2;
+
+			if (showForces)			
+				c.fillText("  f=" + p.force.toFixed(0) + "N, dx=" + p.elongation.toFixed(2) + "m", avgX, avgY);
+			
+        }
+		c.lineWidth = 1;
+		
+		if (grabPointNr > 0) {
+			c.strokeStyle = "#FF8000";
+			c.beginPath();
+			c.moveTo(canvasOrig.x + grabPoint.pos.x * drawScale, canvasOrig.y - grabPoint.pos.y * drawScale);
+			c.lineTo(canvasOrig.x + points[grabPointNr].pos.x * drawScale, canvasOrig.y - points[grabPointNr].pos.y * drawScale);
+			c.stroke();
+		}
+		
+        for (i = 1; i < numPoints; i++) {
+			p = points[i];
+            x = canvasOrig.x + p.pos.x * drawScale;
+            y = canvasOrig.y - p.pos.y * drawScale;
+			c.beginPath();			
+			c.arc(x, y, pointSize * p.size, 0, Math.PI*2, true); 
+			c.closePath();
+			c.fill();			
+		}		
+		
+		if (trail.length > 1) {
+			c.strokeStyle = "#FF0000";
+			c.beginPath();
+			var pos = (trailLast + 1) % trail.length;
+			c.moveTo(canvasOrig.x + trail[pos].x * drawScale, canvasOrig.y - trail[pos].y * drawScale);
+			for (i = 0; i < trail.length - 1; i++) {
+				pos = (pos + 1) % trail.length;
+				c.lineTo(canvasOrig.x + trail[pos].x * drawScale, canvasOrig.y - trail[pos].y * drawScale);
+			}
+			c.stroke();
+			c.strokeStyle = "#000000";
+		}
+    }
+		
+    // simulation (replace with yours) ------------------------------------------------------------
+	
+	function solveDistPos(p0, p1, d0, compliance, unilateral, dt) 
+	{
+		var w = p0.invMass + p1.invMass;
+		if (w == 0)
+			return;
+		var grad = vecSub(p1.pos, p0.pos);
+		var d = vecNormalize(grad);
+		w += compliance / dt / dt;
+		var lambda = (d - d0) / w;
+				
+		if (lambda < 0 && unilateral)
+			return;
+		p1.force = lambda / dt / dt;
+		p1.elongation = d - d0;
+		vecPlus( p0.pos, grad, p0.invMass * lambda);
+		vecMinus(p1.pos, grad, p1.invMass * lambda);
+	}
+
+	function solveDistVel(p0, p1, dampingCoeff, dt) 
+	{
+		var n = vecSub(p1.pos, p0.pos);
+		vecNormalize(n);
+		var v0 = vecDot(n, p0.vel);
+		var v1 = vecDot(n, p1.vel);		
+		var dv0 = (v1 - v0) * Math.min(0.5, dampingCoeff * dt * p0.invMass);
+		var dv1 = (v0 - v1) * Math.min(0.5, dampingCoeff * dt * p1.invMass);
+		vecPlus(p0.vel, n, dv0);
+		vecPlus(p1.vel, n, dv1);
+	}
+
+	function solvePointVel(p, dampingCoeff, dt) 
+	{
+		var n = vecCopy(p.vel);
+		var v = vecNormalize(n);
+		var dv = -v * Math.min(1.0, dampingCoeff * dt * p.invMass);
+		vecPlus(p.vel, n, dv);
+	}
+	
+    function simulate(dt) 
+	{
+        var sdt = dt / numSubsteps;
+        var step;
+        for (step = 0; step < numSubsteps; step++) {
+
+            // predict
+
+            for (i = 1; i < numPoints; i++) {
+                p = points[i];
+                p.vel.y -= gravity * sdt;
+				vecAssign(p.prev, p.pos);
+				vecPlus(p.pos, p.vel, sdt);
+            }
+
+            // solve positions
+
+            for (i = 0; i < numPoints - 1; i++) {
+				p = points[i + 1];
+				solveDistPos(points[i], p, p.radius, p.compliance, p.unilateral, sdt);
+			}
+
+			if (grabPointNr >= 0) 
+				solveDistPos(grabPoint, points[grabPointNr], 0, mouseCompliance, false, sdt);
+
+			if (collisionHandling) {
+				var minX = 0;
+				p = points[numPoints - 1];
+				if (p.pos.x < minX) {
+					p.pos.x = minX;
+					if (p.vel.x < 0)
+						p.prev.x = p.pos.x + p.vel.x * sdt;
+				}
+			}
+			
+            // update velocities
+
+            for (i = 1; i < numPoints; i++) {
+                p = points[i];
+				p.vel = vecSub(p.pos, p.prev);
+				vecScale(p.vel, 1 / sdt);
+				solvePointVel(p, globalDampingCoeff, sdt);
+            }
+			
+            for (i = 0; i < numPoints - 1; i++) {
+				p = points[i + 1];
+				if (p.compliance > 0.0)
+					solveDistVel(points[i], p, edgeDampingCoeff, sdt);
+			}
+			if (grabPointNr >= 0) 
+				solveDistVel(grabPoint, points[grabPointNr], mouseDampingCoeff, sdt);
+			
+			if (showTrail)
+				trailAdd(points[numPoints-1].pos);
+        }
+    }
+	
+	// ---------------------------------------------------------------------------------------
+	
+	// energy conservation
+	
+	function computeEnergy()
+	{
+		var E = 0;
+        for (i = 1; i < numPoints; i++) {
+			p = points[i];
+			E += p.pos.y / p.invMass * gravity + 0.5 / p.invMass * vecLenSquared(p.vel);
+		}
+		return E;
+  	}
+	
+	function forceEnergyConservation(prevE)
+	{
+		var dE = (computeEnergy() - prevE) / (numPoints - 1);
+		if (dE < 0) {
+			var postE = computeEnergy();
+
+			for (i = 1; i < numPoints; i++) {
+				p = points[i];
+				var Ek = 0.5 / p.invMass * vecLenSquared(p.vel);
+				var s = Math.sqrt((Ek - dE) / Ek);
+				vecScale(p.vel, s);
+			}
+		} 		
+	}
+
+    // simulation
+	
+    var requestAnimationFrame = window.requestAnimationFrame ||
+        window.mozRequestAnimationFrame ||
+        window.webkitRequestAnimationFrame ||
+        window.msRequestAnimationFrame;
+
+	var timeFrames = 0;
+	var timeSum = 0;
+	var paused = false;
+
+    function timeStep() 
+	{
+		var prevE;
+		if (conserveEnergy)
+			prevE = computeEnergy();	
+		var startTime = performance.now();
+		
+        simulate(dt);
+
+		var endTime = performance.now();
+		if (conserveEnergy)
+			forceEnergyConservation(prevE);
+		
+		timeSum += endTime - startTime; 
+		timeFrames++;
+		
+		if (timeFrames > 10) {
+			timeSum /= timeFrames;
+			document.getElementById("ms").innerHTML = timeSum.toFixed(3);		
+			timeFrames = 0;
+			timeSum = 0;
+		}
+						
+        draw();
+		if (!paused)
+			requestAnimationFrame(timeStep);
+    }
+	
+	function step()
+	{
+		paused = true;
+		timeStep();	
+	}
+
+	function run()
+	{
+		if (paused) {
+			paused = false;
+			timeStep();
+		}
+	}
+
+	// mouse grab
+	
+	var grabPointNr = -1;
+	var grabPoint = { pos : { x : 0, y : 0}, invMass : 0, vel : vec(0, 0) };
+	var maxGrabDist = 0.5;
+	var prevConserveEnergy = conserveEnergy;
+		
+	function onMouse(evt) {
+		evt.preventDefault();
+		var rect = canvas.getBoundingClientRect();	
+		var mousePos = vec(
+			((evt.clientX - rect.left) - canvasOrig.x) / drawScale, 
+			(canvasOrig.y - (evt.clientY - rect.top)) / drawScale);
+		if (evt.type == "mousedown") {
+			grabPointNr = -1;
+			var minGrabDist2 = maxGrabDist * maxGrabDist;
+			for (i = 1; i < numPoints; i++) {
+				p = points[i];
+				var d2 = vecDistSquared(p.pos, mousePos);
+				if (d2 < minGrabDist2) {
+					minGrabDist2 = d2;
+					grabPointNr = i;
+					vecAssign(grabPoint.pos, mousePos);
+					prevConserveEnergy = conserveEnergy;
+					conserveEnergy = false;
+				}
+			}
+		}
+		else if (evt.type == "mousemove") {
+			vecAssign(grabPoint.pos, mousePos);
+		}
+		
+		else if (evt.type == "mouseup" || evt.type == "mouseout") {
+			grabPointNr = -1;
+			conserveEnergy = prevConserveEnergy;
+		}
+	}
+	
+	canvas.addEventListener("mousedown", onMouse);
+	canvas.addEventListener("mousemove", onMouse);
+	canvas.addEventListener("mouseup", onMouse);
+	canvas.addEventListener("mouseout", onMouse);
+	
+	// main
+	
+	resetPos(false);
+    timeStep();
+
+</script> 
+</font>
+</body>
+</html>
