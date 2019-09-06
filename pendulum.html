@@ -62,8 +62,8 @@ h1 {
 
 <h1>The Pendulum Challenge</h1>
 <p>Matthias M&uuml;ller, Nvidia</p>
-<p>This pendulum simulation shows our simulation algorithm <b>XPBD1</b> in action. A small modification to our original position based dynamics method <b>PBD</b> turns the latter from a toy used in games to a serious competitor of physical simulation methods even surpassing their accuracy while staying as simple as <b>PBD</b>. We discribe the method in detail here. The pendulum simulation showcases the following features: It handles stiff systems with large mass ratios. It shows high frequency details and a high level of energy conservation both missing in implicit global solvers. All quantities have physical units and internal forces can easily be evaluated (turn on force labels). It also removes the conceptual differences of <b>PBD</b> to the backward Euler method.</p>
-<p>Our challenge for you is to <b>beat our method</b> in terms of simplicity, speed, stability or accuracy. The html document you see here is self-contained. It includes the GUI, the rendering and the complete simulation code. You can have a look at it <a href = "https://github.com/matthias-research/SimChallenges/blob/master/pendulum.html" target="_blank"> here</a>. The solver itself only takes 100 lines of  code which you can simply replace it with your own solution. We provide some hints on how to play with this demo below...</p>
+<p>This pendulum simulation shows our simulation algorithm <b>XPBD1</b> in action. A small modification to our original position based dynamics method <b>PBD</b> turns the latter from a toy used in games to a serious competitor of physical simulation methods even surpassing their accuracy while staying as simple as <b>PBD</b>. We describe the method in detail here. The pendulum simulation showcases the following features: It handles stiff systems with large mass ratios. (Zero compliance means infinite stiffness). It shows high frequency details and a high level of energy conservation both missing in implicit global solvers. All quantities have physical units and internal forces can easily be evaluated (turn on force labels). It also removes the conceptual differences of <b>PBD</b> to the backward Euler method. It generalizes to more general constraints as we show here.</p>
+<p>Our challenge for you is to <b>beat our method</b> in terms of simplicity, speed, stability or accuracy. The html document you see here is self-contained. It includes the GUI, the rendering and the complete simulation code. You can have a look at it <a href = "https://github.com/matthias-research/SimChallenges/blob/master/pendulum.html" target="_blank"> here</a>. The solver itself only takes 100 lines of code which you can simply replace it with your own solution. We provide some hints on how to play with this demo below...</p>
 
 <table>
   <tr>
@@ -73,7 +73,7 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 </td>
 <td id = "gui">
 <p><span id = "ms">0.000</span> ms per frame, dt = 1/60 s, g = -10 m/s<sup>2</sup></p>
-<p>Number of segments: <input type = "range" min = "1" max = "4" value = "3" id = "segsSlider"  class = "slider"> <span id = "numSegs">3</span></p>
+<p>Number of links: <input type = "range" min = "1" max = "4" value = "3" id = "segsSlider"  class = "slider"> <span id = "numSegs">3</span></p>
 <p>Number of sub-steps: <input type = "range" min = "0" max = "6" value = "4" id = "stepsSlider" class = "slider"> <span id = "steps">50</span></p>
 <table>
 <tr>
@@ -118,9 +118,34 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 </table>
 <p>
 <ul>
-  <li>Coffee</li>
-  <li>Tea</li>
-  <li>Milk</li>
+  <li><b>Mouse interaction</b><br>
+  You can use the mouse to drag the masses. The mouse pointer is attached to the weights via a spring. This allows you to experience the weight variation and the stiffness of the rods. Pull on the innermost weight.
+  </li>
+  <li><b>The triple pendulum</b><br>
+  The demo starts with a triple pendulum. The reason is that there are quite a few double pendulum simulations on the web. While their reduced coordinates formulation is reasonable complex, the equations for the triple pendulum cover an entire page. Although our method conserves energy quite well, the simulation comes to a stop eventually. If you want to look at it forever, turn on "Enforce energy conservation". I do not recommend to use this feature in general however. </li>
+  <li><b>Number of sub-steps</b><br>
+  We have set the number of sub-steps to 50. Almost all demos work well with 20. The only reason to go higher is to reduce the amount of energy loss. Note that effect of compliance is independent of the number of sub-steps.
+  </li>
+  <li><b>Force labels</b><br>
+  Set the equilibrium position and turn on force labels. As you can see, the forces correspond to 10 times the weight below each link since gravity is 10. At the same time, the elongations are zero if the compliance is zero (corresponding to infinite stiffness). If you increase the compliance the elongations become proportional (via inverse compliance) to the forces. This is best seen with high edge damping. Pull on the weights to see what happens.</li>
+  <li>
+  <b>The single pendulum</b><br>
+  Set the number of segments to 1. Choose compliance zero. As expected from physics, the frequency is independent of the mass but dependent on the link length. Set the mass to ten and the compliance to 0.01. Then hit restart with a variety of edge damping coefficients. While the demo is running, change the number of sub-steps. As you see, the stiffness is unaffected. 
+  </li>
+  <li><b>The double pendulum</b><br>
+  Compare the behavior with the many simulations on the web. Play with all the parameters.</li>
+  <li><b>Unilateral constraints</b></br>
+  Turn compliance to zero and check the "uni" box. The links turn green. In this case, they are allowed to compress but not to expand. The corresponding constraints are called unilateral. Handling them with traditional solvers is challenging.</li>
+  <li><b>Collisions</b><br>
+  Turn on collision handling and see what happens. The last weight bounces off the x = 0 line. This experiment shows the high fidelity of you method. In this case, the trajectory has sharp edges. These are damped out with implicit solvers. The problem increases by increasing the order of the integration method. Collision constraints are unilateral as well.
+  </li>
+  <li><b>High mass ratios</b><br>
+  To see how well our method handles high mass ratios, set the number of links to four. Set the firs three masses to 0.1 and the last to 10 while all compliances are zero. Hit restart and see how there is almost no stretching in the links. Play with the number of sub-steps. Twenty are enough to handle this situation.
+  </li>
+  <li><b>Damping</b><br>
+  Edge damping decreases the bouncing of compliant links. As stiffness, damping is unconditionally stable with our method. Sometimes, users like the overall damping introduced artificially be implicit solvers. You can inject it in a controlled manner via the global damping parameter.</li>  
+  <li><b>Stability</b></br>
+  Note the stability of our approach over the wide space of parameters. We have not seen serious crashes but if it happens, simply re-load the page by hitting F5.
 </ul> 
 </p>
 
