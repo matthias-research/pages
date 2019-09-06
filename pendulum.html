@@ -62,8 +62,8 @@ h1 {
 
 <h1>The Pendulum Challenge</h1>
 <p>Matthias M&uuml;ller, Nvidia</p>
-<p>The simulation below shows our new <b>XPBD1</b> algorithm in action. A small modification removes the approximations of XPBD and enables the simulation of stiff systems with large mass ratios. It also shows high frequency details and a high level of energy conservation both missing in implicit global solvers. In addition, all quantities have physical units and internal forces can easily be evaluated (turn on force labels). All those components are essential to produce the simulations below.</p>
-<p>Our challenge for you is to <b>beat our method</b> in terms of simplicity, speed, stability or accuracy. The html document you see here is self-contained. It includes the GUI, the rendering and the complete simulation code. You can have a look at it <a href = "https://github.com/matthias-research/SimChallenges/blob/master/pendulum.html" target="_blank"> here</a>. The solver itself only takes 100 lines of  code which you can simply replace it with your own solution.
+<p>This pendulum simulation shows our simulation algorithm <b>XPBD1</b> in action. A small modification to our original position based dynamics method <b>PBD</b> turns the latter from a toy used in games to a serious competitor of physical simulation methods even surpassing their accuracy while staying as simple as <b>PBD</b>. We discribe the method in detail here. The pendulum simulation showcases the following features: It handles stiff systems with large mass ratios. It shows high frequency details and a high level of energy conservation both missing in implicit global solvers. All quantities have physical units and internal forces can easily be evaluated (turn on force labels). It also removes the conceptual differences of <b>PBD</b> to the backward Euler method.</p>
+<p>Our challenge for you is to <b>beat our method</b> in terms of simplicity, speed, stability or accuracy. The html document you see here is self-contained. It includes the GUI, the rendering and the complete simulation code. You can have a look at it <a href = "https://github.com/matthias-research/SimChallenges/blob/master/pendulum.html" target="_blank"> here</a>. The solver itself only takes 100 lines of  code which you can simply replace it with your own solution. We provide some hints on how to play with this demo below...</p>
 
 <table>
   <tr>
@@ -110,16 +110,19 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 <p><input type = "checkbox" onclick = "onCollision()"> Collision handling</p>
 <p><input type = "checkbox" onclick = "onTrail()" checked> Show trail
 <input type = "checkbox" onclick = "onForces()"> Force labels</p>
-<p><button onclick="resetPos(false)" class="button">Start position</button>
+<p><button onclick="resetPos(false)" class="button">Restart</button>
 	<button onclick="resetPos(true)" class="button">Equilibrium position</button>
 	<button onclick="step()" class="button">Step</button>
 	<button onclick="run()" class="button">Run</button></p>
 </td>
 </table>
 <p>
-Our approach is an extension of <b>Position Based Dynamics</b> (PBD), a method we developed a while back. The initial goal was to provide a simple and stable way to create physical simulations in games. In the case of a set of particles and distance constraints the idea goes like this: At each time step, advance the particles with an explicit Euler step without considering the constraints, i.e. add gravity times the time step size to the velocities and the velocity times the time step size to the positions. Then modify the particle's positions so they satisfy the constraints and finally set the velocities to the new position minus the positions at the beginning of the time step divided by the time step size.</p>
-
-<p>Of course, the central question is how to modify the positions of the particles</p>
+<ul>
+  <li>Coffee</li>
+  <li>Tea</li>
+  <li>Milk</li>
+</ul> 
+</p>
 
 <script>
 
