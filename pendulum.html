@@ -9,6 +9,7 @@ th, td {
 	padding: 2px;
 }
 body {
+	padding: 10px 50px;
 	font-family: verdana; 
 	line-height: 1.5;
 	font-size: 15px;
@@ -293,31 +294,43 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 	function onUnilateral(nr) {
 		points[nr].unilateral = !points[nr].unilateral;
 	}
-	
-	// vector functions
-	
-	function vec(x, y) { return { x : x, y : y }; }	
-	function vecCopy(v) { return {x : v.x, y : v.y }; }
-	function vecAssign(v0, v1) { v0.x = v1.x; v0.y = v1.y; }
-	
-	function vecAdd(v0, v1, s = 1) { return { x : v0.x + s * v1.x, y : v0.y + s * v1.y }; }
-	function vecSub(v0, v1, s = 1) { return { x : v0.x - s * v1.x, y : v0.y - s * v1.y }; }
-	function vecPlus(v0, v1, s = 1) { v0.x += s * v1.x; v0.y += s * v1.y; }
-	function vecMinus(v0, v1, s = 1) { v0.x -= s * v1.x; v0.y -= s * v1.y; }
-	function vecScale(v, s) { v.x *= s; v.y *= s; }
-	function vecDot(v0, v1) { return v0.x * v1.x + v0.y * v1.y; }
-
-	function vecNormalize(v) { 
-		var d = Math.sqrt(v.x * v.x + v.y * v.y);
-		if (d > 0) { v.x /= d; v.y /= d; } else v.x = 1;
-		return d;
-	}
-	
-	function vecLenSquared(v) { return v.x * v.x + v.y * v.y; }
-	function vecDistSquared(v0, v1) { 
-		return (v0.x - v1.x) * (v0.x - v1.x) + (v0.y - v1.y) * (v0.y - v1.y);
-	}
 		
+	class Vector {
+		constructor(x = 0, y = 0) { this.x = x; this.y = y; }
+		copy(v)   { 
+			return new Vector(this.x, this.y); 
+		}
+		assign(v) { 
+			this.x = v.x; this.y = v.y; 
+		}
+		plus(v) { 
+			return new Vector(this.x + v.x, this.y + v.y); 
+		}
+		minus(v) { 
+			return new Vector(this.x - v.x, this.y - v.y); 
+		}
+		add(v, s = 1) { 
+			this.x += v.x * s; this.y += v.y * s; 
+		}
+		scale(s) {
+			this.x *= s; this.y *= s; 
+		}
+		dot(v) { 
+			return this.x * v.x + this.y * v.y; 
+		}
+		normalize() {
+			var d = Math.sqrt(this.x * this.x + this.y * this.y);		
+			if (d > 0) { this.x /= d; this.y /= d; } else this.x = 1;
+			return d;
+		}
+		lenSquared() { 
+			return this.x * this.x + this.y * this.y; 
+		}
+		distSquared(v) { 
+			return (this.x - v.x) * (this.x - v.x) + (this.y - v.y) * (this.y - v.y);
+		}
+	}
+			
 	// trail
 	
 	var trailLast = 0;
@@ -325,15 +338,15 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 
 	function trailAdd(p) {
 		if (trail.length == 0)
-			trail.push(vecCopy(p));
+			trail.push(p.copy());
 		else {
-			var d2 = vecDistSquared(trail[trailLast], p);
+			var d2 = trail[trailLast].distSquared(p);
 			if (d2 > trailDist * trailDist) {
 				trailLast = (trailLast + 1) % maxTrailLen;
 				if (trail.length < maxTrailLen)
-					trail.push(vecCopy(p));
+					trail.push(p.copy());
 				else 
-					vecAssign(trail[trailLast], p);
+					trail[trailLast].assign(p);
 			}
 		}
 	}
@@ -347,9 +360,9 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 			invMass: i == 0 ? 0 : 1 / defaultMass,
 			radius: i == 0 ? 0 : defaultRadius,
 			size: 0,
-			pos: vec(0, 0),
-			prev: vec(0, 0),
-			vel: vec(0, 0), 
+			pos: new Vector(),
+			prev: new Vector(),
+			vel: new Vector(), 
 			compliance : 0,
 			unilateral : false,
 			force : 0,
@@ -358,13 +371,13 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 					
 	function resetPos(equilibrium) 
 	{
-		var pos = equilibrium ? vec(0, 0) : vec(points[1].radius, - points[1].radius);
+		var pos = equilibrium ? new Vector(0, 0) : new Vector(points[1].radius, - points[1].radius);
 
 		for (i = 1; i < points.length; i++) {
 			p = points[i];
 			p.size = Math.sqrt(1.0 / p.invMass);
 			pos.y = equilibrium ? pos.y - p.radius : pos.y + p.radius;
-			vecAssign(p.pos, pos); vecAssign(p.prev, pos); 
+			p.pos.assign(pos); p.prev.assign(pos); 
 			p.vel.x = 0; p.vel.y = 0;
 		}		
 		trail = [];
@@ -442,8 +455,8 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 		var w = p0.invMass + p1.invMass;
 		if (w == 0)
 			return;
-		var grad = vecSub(p1.pos, p0.pos);
-		var d = vecNormalize(grad);
+		var grad = p1.pos.minus(p0.pos);
+		var d = grad.normalize();
 		w += compliance / dt / dt;
 		var lambda = (d - d0) / w;
 				
@@ -451,28 +464,28 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 			return;
 		p1.force = lambda / dt / dt;
 		p1.elongation = d - d0;
-		vecPlus( p0.pos, grad, p0.invMass * lambda);
-		vecMinus(p1.pos, grad, p1.invMass * lambda);
+		p0.pos.add(grad, p0.invMass * lambda);
+		p1.pos.add(grad, -p1.invMass * lambda);
 	}
 
 	function solveDistVel(p0, p1, dampingCoeff, dt) 
 	{
-		var n = vecSub(p1.pos, p0.pos);
-		vecNormalize(n);
-		var v0 = vecDot(n, p0.vel);
-		var v1 = vecDot(n, p1.vel);		
+		var n = p1.pos.minus(p0.pos);
+		n.normalize();
+		var v0 = n.dot(p0.vel);
+		var v1 = n.dot(p1.vel);		
 		var dv0 = (v1 - v0) * Math.min(0.5, dampingCoeff * dt * p0.invMass);
 		var dv1 = (v0 - v1) * Math.min(0.5, dampingCoeff * dt * p1.invMass);
-		vecPlus(p0.vel, n, dv0);
-		vecPlus(p1.vel, n, dv1);
+		p0.vel.add(n, dv0);
+		p1.vel.add(n, dv1);
 	}
 
 	function solvePointVel(p, dampingCoeff, dt) 
 	{
-		var n = vecCopy(p.vel);
-		var v = vecNormalize(n);
+		var n = p.vel.copy()
+		var v = n.normalize();
 		var dv = -v * Math.min(1.0, dampingCoeff * dt * p.invMass);
-		vecPlus(p.vel, n, dv);
+		p.vel.add(n, dv);
 	}
 	
 	function simulate(dt) 
@@ -486,8 +499,8 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 			for (i = 1; i < numPoints; i++) {
 				p = points[i];
 				p.vel.y -= gravity * sdt;
-				vecAssign(p.prev, p.pos);
-				vecPlus(p.pos, p.vel, sdt);
+				p.prev.assign(p.pos);
+				p.pos.add(p.vel, sdt);
 			}
 
 			// solve positions
@@ -514,8 +527,8 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 
 			for (i = 1; i < numPoints; i++) {
 				p = points[i];
-				p.vel = vecSub(p.pos, p.prev);
-				vecScale(p.vel, 1 / sdt);
+				p.vel = p.pos.minus(p.prev);
+				p.vel.scale(1 / sdt);
 				solvePointVel(p, globalDampingCoeff, sdt);
 			}
 			
@@ -541,7 +554,7 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 		var E = 0;
 		for (i = 1; i < numPoints; i++) {
 			p = points[i];
-			E += p.pos.y / p.invMass * gravity + 0.5 / p.invMass * vecLenSquared(p.vel);
+			E += p.pos.y / p.invMass * gravity + 0.5 / p.invMass * p.vel.lenSquared();
 		}
 		return E;
   	}
@@ -554,9 +567,9 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 
 			for (i = 1; i < numPoints; i++) {
 				p = points[i];
-				var Ek = 0.5 / p.invMass * vecLenSquared(p.vel);
+				var Ek = 0.5 / p.invMass * p.vel.lenSquared();
 				var s = Math.sqrt((Ek - dE) / Ek);
-				vecScale(p.vel, s);
+				p.vel.scale(s);
 			}
 		} 		
 	}
@@ -617,14 +630,14 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 	// mouse grab
 	
 	var grabPointNr = -1;
-	var grabPoint = { pos : { x : 0, y : 0}, invMass : 0, vel : vec(0, 0) };
+	var grabPoint = { pos : { x : 0, y : 0}, invMass : 0, vel : new Vector() };
 	var maxGrabDist = 0.5;
 	var prevConserveEnergy = conserveEnergy;
 		
 	function onMouse(evt) {
 		evt.preventDefault();
 		var rect = canvas.getBoundingClientRect();	
-		var mousePos = vec(
+		var mousePos = Vector(
 			((evt.clientX - rect.left) - canvasOrig.x) / drawScale, 
 			(canvasOrig.y - (evt.clientY - rect.top)) / drawScale);
 		if (evt.type == "mousedown") {
@@ -632,18 +645,18 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 			var minGrabDist2 = maxGrabDist * maxGrabDist;
 			for (i = 1; i < numPoints; i++) {
 				p = points[i];
-				var d2 = vecDistSquared(p.pos, mousePos);
+				var d2 = p.pos.distSquared(mousePos);
 				if (d2 < minGrabDist2) {
 					minGrabDist2 = d2;
 					grabPointNr = i;
-					vecAssign(grabPoint.pos, mousePos);
+					grabPoint.pos.assign(mousePos);
 					prevConserveEnergy = conserveEnergy;
 					conserveEnergy = false;
 				}
 			}
 		}
 		else if (evt.type == "mousemove") {
-			vecAssign(grabPoint.pos, mousePos);
+			grabPoint.pos.assign(mousePos);
 		}
 		
 		else if (evt.type == "mouseup" || evt.type == "mouseout") {
@@ -663,6 +676,5 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 	timeStep();
 
 </script> 
-</font>
 </body>
 </html>
