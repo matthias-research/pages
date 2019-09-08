@@ -16,7 +16,7 @@ body {
 }
 #title {
 	font-weight: normal;
-	font-size: 60px;
+	font-size: 50px;
 }
 #subtitle {
 	font-weight: normal;
@@ -45,12 +45,35 @@ table.mainTable tbody td#einstein {
   background-color: #555555;
   border: none;
   color: white;
-  padding: 8px 8px;
+  padding: 10px 10px;
+  margin: 5px 0px 5px 0px;  
   border-radius: 5px;
   text-align: center;
   text-decoration: none;
   display: inline-block;
-  font-size: 25px;
+  font-size: 20px;
+}
+
+@media only screen and (max-device-width : 640px) {
+.button {
+	font-size: 40px;
+	}
+body {
+	font-size: 40px;
+}
+#title {
+	font-weight: normal;
+	font-size: 80px;
+}
+#subtitle {
+	font-size: 40px;
+}
+#quote {
+	font-size: 45px;
+}
+table.mainTable tbody td#einstein {
+	font-size: 30px;
+}
 }
 
 </style>
@@ -85,7 +108,7 @@ Albert Einstein
 
 
 <p>see:</p>
-<button onclick="resetPos(false)" class="button">simplicity in physics</button>
+<button onclick="window.location.href = 'pendulum.html'" class="button">simplicity in physics</button>
 <button onclick="resetPos(false)" class="button">challenges</button>
 <button onclick="resetPos(false)" class="button">publications</button>
 <button onclick="resetPos(false)" class="button">about</button>
