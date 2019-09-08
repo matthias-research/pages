@@ -630,14 +630,14 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 	// mouse grab
 	
 	var grabPointNr = -1;
-	var grabPoint = { pos : { x : 0, y : 0}, invMass : 0, vel : new Vector() };
+	var grabPoint = { pos : new Vector(), invMass : 0, vel : new Vector() };
 	var maxGrabDist = 0.5;
 	var prevConserveEnergy = conserveEnergy;
 		
 	function onMouse(evt) {
 		evt.preventDefault();
 		var rect = canvas.getBoundingClientRect();	
-		var mousePos = Vector(
+		var mousePos = new Vector(
 			((evt.clientX - rect.left) - canvasOrig.x) / drawScale, 
 			(canvasOrig.y - (evt.clientY - rect.top)) / drawScale);
 		if (evt.type == "mousedown") {

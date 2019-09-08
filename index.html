@@ -11,23 +11,32 @@ th, td {
 body {
 	font-family: verdana; 
 	line-height: 1.5;
-	font-size: 15px;
+	font-size: 25px;
 	padding: 0px 30px 30px 30px;
 }
-h1 {
+#title {
 	font-weight: normal;
-	font-size: 40px;
+	font-size: 60px;
+}
+#subtitle {
+	font-weight: normal;
+	font-size: 25px;
 }
 table.mainTable {
 	text-align: left;
-	vertical-align: bottom;
-	background-color: #FFDAB9;
-	padding: 0px 10px 0px 10px;
 	width: 100%;
+	color: red;
 }
-table.mainTable tbody td#buttons {
+table.mainTable tbody td#einstein {
 	text-align: right;
+	font-size: 20px;
 }
+#quote {
+	font-family: georgia;
+	font-size: 30px;
+	padding: 0px 0px 0px 30px;
+}
+
 .button:hover {
   background-color: #777777; 
   color: white;
@@ -41,7 +50,7 @@ table.mainTable tbody td#buttons {
   text-align: center;
   text-decoration: none;
   display: inline-block;
-  font-size: 20px;
+  font-size: 25px;
 }
 
 </style>
@@ -50,21 +59,36 @@ table.mainTable tbody td#buttons {
 
 <title>Matthias M&uuml;ller</title>
 
+
 <body>
+
+
+<span id = "title" >Matthias M&uuml;ller</span><br>
+<span id = "subtitle">physics research lead, nvidia</span>
+<br>
+<br>
+<p>my credo:</p>
 
 <table class = "mainTable">
 <tr>
-<td id="title">
-<h1>Matthias M&uuml;ller</h1>
+<td id="quote">
+<i>everything should be made as simple as possible, but not simpler</i>
 </td>
-<td id="buttons">
-<button onclick="resetPos(false)" class="button">publications</button>
-<button onclick="resetPos(false)" class="button">tutorials</button>
-<button onclick="resetPos(false)" class="button">simplicity</button>
+</tr>
+<tr>
+<td id="einstein">
+Albert Einstein
 </td>
 </tr>
 </table>
 
+
+
+<p>see:</p>
+<button onclick="resetPos(false)" class="button">simplicity in physics</button>
+<button onclick="resetPos(false)" class="button">challenges</button>
+<button onclick="resetPos(false)" class="button">publications</button>
+<button onclick="resetPos(false)" class="button">about</button>
 
 
 </body>
