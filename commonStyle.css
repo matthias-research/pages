@@ -32,6 +32,11 @@ body {
   display: inline-block;
   font-size: 20px;
 }
+/*
+img { 
+   border:1px solid #021a40;
+}
+*/
 
 @media only screen and (max-device-width : 640px) {
 .button {

@@ -1,0 +1,135 @@
+<!-- Matthias Müller, nvidia -->
+
+<!DOCTYPE html>
+<html>
+<link rel="stylesheet" type="text/css" href="../commonStyle.css">
+<head>
+<style>
+
+table#pubTable {
+	text-align: left;
+	width: 100%;
+	font-size: 16px;
+	vertical-align: bottom;
+}
+td {
+  vertical-align: top;
+  white-space: nowrap;
+  padding : 15px 0px;
+}
+/*
+#pubTable tr:nth-child(even){
+	background-color: #f2f2f2;
+}
+*/
+.paperTitle {
+	font-weight: bold;
+	color : red;
+}
+.paperConference {
+	font-style: italic;
+}
+.paperAuthors {
+/*	color : red; */
+}
+
+thead tr th:first-child,
+tbody tr td:first-child {
+  width: 180px;
+  min-width: 180px;
+  max-width: 180px;
+}
+
+.paperButton:hover {
+  background-color: #777777; 
+  color: white;
+}
+.paperButton {
+  background-color: #555555;
+  border: none;
+  color: white;
+  padding: 5px 5px;
+  margin: 2px 0px 2px 0px;  
+  border-radius: 5px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 14px;
+}
+
+@media only screen and (max-device-width : 640px) {
+}
+
+</style>
+
+
+
+</head>
+
+<title>Publications</title>
+
+<body>
+
+<span id = "title" >Publications</span><br>
+<br>
+<table id = "pubTable">
+
+<tr>
+<td>
+<img src = "smallsteps.jpg" width = "150px">
+</td>
+<td>
+<div class = "paperAuthors">M. Macklin, K. Storey, M. Lu, P. Terdiman, N. Chentanez, S. Jeschke, M. M&uuml;ller</div>
+<div class = "paperTitle">Small Steps in Physics Simulation</div>
+<div class = "paperConference">Symposium on Computer Animation (SCA 2019)</div>
+<a href = "smallsteps.pdf" target="_blank" class="paperButton">PDF</a> 
+<a href = "https://youtu.be/at6S8RkXQhw" target="_blank" class="paperButton">Video</a>
+</td>
+</tr>
+
+<tr>
+<td>
+<img src = "cableJoints.jpg" width = "150px">
+</td>
+<td>
+<div class = "paperAuthors">M. M&uuml;ller, N. Chentanez, S. Jeschke, M. Macklin</div>
+<div class = "paperTitle">Cable Joints</div>
+<div class = "paperConference">Symposium on Computer Animation (SCA 2018)</div>
+<a href = "cableJoints.pdf" target="_blank" class="paperButton">PDF</a> 
+<a href = "https://youtu.be/lGdBSGaiuAM" target="_blank" class="paperButton">Video</a>
+</td>
+</tr>
+
+<tr>
+<td>
+<img src = "PBD2017.jpg" width = "150px">
+</td>
+<td>
+<div class = "paperAuthors">J. Bender, M. M&uuml;ller, M. Macklin</div>
+<div class = "paperTitle">Position-Based Simulation Methods in Computer Graphics 2017</div>
+<div class = "paperConference">EUROGRAPHICS 2017 Tutorial (2017)</div>
+<a href = "PBDTutorial2017-CourseNotes.pdf" target="_blank" class="paperButton">Course notes</a> 
+<a href = "PBDTutorial2017-slides-1.pdf" target="_blank" class="paperButton">Slides 1</a> 
+<a href = "PBDTutorial2017-slides-2.pdf" target="_blank" class="paperButton">Slides 2</a> 
+</td>
+</tr>
+
+<tr>
+<td>
+<img src = "XPBD.jpg" width = "150px">
+</td>
+<td>
+<div class = "paperAuthors">M. Macklin, M. M&uuml;ller, N. Chentanez</div>
+<div class = "paperTitle">XPBD: Position-Based Simulation of Compliant Constrained Dynamics</div>
+<div class = "paperConference">Motion in Games (2016)</div>
+<a href = "XPBD.pdf" target="_blank"class="paperButton">PDF</a>
+<a href = "https://youtu.be/rm26NF9f4aA" target="_blank"class="paperButton">Video</a>
+</td>
+</tr>
+
+</table>
+
+
+
+</body>
+</html>
