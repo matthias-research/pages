@@ -2,26 +2,9 @@
 
 <!DOCTYPE html>
 <html>
-
+<link rel="stylesheet" type="text/css" href="commonStyle.css">
 <head>
 <style>
-th, td {
-	padding: 2px;
-}
-body {
-	font-family: verdana; 
-	line-height: 1.5;
-	font-size: 25px;
-	padding: 0px 30px 30px 30px;
-}
-#title {
-	font-weight: normal;
-	font-size: 50px;
-}
-#subtitle {
-	font-weight: normal;
-	font-size: 25px;
-}
 table.mainTable {
 	text-align: left;
 	width: 100%;
@@ -37,37 +20,7 @@ table.mainTable tbody td#einstein {
 	padding: 0px 0px 0px 30px;
 }
 
-.button:hover {
-  background-color: #777777; 
-  color: white;
-}
-.button {
-  background-color: #555555;
-  border: none;
-  color: white;
-  padding: 10px 10px;
-  margin: 5px 0px 5px 0px;  
-  border-radius: 5px;
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 20px;
-}
-
 @media only screen and (max-device-width : 640px) {
-.button {
-	font-size: 40px;
-	}
-body {
-	font-size: 40px;
-}
-#title {
-	font-weight: normal;
-	font-size: 80px;
-}
-#subtitle {
-	font-size: 40px;
-}
 #quote {
 	font-size: 45px;
 }
@@ -108,11 +61,9 @@ Albert Einstein
 
 
 <p>see:</p>
-<button onclick="window.location.href = 'pendulum.html'" class="button">simplicity in physics</button>
-<button onclick="resetPos(false)" class="button">challenges</button>
-<button onclick="resetPos(false)" class="button">publications</button>
-<button onclick="resetPos(false)" class="button">about</button>
-
-
+<a href = "simplicity.html" class="button">simplicity in physics</a>
+<a href = "challenges.html" class="button">challenges</a>
+<a href = "publications.html" class="button">publications</a>
+<a href = "about.html" class="button">about</a>
 </body>
 </html>
