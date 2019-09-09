@@ -5,19 +5,27 @@
 <link rel="stylesheet" type="text/css" href="commonStyle.css">
 <head>
 <style>
-table.mainTable {
+table#topTable {
+}
+table#quoteTable {
 	text-align: left;
-	width: 100%;
 	color: red;
 }
-table.mainTable tbody td#einstein {
+table#quoteTable tbody td#einstein {
 	text-align: right;
 	font-size: 20px;
 }
 #quote {
 	font-family: georgia;
-	font-size: 30px;
+	font-size: 28px;
 	padding: 0px 0px 0px 30px;
+}
+#portrait {
+	padding: 10px 10px 10px 80px;
+	align: right;
+}
+td {
+  vertical-align: top;
 }
 
 @media only screen and (max-device-width : 640px) {
@@ -38,17 +46,26 @@ table.mainTable tbody td#einstein {
 
 <body>
 
-
+<table id = "topTable">
+<tr>
+<td>
 <span id = "title" >Matthias M&uuml;ller</span><br>
 <span id = "subtitle">physics research lead, nvidia</span>
+</td>
+<td>
+<img src = "portrait.jpg" width = "150px" id = "portrait">
+</td>
+</tr>
+</table>
+
 <br>
 <br>
 <p>my credo:</p>
 
-<table class = "mainTable">
+<table id = "quoteTable">
 <tr>
 <td id="quote">
-<i>everything should be made as simple as possible, but not simpler</i>
+<i>everything should be made as simple as possible,<br> but not simpler.</i>
 </td>
 </tr>
 <tr>

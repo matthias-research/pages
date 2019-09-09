@@ -5,7 +5,7 @@ body {
 	font-family: verdana; 
 	line-height: 1.5;
 	font-size: 25px;
-	padding: 0px 30px 30px 30px;
+	padding: 30px 30px 30px 30px;
 }
 #title {
 	font-weight: normal;
@@ -30,7 +30,7 @@ body {
   text-align: center;
   text-decoration: none;
   display: inline-block;
-  font-size: 20px;
+  font-size: 18px;
 }
 /*
 img { 
