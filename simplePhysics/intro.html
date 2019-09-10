@@ -8,6 +8,9 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
 <style>
+
+/* desktop */
+
 .sidenav {
   height: 100%;
   width: 140px;
@@ -60,19 +63,23 @@
   .sidenav a {font-size: 18px;}
 }
 
+/* mobile */
+
 .mobile-container {
-  max-width: 480px;
+  width : 100%;
   margin: auto;
-  background-color: #555;
-  height: 500px;
+  background-color: #fff;
   color: white;
   border-radius: 10px;
 }
 
 .topnav {
   overflow: hidden;
-  background-color: #333;
-  position: relative;
+  background-color: #555555;
+  position: fixed;
+  width: 300px;
+  left: 0;
+  top: 0;
 }
 
 .topnav #myLinks {
@@ -101,7 +108,7 @@
 }
 
 .active {
-  background-color: #4CAF50;
+  background-color: black;
   color: white;
 }
 
@@ -113,71 +120,50 @@
 
 <body>
 
-<!-- Side navigation -->
+<!-- desktop -->
 <div id = "desktop-menu" class="sidenav">
-  <a class="tablinks" href="../index.html">back</a>
-  <button class="tablinks" onclick="openChapter(event, 'intro')" id="defaultOpen">intro</button>
-  <button class="tablinks" onclick="openChapter(event, 'forces')">forces</button>
-  <button class="tablinks" onclick="openChapter(event, 'conclusion')">conclusion</button>
+  <a href="../index.html">back</a>
+  <a href = "#introduction">intro</a>
+  <a href = "#forces">forces</a>
+  <a href = "#conclusion">conclusion</a>
 </div>
 
-<!-- Simulate a smartphone / tablet -->
-<div id = "moblie-menu" class="mobile-container">
+<!-- mobile -->
+<div id = "mobile-menu" class="mobile-container">
 
-<!-- Top Navigation Menu -->
 <div class="topnav">
-  <a href="#home" class="active">Simplicity in Physics</a>
+  <a href="#home" class="active">simplicity in physics</a>
   <div id="myLinks">
-    <a href="#news">News</a>
-    <a href="#contact">Contact</a>
-    <a href="#about">About</a>
+  <a href="../index.html">back</a>
+  <a href = "#introduction">intro</a>
+  <a href = "#forces">forces</a>
+  <a href = "#conclusion">conclusion</a>
   </div>
   <a href="javascript:void(0);" class="icon" onclick="myFunction()">
     <i class="fa fa-bars"></i>
   </a>
 </div>
 
+</div>
+
 
 <!-- Page content -->
 <div class="main">
 
-<div id = "intro" class ="chapter">
-<div class = "title">introduction</div><br>
-hi everybody<br>
-matthias<br>
-</div>
+<div id = "introduction" class = "title">introduction</div><br>
 
-<div id = "forces" class ="chapter">
-<div class = "title">forces</div><br>
-hi everybody<br>
-matthias<br>
-</div>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 
-<div id = "conclusion" class ="chapter">
-<div class = "title">conclusion</div><br>
-bye bye<br>
-matthias<br>
-</div>
+<div id = "forces" class ="title">forces</div><br>
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
+<div id = "conclusion" class ="title">conclusion</div><br>
 
 
-</div>
+
+</div	>
 <script>
-function openChapter(evt, title) {
-  var i, chapters, tablinks;
-  chapters = document.getElementsByClassName("chapter");
-  for (i = 0; i < chapters.length; i++) {
-    chapters[i].style.display = "none";
-  }
-  tablinks = document.getElementsByClassName("tablinks");
-  for (i = 0; i < tablinks.length; i++) {
-    tablinks[i].className = tablinks[i].className.replace(" active", "");
-  }
-  document.getElementById(title).style.display = "block";
-  evt.currentTarget.className += " active";
-}
-
-// Get the element with id="defaultOpen" and click on it
-document.getElementById("defaultOpen").click();
 
 function myFunction() {
   var x = document.getElementById("myLinks");
@@ -188,15 +174,16 @@ function myFunction() {
   }
 }
 
+
 function checkDevice()
 {
-	if (window.screen.width > 640) {
+	if (window.screen.width < 640) {
 		document.getElementById("desktop-menu").style.display = "none";
-		document.getElementById("moblie-menu").style.display = "block";
+		document.getElementById("mobile-menu").style.display = "block";
 	}
 	else {
 		document.getElementById("desktop-menu").style.display = "block";
-		document.getElementById("moblie-menu").style.display = "none";
+		document.getElementById("mobile-menu").style.display = "none";
 	}
 }
 
