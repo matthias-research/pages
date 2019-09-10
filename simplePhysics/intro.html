@@ -6,7 +6,17 @@
 <head>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({ tex2jax: { inlineMath: [['$','$'], ['\\(','\\)']] } });
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({ TeX: { extensions: ["autobold.js", "AMSsymbols.js"] } });
+</script>
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
 
+<script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
 <style>
 
 /* desktop */
@@ -77,8 +87,8 @@
   overflow: hidden;
   background-color: #555555;
   position: fixed;
-  width: 300px;
-  left: 0;
+  width: 400px;
+  right: 0;
   top: 0;
 }
 
@@ -90,7 +100,7 @@
   color: white;
   padding: 14px 16px;
   text-decoration: none;
-  font-size: 17px;
+  font-size: 30px;
   display: block;
 }
 
@@ -151,6 +161,21 @@
 <div class="main">
 
 <div id = "introduction" class = "title">introduction</div><br>
+
+<pre style="margin: 30px 30px 30px 40px; font-size: 18px;" class="prettyprint">
+class Voila {
+public:
+  // Voila
+  static const string VOILA = "Voila";
+
+  // will not interfere with embedded <a href="#voila2">tags</a>.
+}</pre>
+
+
+<p style="margin: 30px 30px 30px 40px; font-size: 25px;">
+When $a \ne 0$, there are two solutions to $ ax^2 + bx + c = 0 $ and they are
+$$ x = {-b \pm \sqrt{b^2-4ac} \over 2a}. $$
+</p>
 
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 
