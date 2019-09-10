@@ -1,0 +1,122 @@
+<!-- Matthias Müller, nvidia -->
+
+<!DOCTYPE html>
+<html>
+<link rel="stylesheet" type="text/css" href="../commonStyle.css">
+<head>
+<style>
+.sidenav {
+  height: 100%;
+  width: 160px;
+  position: fixed;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  background-color: #555555;
+  overflow-x: hidden;
+  padding-top: 20px;
+}
+
+.sidenav button {
+  display: block;
+  background-color: inherit;
+  color: black;
+  padding: 22px 16px;
+  width: 100%;
+  border: none;
+  outline: none;
+  text-align: left;
+  cursor: pointer;
+  transition: 0.3s;
+  font-size: 17px;}
+
+.sidenav a {
+  padding: 6px 8px 6px 16px;
+  text-decoration: none;
+  font-size: 20px;
+  color: #ffffff;
+  display: block;
+}
+
+
+.sidenav button:hover {
+  background-color: #777777;
+}
+
+.sidenav a:hover {
+  background-color: #777777;
+}
+
+
+/* Style page content */
+.main {
+  margin-left: 160px; /* Same as the width of the sidebar */
+  padding: 0px 10px;
+}
+
+@media screen and (max-height: 450px) {
+  .sidenav {padding-top: 15px;}
+  .sidenav a {font-size: 18px;}
+}
+
+</style>
+
+</head>
+
+<title>Matthias M&uuml;ller</title>
+
+<body>
+
+<!-- Side navigation -->
+<div class="sidenav">
+  <a class="tablinks" href="../index.html">back</a>
+  <button class="tablinks" onclick="openChapter(event, 'intro')" id="defaultOpen">intro</button>
+  <button class="tablinks" onclick="openChapter(event, 'forces')">forces</button>
+  <button class="tablinks" onclick="openChapter(event, 'conclusion')">conclusion</button>
+</div>
+
+<!-- Page content -->
+<div class="main">
+
+<div id = "intro" class ="chapter">
+<div class = "title">introduction</div><br>
+hi everybody<br>
+matthias<br>
+</div>
+
+<div id = "forces" class ="chapter">
+<div class = "title">forces</div><br>
+hi everybody<br>
+matthias<br>
+</div>
+
+<div id = "conclusion" class ="chapter">
+<div class = "title">conclusion</div><br>
+bye bye<br>
+matthias<br>
+</div>
+
+
+</div>
+<script>
+function openChapter(evt, title) {
+  var i, chapters, tablinks;
+  chapters = document.getElementsByClassName("chapter");
+  for (i = 0; i < chapters.length; i++) {
+    chapters[i].style.display = "none";
+  }
+  tablinks = document.getElementsByClassName("tablinks");
+  for (i = 0; i < tablinks.length; i++) {
+    tablinks[i].className = tablinks[i].className.replace(" active", "");
+  }
+  document.getElementById(title).style.display = "block";
+  evt.currentTarget.className += " active";
+}
+
+// Get the element with id="defaultOpen" and click on it
+document.getElementById("defaultOpen").click();
+</script>
+
+</body>
+
+</html>

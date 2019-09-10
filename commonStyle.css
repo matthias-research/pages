@@ -7,11 +7,11 @@ body {
 	font-size: 25px;
 	padding: 30px 30px 30px 30px;
 }
-#title {
+.title {
 	font-weight: normal;
 	font-size: 50px;
 }
-#subtitle {
+.subtitle {
 	font-weight: normal;
 	font-size: 25px;
 }
