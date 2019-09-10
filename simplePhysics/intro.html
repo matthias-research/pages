@@ -4,10 +4,13 @@
 <html>
 <link rel="stylesheet" type="text/css" href="../commonStyle.css">
 <head>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
 <style>
 .sidenav {
   height: 100%;
-  width: 160px;
+  width: 140px;
   position: fixed;
   z-index: 1;
   top: 0;
@@ -18,22 +21,20 @@
 }
 
 .sidenav button {
-  display: block;
-  background-color: inherit;
-  color: black;
-  padding: 22px 16px;
-  width: 100%;
+  background-color: #555555;
   border: none;
-  outline: none;
+  color: white;
+  padding: 6px 8px 6px 16px;
   text-align: left;
-  cursor: pointer;
-  transition: 0.3s;
-  font-size: 17px;}
+  text-decoration: none;
+  font-size: 18px;
+  width: 100%;
+  }
 
 .sidenav a {
   padding: 6px 8px 6px 16px;
   text-decoration: none;
-  font-size: 20px;
+  font-size: 18px;
   color: #ffffff;
   display: block;
 }
@@ -59,6 +60,51 @@
   .sidenav a {font-size: 18px;}
 }
 
+.mobile-container {
+  max-width: 480px;
+  margin: auto;
+  background-color: #555;
+  height: 500px;
+  color: white;
+  border-radius: 10px;
+}
+
+.topnav {
+  overflow: hidden;
+  background-color: #333;
+  position: relative;
+}
+
+.topnav #myLinks {
+  display: none;
+}
+
+.topnav a {
+  color: white;
+  padding: 14px 16px;
+  text-decoration: none;
+  font-size: 17px;
+  display: block;
+}
+
+.topnav a.icon {
+  background: black;
+  display: block;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.topnav a:hover {
+  background-color: #ddd;
+  color: black;
+}
+
+.active {
+  background-color: #4CAF50;
+  color: white;
+}
+
 </style>
 
 </head>
@@ -68,12 +114,29 @@
 <body>
 
 <!-- Side navigation -->
-<div class="sidenav">
+<div id = "desktop-menu" class="sidenav">
   <a class="tablinks" href="../index.html">back</a>
   <button class="tablinks" onclick="openChapter(event, 'intro')" id="defaultOpen">intro</button>
   <button class="tablinks" onclick="openChapter(event, 'forces')">forces</button>
   <button class="tablinks" onclick="openChapter(event, 'conclusion')">conclusion</button>
 </div>
+
+<!-- Simulate a smartphone / tablet -->
+<div id = "moblie-menu" class="mobile-container">
+
+<!-- Top Navigation Menu -->
+<div class="topnav">
+  <a href="#home" class="active">Simplicity in Physics</a>
+  <div id="myLinks">
+    <a href="#news">News</a>
+    <a href="#contact">Contact</a>
+    <a href="#about">About</a>
+  </div>
+  <a href="javascript:void(0);" class="icon" onclick="myFunction()">
+    <i class="fa fa-bars"></i>
+  </a>
+</div>
+
 
 <!-- Page content -->
 <div class="main">
@@ -115,6 +178,31 @@ function openChapter(evt, title) {
 
 // Get the element with id="defaultOpen" and click on it
 document.getElementById("defaultOpen").click();
+
+function myFunction() {
+  var x = document.getElementById("myLinks");
+  if (x.style.display === "block") {
+    x.style.display = "none";
+  } else {
+    x.style.display = "block";
+  }
+}
+
+function checkDevice()
+{
+	if (window.screen.width > 640) {
+		document.getElementById("desktop-menu").style.display = "none";
+		document.getElementById("moblie-menu").style.display = "block";
+	}
+	else {
+		document.getElementById("desktop-menu").style.display = "block";
+		document.getElementById("moblie-menu").style.display = "none";
+	}
+}
+
+checkDevice();
+
+
 </script>
 
 </body>
