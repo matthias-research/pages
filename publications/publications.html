@@ -60,8 +60,26 @@ tbody tr td:first-child {
 	width: 170px;
 }
 
-@media only screen and (max-device-width : 640px) {
+// for phones:
+
+@media (orientation:portrait) and (max-device-width: 500px ) {
+
+body { 
+	font-size: 26px; 
 }
+.paperImage {
+	width: 200px;
+}
+
+thead tr th:first-child,
+tbody tr td:first-child {
+  width: 250px;
+  min-width: 250px;
+  max-width: 250px;
+}
+
+}
+
 
 </style>
 
