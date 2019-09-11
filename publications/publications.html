@@ -69,32 +69,45 @@ tbody tr td:first-child {
 	width: 170px;
 }
 
+@media (max-device-width: 600px), (max-device-height: 600px) {
 
-@media (orientation:portrait) and (max-device-width: 600px), (max-device-height: 600px) {
+	thead tr th:first-child,
+	tbody tr td:first-child {
+		width: 220px;
+		min-width: 220px;
+		max-width: 220px;
+	}
 
-.title {
-	font-size: 100px;
-}
+	.paperImage {
+		width: 200px;
+	}
+		
+	@media (orientation:portrait) { 
 
-table#pubTable {
-	font-size: 50px;
-}
+		.title {
+			font-size: 150px;
+		}
+		
+		table#pubTable {
+			font-size: 50px;
+		}
 
-.paperButton {
-  font-size: 40px;
-}
+		.paperButton {
+			font-size: 45px;
+		}
 
-thead tr th:first-child,
-tbody tr td:first-child {
-  width: 300px;
-  min-width: 300px;
-  max-width: 300px;
-}
+		thead tr th:first-child,
+		tbody tr td:first-child {
+			width: 430px;
+			min-width: 430px;
+			max-width: 430px;
+		}
 
-.paperImage {
-	width: 250px;
-}
-
+		.paperImage {
+			width: 400px;
+		}	
+		
+	}
 }
 
 </style>
@@ -107,7 +120,7 @@ tbody tr td:first-child {
 
 <body>
 
-<div class = "title" >Publications 32</div><br>
+<div class = "title" >Publications</div><br>
 <br>
 <table id = "pubTable">
 
