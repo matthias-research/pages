@@ -2,14 +2,22 @@
 
 <!DOCTYPE html>
 <html>
-<link rel="stylesheet" type="text/css" href="../commonStyle.css">
 <head>
 <style>
 
+body {
+	font-family: verdana; 
+	line-height: 1.5;
+	font-size: 25px;
+	padding: 0px 30px 30px 30px;
+}
+.title {
+	font-size: 50px;
+}
 table#pubTable {
 	text-align: left;
 	width: 100%;
-	font-size: 16px;
+	font-size: 18px;
 	vertical-align: bottom;
 }
 td {
@@ -56,30 +64,38 @@ tbody tr td:first-child {
   display: inline-block;
   font-size: 14px;
 }
+
 .paperImage {
 	width: 170px;
 }
 
-// for phones:
 
-@media (orientation:portrait) and (max-device-width: 500px ) {
+@media (orientation:portrait) and (max-device-width: 600px), (max-device-height: 600px) {
+
+.title {
+	font-size: 100px;
+}
 
 table#pubTable {
-	font-size: 30px;
+	font-size: 50px;
 }
-.paperImage {
-	width: 200px;
+
+.paperButton {
+  font-size: 40px;
 }
 
 thead tr th:first-child,
 tbody tr td:first-child {
-  width: 250px;
-  min-width: 250px;
-  max-width: 250px;
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
+}
+
+.paperImage {
+	width: 250px;
 }
 
 }
-
 
 </style>
 
@@ -91,7 +107,7 @@ tbody tr td:first-child {
 
 <body>
 
-<span class = "title" >Publications</span><br>
+<div class = "title" >Publications 32</div><br>
 <br>
 <table id = "pubTable">
 
