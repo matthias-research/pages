@@ -40,3 +40,45 @@ Coming back to this book. To be able to sell this book via a publisher, I would 
 Simplicity in physics
 --------------------
 
+Physics has the reputation of being a complex subject, of being rocket science. I guess quite a few people have a mental picture like this in the head:
+
+https://iopscience.iop.org/article/10.1086/312959/fulltext/33389.text.html
+
+I want to show you that physics is at the heart easy to understand. We will talk about the world how we perceive in everyday life. In this world, there is basically just a bunch of partices with masses (atoms) and a bunch of forces acting on them. That is true for rigid bodies, soft bodies, cloth, liquids or gases. Why should it be difficult to simulate such a world? Nature does not solve the equations above. What drives nature are four types of forces. Of those, we can simply drop two right from the start - the strong and the weak force. They only act inside the nucleus of atoms and do not have visible effects if we do not cut the uncuttables (the true meaning of the word atom). The two remaining forces are gravity and the electromagnetic fource. 
+
+Gravity is a force that we experience every day. Fortunately it exists, otherwise we and everything around us would float away from earth into the vastness of space and we would not be able to return without a jet pack. Gravity is certainly an effect we have to take into account. It attracts masses and it is very weak. The reason why we experience it at all is the fact that the earth is really big. Since the center of the earth is far away from its surface, we can consider it to point straight down everywhere. We will talk more about gravity later.
+
+The forth force, the electromagetic force is the one that binds electrons to the atomic nucleus, holds atoms together to form mocelules or metals, and connects molecules to form the objects around us. To put it simply, it is the force that holds matter together. 
+
+The last piece we need to understand physics is a way to connect the particles and the forces. How can we compute the effect forces have on particles? That is where the most famous equation of physics comes into play, Newtons second law of motion. You have certainly heard of it. Here it is:
+
+f = m a.
+
+What does this mean? There is a fun way to get a grasp of this euqation. Simply go to the closest supermarked and fill a big shopping trolley with lots of beer. Then start to push it around in the store. The cart is one big particle and you are the force acting on it. What you will find out - I am sure you already have in the past - are the following facts:
+
+- You need to push hard to get it into motion
+- Once it is in motion, it rolls effortlessly without stopping. (It will stop eventually due to friction but the friction force has a hard time to act against the large amount of beer). 
+- You need a lot of force against the card to stop it again. 
+- You also need to push hard to chenge the carts direction! This is the reason why our experiment needs to be carried out with care. It is also the reason why you do not let your kids push aournd your filled shopping cart in the store.
+- The amount of force you need to apply in all cases is proportional to how heavy your cart is.
+
+To sum these findings up: A force does not move objects, objects move without force. A force changes the objecs velocities! Acceleration, deceleration and turns are all changes of the velocity. The velocity in 3d has two components, its direction and its magnitude. The first two change its magnitude, the latter changes its direction. All forms of changes of velocity are called acceleration in physics. The amount of acceleration a force causes is dependent on the mass of the object. If we move the mass in Newtons equation to the other side, we see that it expresses exactly what we have found:
+
+a = f / m;
+
+A force causes an acceleration. If we increase the force, the acceleration will be bigger. ON the other hand, if we increse the mass, we need a stronger force to cause the same acceleration. 
+
+Now we are read to perform our very first simulation. For this you only need a paper and a pencil!
+
+
+
+
+
+
+
+
+
+
+
+
+
