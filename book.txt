@@ -1,20 +1,42 @@
 The book
 
-I have had the idea of writing a book about physics and its conceptual simplicity for quite a while. However, who buys and reads real book these days? Downloading a book as an electronic version and reading it on a phone or tablet is much more convenient. But then why not writing it in html directly? This variant allows the insertion of links or even simulations directly into the text. This is what I have done. I hope you will enjoy it. Unlike real books or electronic versions like the ones offered in the kindle store, my book is free. However, if you have enjoyed the read and think you would have spent 10 dollars for it in the kindle store, I have added a donation button so you can do that here too. 
+I have had the idea of writing a book about physics and its conceptual simplicity for quite a while. However, who buys and reads real book these days? Downloading a book as an electronic version and reading it on a phone or tablet is much more convenient. But then why not writing it in html directly? This variant allows the insertion of links or even simulations directly into the text. It will also enable me to correct or augment the content at any time. I hope you will enjoy it. Unlike real books or electronic versions like the ones offered in the kindle store, my book is free. However, if you have enjoyed the read and think you would have spent 10 dollars for it in the kindle store, I have added a donation button so you can do that here too. Think of it as an in-book purchase. Now let us dive right into the subject.
 
 Simplicity
+---------
+
+Simplicity in general:
+---------
 
 As I say on my home page, I love simplicity. There is this famous quote from Einstein 
 
 "Everything should be made as simple as possible, but not simpler". 
 
-
-During my reasearch in physically based simulation over the last 20 years I always hat that quote in the back of my head. What is important to note here is that *making something simple is not a simple task*.
+During my reasearch in physically based simulation over the last 20 years I always hat that quote in the back of my head. What is important to note here is that *making something simple is not a simple task*. Blaise Pascal or whoever made the comment https://quoteinvestigator.com put it nicely:
 
 If I Had More Time, I Would Have Written a Shorter Letter. Blaise Pascal. 
 
-https://quoteinvestigator.com
+Steve Jobs formulated it like this:
 
 “Simple can be harder than complex: You have to work hard to get your thinking clean to make it simple. But it’s worth it in the end because once you get there, you can move mountains.”
 
-― Steve Jobs
+For me, moving mountains means enabling many researchers and developers to integrate physics into their work, be it computer games, movies or related fields. 
+
+Simplicity in research
+----------------
+
+Simplicity in research introduces an interesting problem though. When reseachers write papers, they almost always describe their methods and algorithms only but not the process of conseiving their ideas. So if authors have spent a substantial amount of brain power to come up with a simple method, that part will not be reflected in their article. This in turn makes it difficult for reviewers to appreciate the resulting method. Over many years my work, was rejected by Siggragph, the most presgegious conference in our field. For the reason stated above, I do not put the blame on the reviewers. It is often difficult to forsee the potential impact an idea has. Also, the variance in the scores are often quite high. Here are the comments of two Siggraph reviewers on our paper "small steps on physics simultion"
+
+"this paper presents a very simple idea, much simpler than typical siggraph papers, but I think it will have a high impact on the siggraph
+community". Score: Strong Accept. 
+
+"...in light of the relatively minor algorithmic contribution described in section 4, I do not think the paper is ready for publication at SIGGRAPH. Score: Strong Reject.
+
+
+For me personally, the citation count on google scholar is more informative than the conference or journal the paper was publish in. The former reflects the opinion of the community, the latter the one of a small group of reviewers. This should also be an encouragement for the many young researchers who get their work rejected by any conference our journal.
+
+Coming back to this book. To be able to sell this book via a publisher, I would have to convince a group of experts that my content is relevant. In contrast, I decided to will let my readers decide. Hopefully, many will enjoy it. And coming back to the title of the section: Creating a book via a published adds a substantial amount of complexity to the process. Everybody who has done it will agree. 
+
+Simplicity in physics
+--------------------
+
