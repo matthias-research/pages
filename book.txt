@@ -66,9 +66,55 @@ To sum these findings up: A force does not move objects, objects move without fo
 
 a = f / m;
 
-A force causes an acceleration. If we increase the force, the acceleration will be bigger. ON the other hand, if we increse the mass, we need a stronger force to cause the same acceleration. 
+A force causes an acceleration. If we increase the force, the acceleration will be bigger. On the other hand, if we increse the mass, we need a stronger force to cause the same acceleration. 
 
-Now we are read to perform our very first simulation. For this you only need a paper and a pencil!
+Now we are ready to create our very first simulation. For this you only need a paper and a pencil! We are going to simulate a cannon ball in free flight. In this little example we will see many concepts of simulations already. 
+
+Take a squared sheet of paper. Draw a cannon ball in a square in at the bottom left. Simulating the ball meens to determine the location of the ball in a sequence of points in time. Let us say our simulation starts at time t = 0 seconds. To make things simple, we will evaluate the position of the cannonball in steps of one second. 
+
+An important observation is, that we not only have to remember the position of the ball but also its velocity. Even if we know the forces that act on it (gravity) at any time, we dont know its speed, since forces do not cause speed, they only change it. The pair of the original location of the ball and with its oringinal speed is called the initial condition. 
+
+Here is a fascinating side note: We need to store the velocity of the objects, nature does not. If you compare the fotographs of a cannon ball that moves from left to right and one that moves from right to left, the two pictures will look exactly the same down to the tiniest level of matter. Where is the information about motion stored? How does nature know that one ball needs to be moved to the right and one to the left in the future course of time? We do not know. 
+
+On our paper, the cannon ball lives in two dimensions (2d). In contrast to the one one dimensional case, the velocity has a direction and a magnitude whereas in 1d, it only has a magnitude. The step from 1d to 2d is much bigger conceptually than the step from 2d to 3d. So everything we will find out during our 2d study of the canonball can be easily generalized to three dimensions.
+
+Velocity in 2d. 
+
+In any case, for our cannon ball we need to represent its velocity. What would be a good way to do this? Let us say we want to find the cannonball's position at times t = 0 seconds, t = 1 second, etc. In this case we say that we take a time step of one second. We can define the velocity to be an arrow that points from the current position to where the ball would be in the next time step, if no forces would act on it. Let us define the length of the squares to be one meter. In this case, the velocity of the ball at the current time step is the length of the arrow and has the unit meter per second. The direction of the arrow determines the direction of the velocity. An arrow is called a vector in mathematics.
+
+With no forces, the ball would be in the quare to which the velocity vector points at time = 1s. If we move (translate) the velocity error to this new location, it points to the location where the ball is at t=2s. If we continue to do this we simulate the ball without the presence of gravity which is pretty boring. 
+
+As we said eariler, gravity will change the velocity. We will take this effect into account at every time step. We can represent the acceleration thet gravity causes as an arrow as well. The arrow points downwards. Let us assume that its length is the length of one squre (in reality it hast the length of 10 squares but we would run out of paper quickly with the true value). At every point in time, we change the velocity vector by adding the acceleration vector to the current velocity. What is the unit of the acceleration vector? It tells us how much the velocity changes in one second so it is meter per second per second or meter per second squared. The resulting simulation will look like this:
+
+We get an approximation of the parabolic shape of the curve we observe in nature! 
+
+Where is the mass?
+------------------
+
+In our simulation, we did not take the mass of the canonball into account. According to newtons law, the acceleration depends on both, the force and the mass. Surprisingly, in the case of the gravitational force (and only in this case), the mass drops out of the equation! Why is this?
+
+
+
+
+
+Approximation
+
+The reason why our simulation only approximates the true curve is an assumption we took:
+
+We assumed that that gravity only changes the velocity at times 0s, 1s, 2s and has no effect inbetween. How can we fix this? We can take the effect of gravity into account in the middle of the time step.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
