@@ -2,7 +2,7 @@
 
 <!DOCTYPE html>
 <html>
-<meta name="viewport" content="width=500, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
 
 <link rel="stylesheet" type="text/css" href="../commonStyle.css">
@@ -78,51 +78,28 @@
 
 /* mobile */
 
-.mobile-container {
-  width : 100%;
-  margin: auto;
-  background-color: #fff;
-  color: white;
-  border-radius: 10px;
-}
-
-.topnav {
-  overflow: hidden;
-  background-color: #555555;
+.topnav
+ {
   position: fixed;
-  width: 400px;
   right: 0;
   top: 0;
 }
 
-.topnav #myLinks {
-  display: none;
-}
-
 .topnav a {
   color: white;
-  padding: 14px 16px;
+  padding: 10px 10px;
   text-decoration: none;
-  font-size: 30px;
-  display: block;
 }
 
 .topnav a.icon {
-  background: black;
-  display: block;
+  background-color: #ddd;
   position: absolute;
   right: 0;
   top: 0;
 }
 
 .topnav a:hover {
-  background-color: #ddd;
-  color: black;
-}
-
-.active {
-  background-color: black;
-  color: white;
+  background-color: #bbb;
 }
 
 </style>
@@ -142,26 +119,14 @@
 </div>
 
 <!-- mobile -->
-<div id = "mobile-menu" class="mobile-container">
-
 <div class="topnav">
-  <a href="#home" class="active">simplicity in physics</a>
-  <div id="myLinks">
-  <a href="../index.html">back</a>
-  <a href = "#introduction">intro</a>
-  <a href = "#forces">forces</a>
-  <a href = "#conclusion">conclusion</a>
-  </div>
   <a href="javascript:void(0);" class="icon" onclick="myFunction()">
     <i class="fa fa-bars"></i>
   </a>
 </div>
 
-</div>
-
-
 <!-- Page content -->
-<div class="main">
+<div id = "main" class="main">
 
 <div id = "introduction" class = "title">introduction</div><br>
 
@@ -196,18 +161,21 @@ $$ x = {-b \pm \sqrt{b^2-4ac} \over 2a}. $$
 // https://www.w3schools.com/howto/tryit.asp?filename=tryhow_js_search_menu
 
 function myFunction() {
-  var x = document.getElementById("myLinks");
+  var x = document.getElementById("desktop-menu");
+		
   if (x.style.display === "block") {
     x.style.display = "none";
+	document.getElementById("main").style.marginLeft = "0px";
   } else {
     x.style.display = "block";
+	document.getElementById("main").style.marginLeft = "160px";
   }
 }
 
 
 function checkDevice()
 {
-	if (window.screen.width < 640) {
+	if (window.screen.width > 640) {
 		document.getElementById("desktop-menu").style.display = "none";
 		document.getElementById("mobile-menu").style.display = "block";
 	}
@@ -217,7 +185,7 @@ function checkDevice()
 	}
 }
 
-checkDevice();
+//checkDevice();
 
 
 </script>

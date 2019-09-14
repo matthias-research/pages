@@ -48,7 +48,17 @@ I want to show you that physics is at the heart easy to understand. We will talk
 
 Gravity is a force that we experience every day. Fortunately it exists, otherwise we and everything around us would float away from earth into the vastness of space and we would not be able to return without a jet pack. Gravity is certainly an effect we have to take into account. It attracts masses and it is very weak. The reason why we experience it at all is the fact that the earth is really big. Since the center of the earth is far away from its surface, we can consider it to point straight down everywhere. We will talk more about gravity later.
 
-The forth force, the electromagetic force is the one that binds electrons to the atomic nucleus, holds atoms together to form mocelules or metals, and connects molecules to form the objects around us. To put it simply, it is the force that holds matter together. 
+f_g = k_g m1 * m1 / r^2
+
+The forth force is the electromagetic force. It can be split into the electric force and the magnitic force. The electric force plays the major role in nature. It is the one that binds electrons to the atomic nucleus, holds atoms together to form mocelules or metals, and connects molecules to form the objects around us. To put it simply, it is the force that holds matter together. Coulomb's law which describes the electric force looks very similar to the equation of the gravitational force:
+
+f_c = k_e q1 * q2 / r^2. 
+
+q1 and q2 are the electric charches of the objects. Since masses are always positive, the gravitational force always attracts objects. Charges can be negative so the electric force can also push bodies apart. Fortunetaly this is the case, otherwise our whole universe would collapse!
+
+https://www.britannica.com/science/electromagnetism/Coulombs-law
+
+From these two simple equations, the entire physics of everyday objects emerges. For light and other waves we would need to consider magnetic effects too.
 
 The last piece we need to understand physics is a way to connect the particles and the forces. How can we compute the effect forces have on particles? That is where the most famous equation of physics comes into play, Newtons second law of motion. You have certainly heard of it. Here it is:
 
@@ -91,9 +101,9 @@ We get an approximation of the parabolic shape of the curve we observe in nature
 Where is the mass?
 ------------------
 
-In our simulation, we did not take the mass of the canonball into account. According to newtons law, the acceleration depends on both, the force and the mass. Surprisingly, in the case of the gravitational force (and only in this case), the mass drops out of the equation! Why is this?
+In our simulation, we did not take the mass of the canonball into account. According to newtons law, the acceleration depends on both, the force and the mass. Surprisingly, in the case of the gravitational force (and only in this case), the mass drops out of the equation! The trajectory of the cannonball looks identical if the mass is doubled (not considering air resistance). Why is this?
 
-
+This phenomenon is called the "equivalence principle". It lead Einstein to the development of general relativity. see https://en.wikipedia.org/wiki/Equivalence_principle. mg = ma
 
 
 
