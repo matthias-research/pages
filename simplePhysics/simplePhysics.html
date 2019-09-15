@@ -28,9 +28,35 @@ body {
 	font-size: 20px;
 	padding: 0px 30px;
 }
+
+#booktitle {
+	font-weight: bold;
+	font-size: 50px;
+}
+
+
 h1 {
 	font-weight: normal;
-	font-size: 50px;
+	font-size: 40px;
+}
+
+
+h2 {
+	font-weight: normal;
+	font-size: 30px;
+}
+
+a {
+  background-color: #555555;
+  border: none;
+  color: white;
+  padding: 2px 10px;
+  margin: 5px 0px 5px 0px;  
+  border-radius: 5px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 18px;
 }
 
 
@@ -140,12 +166,122 @@ h1 {
 <!-- Page content -->
 <div id = "main" class="main">
 
-<h1 id = "introduction">the simpicity in physics</h1>
+<div id = "booktitle">the simpicity in physics</div>
+<h1 id = "introduction">introduction</h1>
 <br>
 
-I have had the idea of writing a book about physics and its conceptual simplicity for quite a while. However, who buys and reads real book these days? Downloading a book as an electronic version and reading it on a phone or tablet is much more convenient. But then why not writing it in html directly? This variant allows the insertion of links or even simulations directly into the text. It will also enable me to correct or augment the content at any time. I hope you will enjoy it. Unlike real books or electronic versions like the ones offered in the kindle store, my book is free.
-<br>If you enjoy the read and think you would have spent 10 dollars for it in the kindle store, I have added a donation button so you can do that here too. Think of it as an in-book purchase. Now let us dive right into the subject.
+<a href="../about.html">I</a> have had the idea of writing a book about physics and its conceptual simplicity for quite a while. However, who buys and reads real book these days? Downloading a book as an electronic version and reading it on a phone or tablet is much more convenient. But then why not writing it in html? This variant allows the insertion of links or even simulations directly into the text. It will also enable me to correct or augment the content at any time. I hope you will enjoy it. Unlike real books or electronic versions like the ones offered in the kindle store, this book is free.
+<br>If you enjoy the read and think you would have baught it in the kindle store, I have added a donation button - an in-book purchase so to say. Now let us dive right into the subject.
 
+
+<h1>Simplicity</h1>
+
+<h2>Simplicity in general</h1>
+
+As I say on my home page, I love simplicity. There is this famous quote from Einstein 
+
+"Everything should be made as simple as possible, but not simpler". 
+
+During my reasearch in physically based simulation over the last 20 years I always hat that quote in the back of my head. What is important to note here is that *making something simple is not a simple task*. Blaise Pascal or whoever made the comment https://quoteinvestigator.com put it nicely:
+
+If I Had More Time, I Would Have Written a Shorter Letter. Blaise Pascal. 
+
+Steve Jobs formulated it like this:
+
+“Simple can be harder than complex: You have to work hard to get your thinking clean to make it simple. But it’s worth it in the end because once you get there, you can move mountains.”
+
+For me, moving mountains means enabling many researchers and developers to integrate physics into their work, be it computer games, movies or related fields. 
+
+<h2>Simplicity in research</h2>
+
+Simplicity in research introduces an interesting problem though. When reseachers write papers, they almost always describe their methods and algorithms only but not the process of conseiving their ideas. So if authors have spent a substantial amount of brain power to come up with a simple method, that part will not be reflected in their article. This in turn makes it difficult for reviewers to appreciate the resulting method. Over many years my work, was rejected by Siggragph, the most presgegious conference in our field. For the reason stated above, I do not put the blame on the reviewers. It is often difficult to forsee the potential impact an idea has. Also, the variance in the scores are often quite high. Here are the comments of two Siggraph reviewers on our paper "small steps on physics simultion"
+
+"this paper presents a very simple idea, much simpler than typical siggraph papers, but I think it will have a high impact on the siggraph
+community". Score: Strong Accept. 
+
+"...in light of the relatively minor algorithmic contribution described in section 4, I do not think the paper is ready for publication at SIGGRAPH. Score: Strong Reject.
+
+
+For me personally, the citation count on google scholar is more informative than the conference or journal the paper was publish in. The former reflects the opinion of the community, the latter the one of a small group of reviewers. This should also be an encouragement for the many young researchers who get their work rejected by any conference our journal.
+
+Coming back to this book. To be able to sell this book via a publisher, I would have to convince a group of experts that my content is relevant. In contrast, I decided to will let my readers decide. Hopefully, many will enjoy it. And coming back to the title of the section: Creating a book via a published adds a substantial amount of complexity to the process. Everybody who has done it will agree. 
+
+<h2>Simplicity in programming</h2>
+
+<h2>Simplicity in physics</h2>
+
+Physics has the reputation of being a complex subject, of being rocket science. I guess quite a few people have a mental picture like this in the head:
+
+https://iopscience.iop.org/article/10.1086/312959/fulltext/33389.text.html
+
+I want to show you that physics is at the heart easy to understand. We will talk about the world how we perceive in everyday life. In this world, there is basically just a bunch of partices with masses (atoms) and a bunch of forces acting on them. That is true for rigid bodies, soft bodies, cloth, liquids or gases. Why should it be difficult to simulate such a world? Nature does not solve the equations above. What drives nature are four types of forces. Of those, we can simply drop two right from the start - the strong and the weak force. They only act inside the nucleus of atoms and do not have visible effects if we do not cut the uncuttables (the true meaning of the word atom). The two remaining forces are gravity and the electromagnetic fource. 
+
+Gravity is a force that we experience every day. Fortunately it exists, otherwise we and everything around us would float away from earth into the vastness of space and we would not be able to return without a jet pack. Gravity is certainly an effect we have to take into account. It attracts masses and it is very weak. The reason why we experience it at all is the fact that the earth is really big. Since the center of the earth is far away from its surface, we can consider it to point straight down everywhere. We will talk more about gravity later.
+
+f_g = k_g m1 * m1 / r^2
+
+The forth force is the electromagetic force. It can be split into the electric force and the magnitic force. The electric force plays the major role in nature. It is the one that binds electrons to the atomic nucleus, holds atoms together to form mocelules or metals, and connects molecules to form the objects around us. To put it simply, it is the force that holds matter together. Coulomb's law which describes the electric force looks very similar to the equation of the gravitational force:
+
+f_c = k_e q1 * q2 / r^2. 
+
+q1 and q2 are the electric charches of the objects. Since masses are always positive, the gravitational force always attracts objects. Charges can be negative so the electric force can also push bodies apart. Fortunetaly this is the case, otherwise our whole universe would collapse!
+
+https://www.britannica.com/science/electromagnetism/Coulombs-law
+
+From these two simple equations, the entire physics of everyday objects emerges. For light and other waves we would need to consider magnetic effects too.
+
+The last piece we need to understand physics is a way to connect the particles and the forces. How can we compute the effect forces have on particles? That is where the most famous equation of physics comes into play, Newtons second law of motion. You have certainly heard of it. Here it is:
+
+f = m a.
+
+What does this mean? There is a fun way to get a grasp of this euqation. Simply go to the closest supermarked and fill a big shopping trolley with lots of beer. Then start to push it around in the store. The cart is one big particle and you are the force acting on it. What you will find out - I am sure you already have in the past - are the following facts:
+
+- You need to push hard to get it into motion
+- Once it is in motion, it rolls effortlessly without stopping. (It will stop eventually due to friction but the friction force has a hard time to act against the large amount of beer). 
+- You need a lot of force against the card to stop it again. 
+- You also need to push hard to chenge the carts direction! This is the reason why our experiment needs to be carried out with care. It is also the reason why you do not let your kids push aournd your filled shopping cart in the store.
+- The amount of force you need to apply in all cases is proportional to how heavy your cart is.
+
+To sum these findings up: A force does not move objects, objects move without force. A force changes the objecs velocities! Acceleration, deceleration and turns are all changes of the velocity. The velocity in 3d has two components, its direction and its magnitude. The first two change its magnitude, the latter changes its direction. All forms of changes of velocity are called acceleration in physics. The amount of acceleration a force causes is dependent on the mass of the object. If we move the mass in Newtons equation to the other side, we see that it expresses exactly what we have found:
+
+a = f / m;
+
+A force causes an acceleration. If we increase the force, the acceleration will be bigger. On the other hand, if we increse the mass, we need a stronger force to cause the same acceleration. 
+
+Now we are ready to create our very first simulation. For this you only need a paper and a pencil! We are going to simulate a cannon ball in free flight. In this little example we will see many concepts of simulations already. 
+
+Take a squared sheet of paper. Draw a cannon ball in a square in at the bottom left. Simulating the ball meens to determine the location of the ball in a sequence of points in time. Let us say our simulation starts at time t = 0 seconds. To make things simple, we will evaluate the position of the cannonball in steps of one second. 
+
+An important observation is, that we not only have to remember the position of the ball but also its velocity. Even if we know the forces that act on it (gravity) at any time, we dont know its speed, since forces do not cause speed, they only change it. The pair of the original location of the ball and with its oringinal speed is called the initial condition. 
+
+Here is a fascinating side note: We need to store the velocity of the objects, nature does not. If you compare the fotographs of a cannon ball that moves from left to right and one that moves from right to left, the two pictures will look exactly the same down to the tiniest level of matter. Where is the information about motion stored? How does nature know that one ball needs to be moved to the right and one to the left in the future course of time? We do not know. 
+
+On our paper, the cannon ball lives in two dimensions (2d). In contrast to the one one dimensional case, the velocity has a direction and a magnitude whereas in 1d, it only has a magnitude. The step from 1d to 2d is much bigger conceptually than the step from 2d to 3d. So everything we will find out during our 2d study of the canonball can be easily generalized to three dimensions.
+
+Velocity in 2d. 
+
+In any case, for our cannon ball we need to represent its velocity. What would be a good way to do this? Let us say we want to find the cannonball's position at times t = 0 seconds, t = 1 second, etc. In this case we say that we take a time step of one second. We can define the velocity to be an arrow that points from the current position to where the ball would be in the next time step, if no forces would act on it. Let us define the length of the squares to be one meter. In this case, the velocity of the ball at the current time step is the length of the arrow and has the unit meter per second. The direction of the arrow determines the direction of the velocity. An arrow is called a vector in mathematics.
+
+With no forces, the ball would be in the quare to which the velocity vector points at time = 1s. If we move (translate) the velocity error to this new location, it points to the location where the ball is at t=2s. If we continue to do this we simulate the ball without the presence of gravity which is pretty boring. 
+
+As we said eariler, gravity will change the velocity. We will take this effect into account at every time step. We can represent the acceleration thet gravity causes as an arrow as well. The arrow points downwards. Let us assume that its length is the length of one squre (in reality it hast the length of 10 squares but we would run out of paper quickly with the true value). At every point in time, we change the velocity vector by adding the acceleration vector to the current velocity. What is the unit of the acceleration vector? It tells us how much the velocity changes in one second so it is meter per second per second or meter per second squared. The resulting simulation will look like this:
+
+We get an approximation of the parabolic shape of the curve we observe in nature! 
+
+Where is the mass?
+------------------
+
+In our simulation, we did not take the mass of the canonball into account. According to newtons law, the acceleration depends on both, the force and the mass. Surprisingly, in the case of the gravitational force (and only in this case), the mass drops out of the equation! The trajectory of the cannonball looks identical if the mass is doubled (not considering air resistance). Why is this?
+
+This phenomenon is called the "equivalence principle". It lead Einstein to the development of general relativity. see https://en.wikipedia.org/wiki/Equivalence_principle. mg = ma
+
+
+
+Approximation
+
+The reason why our simulation only approximates the true curve is an assumption we took:
+
+We assumed that that gravity only changes the velocity at times 0s, 1s, 2s and has no effect inbetween. How can we fix this? We can take the effect of gravity into account in the middle of the time step.
 
 
 
