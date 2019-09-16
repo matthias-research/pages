@@ -38,6 +38,10 @@ body {
   padding: 20px 20px 20px 50px;  
 }
 
+.equation {
+	margin: 30px 30px 30px 40px;
+	font-size: 20px;"
+}
 
 #booktitle {
 	font-weight: bold;
@@ -227,43 +231,70 @@ I am a C++ programmer. For this book I started to use Javascript and love it. Ma
 
 <h2>Simplicity in physics</h2>
 
-Physics has the reputation of being a complex subject, of being rocket science. I guess quite a few people have a mental picture like this in the head:
+Physics has the reputation of being a complex subject, of being rocket science. If we look at equations that are studies by physicists, that is certainly true. As an example, the Navier-Stokes equation describes the evolution of fluids (liquids and gases) and looks like this:
 
-https://iopscience.iop.org/article/10.1086/312959/fulltext/33389.text.html
+<p class = "equation">
+$$\rho\frac{D \mathbf{v}}{D t}=-\nabla p + \rho \mathbf{g} + \mu \nabla^2\mathbf{v}$$
+</p>
 
-I want to show you that physics is at the heart easy to understand. We will talk about the world how we perceive in everyday life. In this world, there is basically just a bunch of partices with masses (atoms) and a bunch of forces acting on them. That is true for rigid bodies, soft bodies, cloth, liquids or gases. Why should it be difficult to simulate such a world? Nature does not solve the equations above. What drives nature are four types of forces. Of those, we can simply drop two right from the start - the strong and the weak force. They only act inside the nucleus of atoms and do not have visible effects if we do not cut the uncuttables (the true meaning of the word atom). The two remaining forces are gravity and the electromagnetic fource. 
+For somebody who works in the field, this equation is quite easy to understand. But solving it is a different story! Nobody has so far solved the following problem which is a sub-problem of solving the equation in general:
 
-Gravity is a force that we experience every day. Fortunately it exists, otherwise we and everything around us would float away from earth into the vastness of space and we would not be able to return without a jet pack. Gravity is certainly an effect we have to take into account. It attracts masses and it is very weak. The reason why we experience it at all is the fact that the earth is really big. Since the center of the earth is far away from its surface, we can consider it to point straight down everywhere. We will talk more about gravity later.
+<div class = "quote"> Prove or give a counter-example of the following statement: In three space dimensions and time, given an initial velocity field, there exists a vector velocity and a scalar pressure field, which are both smooth and globally defined, that solve the Navier–Stokes equations.</div> You can win a <a target =_blank" href = "https://en.wikipedia.org/wiki/Navier%E2%80%93Stokes_existence_and_smoothness">million dollers</a> if you solve it. Does this mean simulating water is as hard as this? Nothing could be further from the truth. I will explain where the complexity in physical many formulas in solving them comes from in a bit later.
 
-f_g = k_g m1 * m1 / r^2
+<br>First I want to show you that physics is at the heart easy to understand and to simulate. We consider the world how we perceive in everyday life. This world - rigid bodies, soft bodies, cloth, liquids or gases - is composed of simple partices with masses (atoms). Nature does not solve the equations above. What drives nature are two simple forces. Acutally four but the strong and the weak force only act inside the nucleus of atoms. They do not have visible effects if we do not cut the uncuttables (the true meaning of the word atom). The two remaining forces are gravity and the electromagnetic force. 
 
-The forth force is the electromagetic force. It can be split into the electric force and the magnitic force. The electric force plays the major role in nature. It is the one that binds electrons to the atomic nucleus, holds atoms together to form mocelules or metals, and connects molecules to form the objects around us. To put it simply, it is the force that holds matter together. Coulomb's law which describes the electric force looks very similar to the equation of the gravitational force:
+<h2>Gravity</h2>
 
-f_c = k_e q1 * q2 / r^2. 
+Gravity is a force that we experience every day. Fortunately it exists, otherwise we and everything around us would float away from earth into the vastness of space and we would not be able to return without a jet pack. Gravity is certainly an effect we have to take into account. It attracts masses and it is very weak. The reason why we experience it at all is the fact that the earth is really big. Here is the simple formula describing the gravitational force that acts between to bodies of mass $m_1$ and $m_2$ and a mutual distance of $r$:
 
-q1 and q2 are the electric charches of the objects. Since masses are always positive, the gravitational force always attracts objects. Charges can be negative so the electric force can also push bodies apart. Fortunetaly this is the case, otherwise our whole universe would collapse!
+<p class = "equation">
+$$\mathbf{f}_g = G \frac{m_1 \times m_2}{r^2},$$
+</p>
 
-https://www.britannica.com/science/electromagnetism/Coulombs-law
+where $G$ is the <a target = "_blank" href = "https://en.wikipedia.org/wiki/Gravitational_constant">gravitational constant</a> which is just a fixed number. I chose a bold face for the force which indicates that it is a vector or arrow not just a number. Its magnitude is given by the formula and direction is the line between the bodies. The only case where we see the effect of gravity is when one of the bodies is the earth. Since the center of the earth is far away from its surface, we can consider the direction of gravity to point straight down everywhere. If we let $m_2$ be the mass of the earth and $r$ its radius the formula simplifies further and we get:
 
-From these two simple equations, the entire physics of everyday objects emerges. For light and other waves we would need to consider magnetic effects too.
+<p class = "equation">
+$$ \mathbf{f}_g = m g,$$
+</p>
+where $g$ is the fixed number $9.81 m/s^2$ and $m$ the bodies mass. Can it be simpler?
 
-The last piece we need to understand physics is a way to connect the particles and the forces. How can we compute the effect forces have on particles? That is where the most famous equation of physics comes into play, Newtons second law of motion. You have certainly heard of it. Here it is:
+<h2>The electric force</h2>
 
-f = m a.
+The second force we need to consider is the electromagetic force. It can be split into the electric force and the magnitic force. The electric force plays the major role in nature. It is the one that binds electrons to the atomic nucleus, holds atoms together to form mocelules or metals, and connects molecules to form the objects around us. To put it simply, it is the force that holds matter together. The equation of the electric force vector looks very similar to the equation of the gravitational force:
 
-What does this mean? There is a fun way to get a grasp of this euqation. Simply go to the closest supermarked and fill a big shopping trolley with lots of beer. Then start to push it around in the store. The cart is one big particle and you are the force acting on it. What you will find out - I am sure you already have in the past - are the following facts:
+<p class = "equation">
+$$\mathbf{f}_e = k_e \frac{q_1 \times q_2}{r^2}.$$
+</p>
 
-- You need to push hard to get it into motion
-- Once it is in motion, it rolls effortlessly without stopping. (It will stop eventually due to friction but the friction force has a hard time to act against the large amount of beer). 
-- You need a lot of force against the card to stop it again. 
-- You also need to push hard to chenge the carts direction! This is the reason why our experiment needs to be carried out with care. It is also the reason why you do not let your kids push aournd your filled shopping cart in the store.
-- The amount of force you need to apply in all cases is proportional to how heavy your cart is.
+This formula is called <a target ="_blank" href = "https://www.britannica.com/science/electromagnetism/Coulombs-law">Coulomb's law</a>.
 
-To sum these findings up: A force does not move objects, objects move without force. A force changes the objecs velocities! Acceleration, deceleration and turns are all changes of the velocity. The velocity in 3d has two components, its direction and its magnitude. The first two change its magnitude, the latter changes its direction. All forms of changes of velocity are called acceleration in physics. The amount of acceleration a force causes is dependent on the mass of the object. If we move the mass in Newtons equation to the other side, we see that it expresses exactly what we have found:
+The quantities $q_1$ and $q_2$ that correspond to the masses in gravity are the electric charges of the objects. Masses are always positive numbers and the gravitational force always attracts the bodies. All objects fall downward. Charges on the other hand have a sign. If the signs are different, the electric force attracts them. If they are equal it pushes them apart. Fortunately we have this repelling effect, otherwise our whole universe would collapse! From these two simple equations, the entire physics of everyday objects emerges. For light and other electromagnetic waves we would need to consider magnetic effects too.
 
-a = f / m;
+<h2>Newton's law</h2>
 
-A force causes an acceleration. If we increase the force, the acceleration will be bigger. On the other hand, if we increse the mass, we need a stronger force to cause the same acceleration. 
+The last piece we need to understand physics is a way to connect bodies and forces. How can we compute the effect forces have on bodies? That is where the most famous equation of physics comes into play, Newtons second law of motion. You have certainly heard of it. Here it is:
+
+<p class = "equation">
+$$\mathbf{f} = m \mathbf{a}$$
+</p>
+
+What does this mean? There is a fun way to get a grasp of this equation. Simply go to the closest supermarket and fill a big shopping trolley with lots of beer. Then start to push it around in the store. The cart is one big body and you are the force acting on it. What you will find out - I am sure you already have in the past - are the following facts:
+
+<ul>
+<li>You need to push hard to get it into motion.</li>
+<li>Once it is in motion, it rolls effortlessly without stopping. (It will stop eventually if it crashes into a shelf or due to friction. The friction force alone will have a hard time to act against the large amount of beer).</li>
+<li>You need a lot of force against the card to stop it again.</li>
+<li>You also need to push hard to change the carts direction! This is the reason why our experiment needs to be carried out with care. It is also the reason why you do not let your kids push your filled shopping cart around in the store.</li>
+<li>The amount of force you need to apply in all cases is proportional to how heavy your cart is.</li>
+</ul>
+
+The most important conclusion from this experiment is: 
+<br><br>
+<div class = "emphasize">A force does not move objects, objects move without force. A force changes the objects' velocities!</div> 
+<br>
+Acceleration, deceleration and turns are all changes of the velocity. As forces, velocities are vectors with a direction and a magnitude. Acceleration and deceleration change the magnitude, turns the direction. All forms of changes of velocity are called accelerations in physics. Accelerations are vectors too. What Newton's law says is that a force $\mathbf{f}$ causes an acceleration $\mathbf{a}$ in the same direction. The magnitude of the acceleration is $a = f / m$. This means with a bigger mass we need a bigger force to cause the same acceleration. That is all. We have the tree equations we need to simulate everything &#128512;.
+
+<h1>Our first simulation</h1>
 
 Now we are ready to create our very first simulation. For this you only need a paper and a pencil! We are going to simulate a cannon ball in free flight. In this little example we will see many concepts of simulations already. 
 
