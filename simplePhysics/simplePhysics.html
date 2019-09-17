@@ -30,9 +30,9 @@ body {
 }
 
 .image {
-	display: block;
 	margin-left: auto;
 	margin-right: auto;
+	width: 100px;
 }
 
 .emphasize {
@@ -233,11 +233,11 @@ Coming back to this book. To be able to sell this book via a publisher, I would 
 
 <a target="_blank" href = "https://en.wikipedia.org/wiki/Niklaus_Wirth">Niklaus Wirth</a> is the professor who taught me the basics of computer science at ETH Z&uuml;rich. He is a pioneer in the development of programming languages and the inventor of the PASCAL, some of you might remember. He initiated my strive for simplicity. In the 90's, he developed a complete operating system called <a target="_blank" href = "https://en.wikipedia.org/wiki/Oberon_(operating_system)">Oberon</a> together with a colleague. What is most astonishing about Oberon is its smallness. The core operating system including the Oberon compiler occupies only 131 KB. In contrast, here are the Visual Studio 2017 System Requirements: 130 GB of available space, depending on features installed; typical installations require 20-50 GB of free space. It is hard for me to understand why a compiler can take more than 10-20 MB of disk space. A positive example is Blender. This fantastic and comprehensive digital content creation tool takes 80Mb, downloads in 10, installs in 5 and starts up in 1 second! <br>
 
-I am a C++ programmer. For this book I started to use Javascript and love it. Many C++ libraries are huge. The boost library for instance has over 15,000 headerfiles. The implementation of STL vectors.h has more than 3000 lines of code. It should not be hard to implement its functionalty in less than 300. In contrast, the core of the <a target = "_blank" href = "https://threejs.org/">three.js library</a> is a single file of 600 KB (text, not binary) which one simply links in a html page. This library contains everything a 3d graphics programmer wishes for. We will make use of it extensively in this book.
+I am a C++ programmer. For this book I started to use Javascript and love it. Many C++ libraries are huge. The boost library for instance has over 15,000 headerfiles. The implementation of STL vectors.h has more than 3000 lines of code. It should not be hard to implement its functionality in less than 300. In contrast, the core of the <a target = "_blank" href = "https://threejs.org/">three.js library</a> is a single file of 600 KB (text, not binary) which one simply links in a html page. This library contains everything a 3d graphics programmer wishes for. We will make use of it extensively in this book.
 
 <h2>Simplicity in physics</h2>
 
-Physics has the reputation of being a complex subject, of being rocket science. If we look at equations that are studies by physicists, that is certainly true. As an example, the Navier-Stokes equation describes the evolution of fluids (liquids and gases) and looks like this:
+Physics has the reputation of being a complex subject, of being rocket science. If we look at equations that are studied by physicists, that is certainly true. As an example, the Navier-Stokes equation describes the evolution of fluids (liquids and gases) and looks like this:
 
 <p class = "equation">
 $$\rho\frac{D \mathbf{v}}{D t}=-\nabla p + \rho \mathbf{g} + \mu \nabla^2\mathbf{v}$$
@@ -245,9 +245,9 @@ $$\rho\frac{D \mathbf{v}}{D t}=-\nabla p + \rho \mathbf{g} + \mu \nabla^2\mathbf
 
 For somebody who works in the field, this equation is quite easy to understand. But solving it is a different story! Nobody has so far solved the following problem which is a sub-problem of solving the equation in general:
 
-<div class = "quote"> Prove or give a counter-example of the following statement: In three space dimensions and time, given an initial velocity field, there exists a vector velocity and a scalar pressure field, which are both smooth and globally defined, that solve the Navier–Stokes equations.</div> You can win a <a target =_blank" href = "https://en.wikipedia.org/wiki/Navier%E2%80%93Stokes_existence_and_smoothness">million dollers</a> if you solve it. Does this mean simulating water is as hard as this? Nothing could be further from the truth. I will explain where the complexity in physical many formulas in solving them comes from in a bit later.
+<div class = "quote"> Prove or give a counter-example of the following statement: In three space dimensions and time, given an initial velocity field, there exists a vector velocity and a scalar pressure field, which are both smooth and globally defined, that solve the Navier–Stokes equations.</div> You can win a <a target =_blank" href = "https://en.wikipedia.org/wiki/Navier%E2%80%93Stokes_existence_and_smoothness">million dollars</a> if you solve it. Does this mean simulating water is as hard as this? Nothing could be further from the truth. I will explain where the complexity in many physical formulas comes from and why they are often hard to solve a bit later.
 
-<br>First I want to show you that physics is at the heart easy to understand and to simulate. We consider the world how we perceive in everyday life. This world - rigid bodies, soft bodies, cloth, liquids or gases - is composed of simple partices with masses (atoms). Nature does not solve the equations above. What drives nature are two simple forces. Acutally four but the strong and the weak force only act inside the nucleus of atoms. They do not have visible effects if we do not cut the uncuttables (the true meaning of the word atom). The two remaining forces are gravity and the electromagnetic force. 
+<br>First I want to show you that physics is at the heart easy to understand and to simulate. We consider the world how we perceive in everyday life. This world - rigid bodies, soft bodies, cloth, liquids or gases - is composed of simple particles with masses (atoms). Nature does not solve the equations above. What drives nature are two simple forces. Actually four but the strong and the weak force only act inside the nucleus of atoms. They do not have visible effects if we do not cut the uncutables (the true meaning of the word atom). The two remaining forces are gravity and the electromagnetic force. 
 
 <h2>Gravity</h2>
 
@@ -277,14 +277,20 @@ This formula is called <a target ="_blank" href = "https://www.britannica.com/sc
 The quantities $q_1$ and $q_2$ that correspond to the masses in gravity are the electric charges of the objects. Masses are always positive numbers and the gravitational force always attracts the bodies. All objects fall downward. Charges on the other hand have a sign. If the signs are different, the electric force attracts them. If they are equal it pushes them apart. Fortunately we have this repelling effect, otherwise our whole universe would collapse! From these two simple equations, the entire physics of everyday objects emerges. For light and other electromagnetic waves we would need to consider magnetic effects too.
 <br><br>
 While the electric force formula describes how single particles act at a small scale, the resulting force between entire atoms and molecules is best described by the <a target = "_blank" href = "https://en.wikipedia.org/wiki/Lennard-Jones_potential">Lennard Jones potential</a>. It has the following form (image copied from wikepedia):
-<div class = "image">
-<img src = "Lennard-Jones-Potential.png" style="width:50%"	>
-</div>
+<p class = "image">
+<img src = "Lennard-Jones-Potential.png">
+</p>
 <br>
 What this means is that there is a preferred distance $r_m$ between the atoms or molecules where the energy is minimal and the force is zero. With decreasing distance, the energy grows rapidly causing a strong repelling force. When the distance becomes larger, the energy grows as well and the force becomes attractive. When the distance is increased further, the atoms or molecules lose contact and the force converges to zero. 
-<br><br> We will model this effect by using distance constraints with a certain with a certain strength that pull pairs of particles toward a rest distance. 
-
-
+<br><br> 
+This simple concept lets us simulate, soft bodies, cloth, rigid bodies, liquids and gases in a very simple way (attention, spoiler alarm). Take a bunch of particles and connect them with springs. Then for
+<ul>
+<li>Soft bodies: arrange the particles in a 3d pattern and use soft springs.
+<li>Cloth: arrange them in a 2d pattern and use stiff springs for stretching resistance and soft springs for bending resistance.
+<li>Rigid bodies: arrange them in a 3d pattern and make the springs infinitely stiff.
+<li>Liquids: let the particles move freely. Use a one sided infinitely stiff force (to model incompressibility) that pushes them apart if they get closer than the rest distance.
+<li>Gases: same as liquids but turn off gravity and render the particles differently (no sharp surface).
+</ul>
 
 <h2>Newton's law</h2>
 
@@ -298,7 +304,7 @@ What does this mean? There is a fun way to get a grasp of this equation. Simply 
 
 <ul>
 <li>You need to push hard to get it into motion.</li>
-<li>Once it is in motion, it rolls effortlessly without stopping. (It will stop eventually if it crashes into a shelf or due to friction. The friction force alone will have a hard time to act against the large amount of beer).</li>
+<li>Once it is in motion, it rolls effortlessly without stopping. (It will stop eventually if it crashes into a shelf or due to friction. The friction force alone will have a hard time to act against the large amount of beer though).</li>
 <li>You need a lot of force against the card to stop it again.</li>
 <li>You also need to push hard to change the carts direction! This is the reason why our experiment needs to be carried out with care. It is also the reason why you do not let your kids push your filled shopping cart around in the store.</li>
 <li>The amount of force you need to apply in all cases is proportional to how heavy your cart is.</li>
@@ -310,17 +316,22 @@ The most important conclusion from this experiment is:
 <br>
 Acceleration, deceleration and turns are all changes of the velocity. As forces, velocities are vectors with a direction and a magnitude. Acceleration and deceleration change the magnitude, turns the direction. All forms of changes of velocity are called accelerations in physics. Accelerations are vectors too. What Newton's law says is that a force $\mathbf{f}$ causes an acceleration $\mathbf{a}$ in the same direction. The magnitude of the acceleration is $a = f / m$. This means with a bigger mass we need a bigger force to cause the same acceleration. That is all. We have the tree equations we need to simulate everything &#128512;.
 
+<!-- --------------------------------------------------------------------------------------------- -->
 <h1>Our first simulation</h1>
 
-Now we are ready to create our very first simulation. For this you only need a paper and a pencil! We are going to simulate a cannon ball in free flight. In this little example we will see many concepts of simulations already. 
+Now we are ready to create our very first simulation. For this you only need a paper and a pencil! We are going to simulate a cannon ball in free flight. In this little example we will see many concepts of simulations already. <br>
 
-Take a squared sheet of paper. Draw a cannon ball in a square in at the bottom left. Simulating the ball meens to determine the location of the ball in a sequence of points in time. Let us say our simulation starts at time t = 0 seconds. To make things simple, we will evaluate the position of the cannonball in steps of one second. 
+Take a squared sheet of paper. Draw a cannon ball as a dot on a line crossing in the bottom left. Simulating the ball means to determine the location of the ball in a sequence of points in time. Let us say our simulation starts at time t = 0 seconds. To make things simple, we will evaluate the position of the cannonball in steps of one second. 
 
-An important observation is, that we not only have to remember the position of the ball but also its velocity. Even if we know the forces that act on it (gravity) at any time, we dont know its speed, since forces do not cause speed, they only change it. The pair of the original location of the ball and with its oringinal speed is called the initial condition. 
+An important observation is, that we not only have to remember the position of the ball but also its velocity. Even if we know the forces that act on it (gravity) at any time, we do not know its speed since forces do not cause speed, they only change it. The pair of the original location of the ball and its original speed is called the initial condition. Let us assume that the speed of the cannon ball is two steps to the right and four steps to the top.
 
 Here is a fascinating side note: We need to store the velocity of the objects, nature does not. If you compare the fotographs of a cannon ball that moves from left to right and one that moves from right to left, the two pictures will look exactly the same down to the tiniest level of matter. Where is the information about motion stored? How does nature know that one ball needs to be moved to the right and one to the left in the future course of time? We do not know. 
 
 On our paper, the cannon ball lives in two dimensions (2d). In contrast to the one one dimensional case, the velocity has a direction and a magnitude whereas in 1d, it only has a magnitude. The step from 1d to 2d is much bigger conceptually than the step from 2d to 3d. So everything we will find out during our 2d study of the canonball can be easily generalized to three dimensions.
+
+<div class = "image">
+<img src = "canonBall.jpg">
+</div>
 
 Velocity in 2d. 
 
