@@ -29,6 +29,12 @@ body {
 	padding: 0px 30px;
 }
 
+.image {
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
+}
+
 .emphasize {
 	font-weight: bold;
 }
@@ -269,6 +275,16 @@ $$\mathbf{f}_e = k_e \frac{q_1 \times q_2}{r^2}.$$
 This formula is called <a target ="_blank" href = "https://www.britannica.com/science/electromagnetism/Coulombs-law">Coulomb's law</a>.
 
 The quantities $q_1$ and $q_2$ that correspond to the masses in gravity are the electric charges of the objects. Masses are always positive numbers and the gravitational force always attracts the bodies. All objects fall downward. Charges on the other hand have a sign. If the signs are different, the electric force attracts them. If they are equal it pushes them apart. Fortunately we have this repelling effect, otherwise our whole universe would collapse! From these two simple equations, the entire physics of everyday objects emerges. For light and other electromagnetic waves we would need to consider magnetic effects too.
+<br><br>
+While the electric force formula describes how single particles act at a small scale, the resulting force between entire atoms and molecules is best described by the <a target = "_blank" href = "https://en.wikipedia.org/wiki/Lennard-Jones_potential">Lennard Jones potential</a>. It has the following form (image copied from wikepedia):
+<div class = "image">
+<img src = "Lennard-Jones-Potential.png" style="width:50%"	>
+</div>
+<br>
+What this means is that there is a preferred distance $r_m$ between the atoms or molecules where the energy is minimal and the force is zero. With decreasing distance, the energy grows rapidly causing a strong repelling force. When the distance becomes larger, the energy grows as well and the force becomes attractive. When the distance is increased further, the atoms or molecules lose contact and the force converges to zero. 
+<br><br> We will model this effect by using distance constraints with a certain with a certain strength that pull pairs of particles toward a rest distance. 
+
+
 
 <h2>Newton's law</h2>
 
