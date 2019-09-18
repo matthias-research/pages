@@ -335,21 +335,29 @@ In any case, for our cannon ball we need to represent its velocity. What would b
 <img class = "image" src = "canonBall.jpg">
 <br>
 
-Let us say we want to find the cannonball's position at times t = 0 seconds, t = 1 second, etc. In this case we say that we take a <span class = "emphasize">time step</span> of one second. We can define the velocity to be an arrow that points from the current position to where the ball would be in the next time step, if no forces would act on it. Let us define the length of the squares to be one meter. In this case, the velocity of the ball at the current time step is the length of the arrow and has the unit meter per second. The direction of the arrow determines the direction of the velocity. In my example I have chosen the velocity to be
+Let us say we want to find the cannonball's position at times t = 0 seconds, t = 1 second, etc. In this case we say that we take a <span class = "emphasize">time step</span> of one second. We can define the velocity to be an arrow that points from the current position to where the ball would be in the next time step, if no forces  acted on it. Let us define the length of the squares to be one meter. In this case, the velocity of the ball at the current time step is the length of the arrow and has the unit meter per second. The direction of the arrow determines the direction of the velocity. In my example I have chosen the velocity to be
 
 <p class = "equation">
 $$\mathbf{v} = \left[\begin{array}{c}2\\4\end{array}\right]m/s$$
 </p>
-I used a bold face for the velocity $\mathbf{v}$ because it is a vector in 2d. Mine goes 2 to meters to the right and 4 meters up per second. <br><br>After a time step of a second, the ball has moved to the top of the velocity arrow. With no forces, the ball would continue flying in the same direction with the same speed. In our case however, gravity will change the velocity. We will take this effect into account at every time step. We can represent the acceleration thet gravity causes as an arrow as well. The arrow points downwards. Let us assume that its length is the length of one squre (in reality it hast the length of 10 squares but we would run out of paper quickly with the true value). At every point in time, we change the velocity vector by adding the acceleration vector to the current velocity. What is the unit of the acceleration vector? It tells us how much the velocity changes in one second so it is meter per second per second or meter per second squared. The resulting simulation will look like this:
+I used a bold face for the velocity $\mathbf{v}$ because it is a vector in 2d. Mine goes 2 to meters to the right and 4 meters up per second. <br><br>After a time step of one second, the ball has moved to the top of the velocity arrow. With no forces, the ball would continue flying in the same direction with the same speed. In our case however, gravity will change the velocity. We will take this effect into account at every time step. We can represent the acceleration $\mathbf{g}$ that gravity causes as an arrow as well.  The arrow points downwards. Let us assume that its length is the length of one square (in reality it hast the length of about 10 squares but we would run out of paper quickly with the true value). At every point in time, we change the velocity vector by adding the acceleration vector to the current velocity. In our case, this reduces the vertical velocity component by one meter per second. What is the unit of the acceleration vector? It tells us how much the velocity changes in one second so it is meter per second per second or meter per second squared. The resulting simulation will look like the image above. Try different initial velocities too. 
 
-We get an approximation of the parabolic shape of the curve we observe in nature! 
+<h2>Where is the mass?</h2>
 
-Where is the mass?
-------------------
+In the simulation above we did not consider the mass of the ball. The interesting fact is that the trajectory looks exactly the same, no matter how heavy or light the canon ball is (not considering air resistance). As we saw earlier, the gravitational force on our ball has the magnitude $mg$. This means the heaver the ball, the stronger the force. The acceleration this force causes on the balls (according to Newton's law) is
 
-In our simulation, we did not take the mass of the canonball into account. According to newtons law, the acceleration depends on both, the force and the mass. Surprisingly, in the case of the gravitational force (and only in this case), the mass drops out of the equation! The trajectory of the cannonball looks identical if the mass is doubled (not considering air resistance). Why is this?
+<p class = "equation">
+$$a = f / m = (m g) / m = g.$$
+</p>
+The mass drops out, why? The heaver the ball the stronger the gravitational force. However, heaver objects also need stronger forces to get accelerated. These two effects cancel each other out perfectly. This is not at all obvious. To be precise, objects have a mass $m_{Gravity}$ which says how strong a gravitational force they cause. They also have a mass $m_{Newton}$ which says how strong a force is needed to accelerate them. These two masses are the same for all objects which simplifies physics quite a lot. This phenomenon is called the <a target = "_blank" href = "https://en.wikipedia.org/wiki/Equivalence_principle">equivalence principle</a>. It lead Einstein to the development of general relativity. 
 
-This phenomenon is called the "equivalence principle". It lead Einstein to the development of general relativity. see https://en.wikipedia.org/wiki/Equivalence_principle. mg = ma
+<h1>Our first program</h1>
+
+
+
+<h1>Numeric vs. Analytic Solution</h1>
+
+
 
 
 
