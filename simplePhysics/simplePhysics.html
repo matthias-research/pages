@@ -53,8 +53,11 @@ body {
 }
 
 .code {
-	margin: 30px 30px 30px 40px; 
-	font-size: 12px;
+	margin: 30px 0px 30px 0px;
+}
+
+.codefont {
+	font-size: 16px;
 }
 
 #booktitle {
@@ -183,6 +186,7 @@ a {
   <a href = "#introduction">introduction</a>
   <a href = "#firstSimulation">First simulation</a>
   <a href = "#firstProgram">First program</a>
+  <a href = "#calculus">Calculus</a>
 </div>
 
 <!-- mobile -->
@@ -362,9 +366,9 @@ The mass drops out, why? The heaver the ball the stronger the gravitational forc
 
 <h1 id = "firstProgram">Our first program</h1>
 
-Now it is time to write our first simulator! Open an editor and create a new document called cannonball1.html. We need to create a valid html document first:
+Now it is time to write our first simulator! Open an editor and create a new file called cannonball1.html. This is how a basic html document looks:
 
-<pre data-language="javascript"><code>&lt;!DOCTYPE html&gt;
+<pre class = "code" data-language="javascript"><code class = "codefont">&lt;!DOCTYPE html&gt;
 &lt;html&gt;
 
 &lt;style&gt;
@@ -394,28 +398,140 @@ Your browser does not support the HTML5 canvas tag.&lt;/canvas&gt;
 </code>
 </pre>
 
+After specifying the overall style we add a title and a canvas to draw on. The javascript code that follows will go between the script tags. Here is the complete simulation part:
+
+<pre class = "code" data-language="javascript"><code class = "codefont">var timeStep = 1;
+var gravity = -1;
+var startPos = { x : 0, y : 0 };
+var startVel = { x : 2, y : 4 };
+
+var ball = {
+	pos : { x : startPos.x, y : startPos.y },
+	vel : { x : startVel.x, y : startVel.y },
+	radius : 0.5
+};
+
+function simulate()
+{
+	ball.pos.x += ball.vel.x;
+	ball.pos.y += ball.vel.y;
+	ball.vel.y += gravity;
+	
+	if (ball.pos.y < 0) {
+		ball.pos.x = startPos.x;
+		ball.pos.y = startPos.y;
+		ball.vel.x = startVel.x;
+		ball.vel.y = startVel.y;
+	}
+}
+</code>
+</pre>
+I hope this code is more or less self-explanatory. Javascript has lots of fascinating and fancy features. For c++ programmers however, they are quite confusing at first. To the possible disappointment of javascript gurus, I will use a very basic style that should be easy to read for everybody. 
+
+Before the simulation starts we have to define the simulation parameters and the initial conditions of the ball. In the simulation itself is done with three lines of code. The if-block just resets the ball when it disappears from the screen. <br>Of course we want to see something on screen. The draw() procedure uses canvas commands to render a grid and the cannonball as a sphere.
+
+<pre class = "code" data-language="javascript"><code class = "codefont">function draw() 
+{
+	var canvas = document.getElementById("myCanvas");
+	var c = canvas.getContext("2d");
+	var scale = 30;		
+	c.clearRect(0, 0, canvas.width, canvas.height);
+	
+	var x, y;
+	
+	// grid
+	
+	c.strokeStyle = "#000000";
+	
+	for (x = 0; x < canvas.width; x += scale) {		
+		c.beginPath();
+		c.moveTo(x, 0); c.lineTo(x, canvas.height);
+		c.stroke();
+	}
+	for (y = canvas.height; y >= 0; y -= scale) {		
+		c.beginPath();
+		c.moveTo(0, y); c.lineTo(canvas.width, y);
+		c.stroke();
+	}
+
+	// ball
+					
+	c.strokeStyle = "#000000";
+	c.beginPath();			
+	c.arc(ball.pos.x * scale, canvas.height - ball.pos.y * scale, 
+		ball.radius * scale, 0, Math.PI*2, true); 
+	c.closePath();
+	c.fill();
+}	
+</code>
+</pre>
+What is worth mentioning here is the mapping from physical to screen coordinates. We use a scale variable to define how long a physical unit is in pixels. Also, in contrast to physical coordinate systems, the screen coordinates go from top to bottom so we have to account for this in the mapping of the y-coordinate. The final block contains code that makes sure our simulation and draw function get called with the desired frequency.
+
+<pre class = "code" data-language="javascript"><code class = "codefont">var lastTime = 0;
+var elapsedTime = 0;
+
+function step() 
+{
+	var time = Date.now();		
+	elapsedTime += lastTime > 0 ? (time - lastTime) * 0.001 : 0;
+	lastTime = time;
+		
+	if (elapsedTime > timeStep) {
+		elapsedTime = 0;			
+		simulate();		
+	}
+	draw();
+	requestAnimationFrame(step);
+}
+
+step();
+</code></pre>
+
+<a target = "_blank" href="cannonball1.html">Try it yourself</a>. Pretty boring I would say. Don't worry, our simulations will get better soon. 
+
+<h1>Numeric vs. Analytic Solutions</h1>
+
+It is essential to note that our simulation creates a path that is only an approximation to the true trajectory of the ball. Do you see where we introduced an error? The answer is fundamental to physical simulations:
+
+<br>
+<div style="margin: 20px 50px" class = "emphasize">We assumed that certain variables (the velocity in our case) do not change during an entire time step!</div>
+
+In nature, gravity influences the velocity constantly which results in a perfectly smooth curve wheres our trajectory is piecewise linear. There is a very simple way to reduce this error, namely to make the time step size smaller. Here is how we need to change our simulation to account for variable time steps:
+
+<pre class = "code" data-language="javascript"><code class = "codefont">	ball.pos.x += timeStep * ball.vel.x;
+	ball.pos.y += timeStep * ball.vel.y;
+	ball.vel.y += timeStep * gravity;
+</code></pre>
+
+The velocity tells us how far the ball travels in one second. If we take a time step of half a second, the ball travels half that distance. Therefore we simply multiply the velocity with the time step size before adding it to the position. The same holds for the acceleration which tells us how much the velocity is changed in one second. I added a slider to play with the time step size. <br>
+
+<a target = "_blank" href="cannonball2.html">Try it yourself</a><br><br>
+
+The following image shows the trajectory we get with a time step of two seconds in yellow. The true trajectory is shown in green. What is important to note here is that we approximate the true curve from above. The reason is that with a fixed velocity we <span class ="emphasize">overshoot</span> the true location because gravity cannot bend the velocity downward during the time step. Overshooting is not problematic in this scenario. When it comes to the simulation of internal forces, overshooting causes instabilities and may cause a scene to explode as we will see later.
+
 <br>
 <img class = "image" src = "cannonBall2.jpg">
 <br>
 
+Obviously, if we want to get the true trajectory we need to make our time step infinitely small. This would break our simulator because it would not make any progress anymore. With our program we have computed a so called <span class ="emphasize">numeric</span> solution of the simulation problem. 
 
+<br><br>While a program cannot handle infinitely small time steps, there is a method in mathematics that can! This method is called <a target = "_blank" href = "https://en.wikipedia.org/wiki/Calculus">Calculus</a> and was - not surprisingly - invented by Newton. Without computers, his famous second law can only be solved with calculus. In contrast to a numeric solution, a solution that is found via calculus is called an <span class ="emphasize">analytic</span> solution. An analytic solution would describe the trajectory of our ball with a two dimensional function
 
+<p class = "equation">
+$$\left[\begin{array}{c}x(t)\\y(t)\end{array}\right]$$
+</p>
 
+which tells us where the ball is at any time $t$. Without gravity and the same initial conditions we had before, the solution would be:
 
-<h1>Numeric vs. Analytic Solution</h1>
+<p class = "equation">
+$$\left[\begin{array}{c}x(t)\\y(t)\end{array}\right] = \left[\begin{array}{c}2t\\4t\end{array}\right]$$
+</p>
 
+Having an analytic solution is quite convenient. You simply plug in any time and out comes the exact location of the ball without any simulation! The problem with the analytic approach is that it adds a substantial amount of complexity to physics. First of all calculus is needed which scares many people. Second, solving the equations and the solutions themselves get pretty complex pretty quickly. Analytic solutions are functions. Functions that can be expressed explicitly with mathematical symbols and operators can only describe the solutions for small problems such as the trajectory of a ball. Even the trajectory of a double pendulum cannot be written down as a function. 
+<br><br>
+Nevertheless, calculus and analytic solutions can give us interesting insight into a problem. Also, calculus is a really clever and beautiful method. Therefore I will show you how the cannon ball problem can be solved analytically in the next chapter. You can skip this chapter if you wish. We will get back to numerical simulations afterwards. 
 
-
-
-
-Approximation
-
-The reason why our simulation only approximates the true curve is an assumption we took:
-
-We assumed that that gravity only changes the velocity at times 0s, 1s, 2s and has no effect inbetween. How can we fix this? We can take the effect of gravity into account in the middle of the time step.
-
-
-
+<h1 id = "calculus">Calculus</h1>
 
 
 </div>
