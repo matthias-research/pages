@@ -1,0 +1,104 @@
+<!-- Matthias Müller -->
+
+<!DOCTYPE html>
+<html>
+
+<style>
+body {
+	padding: 10px 50px;
+	font-family: verdana; 
+	line-height: 1.5;
+	font-size: 15px;
+}
+</style>
+
+<title>Cannonball Version 1</title>
+<body>
+
+<h1>Cannonball Version 1</h1>
+
+<canvas id="myCanvas" width="600" height="400" style="border:3px solid #d3d3d3;">
+Your browser does not support the HTML5 canvas tag.</canvas>
+
+<script>
+
+	var timeStep = 1;
+	var gravity = -1;
+	var startPos = { x : 0, y : 0 };
+	var startVel = { x : 2, y : 4 };
+	
+	var ball = {
+		pos : { x : startPos.x, y : startPos.y },
+		vel : { x : startVel.x, y : startVel.y },
+		radius : 0.5
+	};
+	
+	function simulate()
+	{
+		ball.pos.x += ball.vel.x;
+		ball.pos.y += ball.vel.y;
+		ball.vel.y += gravity;
+		
+		if (ball.pos.y < 0) {
+			ball.pos.x = startPos.x;
+			ball.pos.y = startPos.y;
+			ball.vel.x = startVel.x;
+			ball.vel.y = startVel.y;
+		}
+	}
+	
+	function draw() 
+	{
+		var canvas = document.getElementById("myCanvas");
+		var c = canvas.getContext("2d");
+		var scale = 30;		
+		c.clearRect(0, 0, canvas.width, canvas.height);
+		
+		var x, y;
+		
+		// grid
+		
+		c.strokeStyle = "#000000";
+		
+		for (x = 0; x < canvas.width; x += scale) {		
+			c.beginPath();
+			c.moveTo(x, 0); c.lineTo(x, canvas.height);
+			c.stroke();
+		}
+		for (y = canvas.height; y >= 0; y -= scale) {		
+			c.beginPath();
+			c.moveTo(0, y); c.lineTo(canvas.width, y);
+			c.stroke();
+		}
+
+		// ball
+						
+		c.strokeStyle = "#000000";
+		c.beginPath();			
+		c.arc(ball.pos.x * scale, canvas.height - ball.pos.y * scale, ball.radius * scale, 0, Math.PI*2, true); 
+		c.closePath();
+		c.fill();
+	}	
+		
+	var lastTime = 0;
+	var elapsedTime = 0;
+
+	function step() 
+	{
+		var time = Date.now();		
+		elapsedTime += lastTime > 0 ? (time - lastTime) * 0.001 : 0;
+		lastTime = time;
+			
+		if (elapsedTime > timeStep) {
+			elapsedTime = 0;			
+			simulate();		
+		}
+		draw();
+		requestAnimationFrame(step);
+	}
+	
+	step();
+
+</script> 
+</body>
+</html>

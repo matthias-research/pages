@@ -1,5 +1,4 @@
 <!-- Matthias Müller, nvidia -->
-n-resize
 <!DOCTYPE html>
 <html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,7 +17,9 @@ n-resize
   src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
 </script>
 
-<script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+<script src="rainbow/rainbow-custom.min.js"></script>
+<link href="rainbow/github.css" rel="stylesheet" type="text/css" media="screen">
+<!-- <link href="rainbow/pastie.css" rel="stylesheet" type="text/css" media="screen"> -->
 
 <style>
 
@@ -49,6 +50,11 @@ body {
 .equation {
 	margin: 30px 30px 30px 40px;
 	font-size: 20px;"
+}
+
+.code {
+	margin: 30px 30px 30px 40px; 
+	font-size: 12px;
 }
 
 #booktitle {
@@ -154,8 +160,9 @@ a {
 .topnav a.icon {
   background-color: #ddd;
   position: absolute;
-  right: 0;
   top: 0;
+  right: 0;
+  z-index: 2;
 }
 
 .topnav a:hover {
@@ -174,8 +181,8 @@ a {
 <div id = "desktop-menu" class="sidenav">
   <a href="../index.html">back</a>
   <a href = "#introduction">introduction</a>
-  <a href = "#forces">forces</a>
-  <a href = "#conclusion">conclusion</a>
+  <a href = "#firstSimulation">First simulation</a>
+  <a href = "#firstProgram">First program</a>
 </div>
 
 <!-- mobile -->
@@ -233,11 +240,11 @@ Coming back to this book. To be able to sell this book via a publisher, I would 
 
 <h2>Simplicity in computer science</h2>
 
-<a target="_blank" href = "https://en.wikipedia.org/wiki/Niklaus_Wirth">Niklaus Wirth</a> is the professor who taught me the basics of computer science at ETH Z&uuml;rich. He is a pioneer in the development of programming languages and the inventor of the PASCAL, some of you might remember. He initiated my strive for simplicity. In the 90's, he developed a complete operating system called <a target="_blank" href = "https://en.wikipedia.org/wiki/Oberon_(operating_system)">Oberon</a> together with a colleague. What is most astonishing about Oberon is its smallness. The core operating system including the Oberon compiler occupies only 131 KB. In contrast, here are the Visual Studio 2017 System Requirements: 130 GB of available space, depending on features installed. Of course, we do have enough disk space these days but it is still hard to understand why compilers today use more than a million times the space of the ones in the 90's where the complexity comes from. A positive example is Blender. This fantastic and comprehensive digital content creation tool takes 80Mb, downloads in 10, installs in 5 and starts up in 1 second! <br>
+<a target="_blank" href = "https://en.wikipedia.org/wiki/Niklaus_Wirth">Niklaus Wirth</a> is the professor who taught me the basics of computer science at ETH Z&uuml;rich. He is a pioneer in the development of programming languages and the inventor of the PASCAL, some of you might remember. He initiated my strive for simplicity. In the 90's, he developed a complete operating system called <a target="_blank" href = "https://en.wikipedia.org/wiki/Oberon_(operating_system)">Oberon</a> together with a colleague. What is most astonishing about Oberon is its smallness. The core operating system including the Oberon compiler occupies only 131 KB. In contrast, here are the Visual Studio 2017 System Requirements: 130 GB of available space, depending on features installed. Of course, we do have enough disk space these days but it is still hard to understand why compilers today use more than a million times the space of the ones in the 90's and where the complexity comes from. A positive example is Blender. This fantastic and comprehensive digital content creation tool takes 80Mb, downloads in 10, installs in 5 and starts up in 1 second! <br>
 
-I am a C++ programmer. C++ is a great language. You know almost exactly what is going on behind the scenes and the generated code is very fast. However, most libraries are huge. As an example, the boost library is nice but has over 15,000 headerfiles. Typically, one needs to rund make scripts, copy lib and dll files to the right places, use the correct compiler settings, etc. etc. and hopefully, after many tries everythings works. Maybe it is just me who sees things this way. 
+I am a C++ programmer. C++ is a great language. You know almost exactly what is going on behind the scenes and the generated code is very fast. However, most libraries are huge. As an example, the boost library is nice but has over 15,000 header-files. Typically, one needs to run make-scripts, copy lib and dll files to the right places, use the correct compiler settings, etc. etc. and hopefully, after many tries everything works. Maybe it is just me who sees things this way. 
 
-For this book I started to use Javascript and love it. You write a page of code in 10 minutes, drop it into a browser and you can immediately see the results. If it does not work properly, hit F12 to start a nice debugger with everything you need. Everything is a matter of seconds if not less. For this book I was looking for a library to visualize 3d scenes and found the incredible <a target = "_blank" href = "https://threejs.org/">three.js</a>. The core of the it is a single file of 600 KB (text, not binary) which one links with a single command in the html page. This library contains everything a 3d graphics programmer wishes for. We will make use of it extensively in this book.
+For this book I started to use Javascript and love it. You write a page of code in 10 minutes, drop it into a browser and you can immediately see the results. If it does not work properly, hit F12 to start a nice debugger with everything you need. Things are matter of seconds if not less. For this book I was looking for a library to visualize 3d scenes and found the incredible <a target = "_blank" href = "https://threejs.org/">three.js</a>. The core of the it is a single file of 600 KB (text, not binary) which one links with a single command in the html page. This library contains everything a 3d graphics programmer wishes for. We will make use of it extensively in this book.
 
 <h2>Simplicity in physics</h2>
 
@@ -261,12 +268,12 @@ Gravity is a force that we experience every day. Fortunately it exists, otherwis
 $$f_g = G \frac{m_1 \times m_2}{r^2},$$
 </p>
 
-where $G$ is the gravitational constant which is just a fixed number. The force $f_g$ is actually a vector (an arrow) with a direction and a magnitude (length). The equation above gives us the magnitude. The direction points along the common line of the two objects. In the case of an object lying on the ground, it points straight downward along the line between the object and the earth's center. The only case where we see the effect of gravity is when one of the bodies is the earth. Since the center of the earth is far away from its surface, we can consider the ground to be a plane and the direction of gravity to be perpendicular to this plane, having the same direction everywhere. If we let $m_2$ be the mass of the earth and $r$ its radius the formula simplifies further and we get:
+where $G$ is the gravitational constant which is just a fixed number. The force $f_g$ is actually a vector (an arrow) with a direction and a magnitude (length). The equation above gives us the magnitude. The direction points along the common line of the two objects. In the case of an object lying on the ground, gravity points straight downward along the line between the object and the earth's center. The only case where we see the effect of gravity is when one of the bodies is in fact the earth. Since the center of the earth is far away from its surface, we can consider the ground to be a plane and the direction of gravity to be perpendicular to this plane, having the same direction everywhere. If we let $m_2$ be the mass of the earth and $r$ its radius the formula simplifies further and we get:
 
 <p class = "equation">
-$$ \mathbf{f}_g = m g,$$
+$$ f_g = m g,$$
 </p>
-where $g$ is the fixed number $9.81 m/s^2$ and $m$ the bodies mass. This force points downward along the up axis of the coordinate system everywhere. Can it be simpler?
+where $g$ is the fixed number $9.81 m/s^2$ and $m$ the body's mass. This force points downward along the up axis of the coordinate system everywhere. Could it be simpler?
 
 <h2>The electric force</h2>
 
@@ -320,7 +327,7 @@ The most important conclusion from this experiment is:
 Acceleration, deceleration and turns are all changes of the velocity. As forces, velocities are vectors with a direction and a magnitude. Acceleration and deceleration change the magnitude, turns the direction. All forms of changes of velocity are called accelerations in physics. Accelerations are vectors too. What Newton's law says is that a force $\mathbf{f}$ causes an acceleration $\mathbf{a}$ in the same direction. The magnitude of the acceleration is $a = f / m$. This means with a bigger mass we need a bigger force to cause the same acceleration. That is all. We have the tree equations we need to simulate everything &#128512;.
 
 <!-- --------------------------------------------------------------------------------------------- -->
-<h1>Our first simulation</h1>
+<h1 id = "firstSimulation">Our first simulation</h1>
 
 Now we are ready to create our very first simulation. For this we only need a paper and a pencil! We are going to simulate a cannon ball in free flight. In this little example we will see many concepts of simulations already. <br>
 
@@ -334,7 +341,7 @@ Here is a fascinating side note: We need to store the velocity of the objects, n
 In any case, for our cannon ball we need to represent its velocity. What would be a good way to do this? Have a look at my drawing:
 
 <br>
-<img class = "image" src = "canonBall.jpg">
+<img class = "image" src = "cannonBall1.jpg">
 <br>
 
 Let us say we want to find the cannonball's position at times t = 0 seconds, t = 1 second, etc. In this case we say that we take a <span class = "emphasize">time step</span> of one second. We can define the velocity to be an arrow that points from the current position to where the ball would be in the next time step, if no forces  acted on it. Let us define the length of the squares to be one meter. In this case, the velocity of the ball at the current time step is the length of the arrow and has the unit meter per second. The direction of the arrow determines the direction of the velocity. In my example I have chosen the velocity to be
@@ -346,14 +353,52 @@ I used a bold face for the velocity $\mathbf{v}$ because it is a vector in 2d. M
 
 <h2>Where is the mass?</h2>
 
-In the simulation above we did not consider the mass of the ball. The interesting fact is that the trajectory looks exactly the same, no matter how heavy or light the canon ball is (not considering air resistance). As we saw earlier, the gravitational force on our ball has the magnitude $mg$. This means the heaver the ball, the stronger the force. The acceleration this force causes on the balls (according to Newton's law) is
+In the simulation above we did not consider the mass of the ball. The interesting fact is that the trajectory looks exactly the same, no matter how heavy or light the cannon ball is (not considering air resistance). As we saw earlier, the gravitational force on our ball has the magnitude $mg$. This means the heaver the ball, the stronger the force. The acceleration this force causes on the balls (according to Newton's law) is
 
 <p class = "equation">
 $$a = f / m = (m g) / m = g.$$
 </p>
 The mass drops out, why? The heaver the ball the stronger the gravitational force. However, heaver objects also need stronger forces to get accelerated. These two effects cancel each other out perfectly. This is not at all obvious. To be precise, objects have a mass $m_{Gravity}$ which says how strong a gravitational force they cause. They also have a mass $m_{Newton}$ which says how strong a force is needed to accelerate them. These two masses are the same for all objects which simplifies physics quite a lot. This phenomenon is called the <a target = "_blank" href = "https://en.wikipedia.org/wiki/Equivalence_principle">equivalence principle</a>. It lead Einstein to the development of general relativity. 
 
-<h1>Our first program</h1>
+<h1 id = "firstProgram">Our first program</h1>
+
+Now it is time to write our first simulator! Open an editor and create a new document called cannonball1.html. We need to create a valid html document first:
+
+<pre data-language="javascript"><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+
+&lt;style&gt;
+body {
+	padding: 10px 50px;
+	font-family: verdana; 
+	line-height: 1.5;
+	font-size: 15px;
+}
+&lt;/style&gt;
+
+&lt;title&gt;Cannonball Version 1&lt;/title&gt;
+&lt;body&gt;
+
+&lt;h1&gt;Cannonball Version 1&lt;/h1&gt;
+
+&lt;canvas id="myCanvas" width="600" height="400" style="border:3px solid #d3d3d3;"&gt;
+Your browser does not support the HTML5 canvas tag.&lt;/canvas&gt;
+
+&lt;/script&gt;
+
+&lt;!-- javascript code goes here... --&gt;
+
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/htmt&gt;
+</code>
+</pre>
+
+<br>
+<img class = "image" src = "cannonBall2.jpg">
+<br>
+
+
 
 
 
@@ -373,34 +418,7 @@ We assumed that that gravity only changes the velocity at times 0s, 1s, 2s and h
 
 
 
-
-
-<pre style="margin: 30px 30px 30px 40px; font-size: 18px;" class="prettyprint">
-class Voila {
-public:
-  // Voila
-  static const string VOILA = "Voila";
-
-  // will not interfere with embedded <a href="#voila2">tags</a>.
-}</pre>
-
-
-<p style="margin: 30px 30px 30px 40px; font-size: 25px;">
-When $a \ne 0$, there are two solutions to $ ax^2 + bx + c = 0 $ and they are
-$$ x = {-b \pm \sqrt{b^2-4ac} \over 2a}. $$
-</p>
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
-<div id = "forces" class ="title">forces</div><br>
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
-<div id = "conclusion" class ="title">conclusion</div><br>
-
-
-
-</div	>
+</div>
 <script>
 
 // https://www.w3schools.com/howto/tryit.asp?filename=tryhow_js_search_menu
