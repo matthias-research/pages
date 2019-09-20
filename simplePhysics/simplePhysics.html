@@ -527,12 +527,53 @@ which tells us where the ball is at any time $t$. Without gravity and the same i
 $$\left[\begin{array}{c}x(t)\\y(t)\end{array}\right] = \left[\begin{array}{c}2t\\4t\end{array}\right]$$
 </p>
 
-Having an analytic solution is quite convenient. You simply plug in any time and out comes the exact location of the ball without any simulation! The problem with the analytic approach is that it adds a substantial amount of complexity to physics. First of all calculus is needed which scares many people. Second, solving the equations and the solutions themselves get pretty complex pretty quickly. Analytic solutions are functions. Functions that can be expressed explicitly with mathematical symbols and operators can only describe the solutions for small problems such as the trajectory of a ball. Even the trajectory of a double pendulum cannot be written down as a function. 
+Having an analytic solution is quite convenient. You simply plug in any time and out comes the exact location of the ball without any simulation! The problem with the analytic approach is that it adds a substantial amount of complexity to physics. First of all calculus is needed which scares many people. Second, solving the equations and the solutions themselves get pretty complex pretty quickly. Analytic solutions are functions in closed form. A closed form function can be expressed explicitly with mathematical symbols and operators. Unfortunately only simple problems such as ball in free flight have closed form solutions. Even the trajectory of a double pendulum cannot be written down as a closed form function. 
 <br><br>
 Nevertheless, calculus and analytic solutions can give us interesting insight into a problem. Also, calculus is a really clever and beautiful method. Therefore I will show you how the cannon ball problem can be solved analytically in the next chapter. You can skip this chapter if you wish. We will get back to numerical simulations afterwards. 
 
 <h1 id = "calculus">Calculus</h1>
 
+The idea is to compute the velocity function from the force function and the initial velocity. Then compute the position function from the force function and the initial prostion. Our force funtion is trivial since it is constant over time. The method to derive the velocity from the acceleration or the position from the velocity is called <span class "emphasize">integration</span>. The method for goint the other way is called <span class "emphasize">integration</span>. We will loook at differentiation first because it is easier to carry out. 
+
+Let us assume you want to measure the instant velocity of your car while driving. The obvious method is to measure the distance you travel along the road and divide it by the time you needed. You could look at your dashboard at your kilometer status, drive for one hour and look again. This way you can compute the veolocity in kilometers per hour. Of course, this does not give you an average, not the instant velocity. You need to carry out the same procedure with a much smaller time interval. Ideally, the time interval is zero. Let us $s(t)$ the kilometer status at time $t$. Then $s(t + dt)$ is the kilometer status after a time interval $dt$. The letter $d$ stands for delta, or difference. The estimate of the velocity is them 
+
+<div class = "equation">
+$$v(t) \approx \frac{s(t + dt) - s(t)}{dt}$$
+</div>
+
+We cannot simply set $dt = 0$ because then we would have a zero in the denominator which gives us an undefined number. We we can do is this about what value $v(t)$ approaches as we make $dt$ smaller and smaller. This is called a limit in mathematics and can be written as
+
+<div class = "equation">
+$$v(t) = \lim_{dt \to 0} \frac{s(t + dt) - s(t)}{dt}$$
+</div>
+
+which is the definition of a derivate. The full name of "calculus" is actually "calculus of 
+infinitesimals", the calculation with infinitesimal quantities. Let us now plug in some numbers to see 
+what happens with this limit. Let us assume that 
+
+<div class = "equation">
+$$s(t) = a\;\;\rightarrow \;\;s'(t) = 0$$
+</div>
+
+where $a$ is a constant. The numerator becomes $a - a$ and is zero for all $dt$ larger than zero. This makes sense. If our kilometer status remains unchanged, our velocity is zero. What about 
+
+<div class = "equation">
+$$s(t) = at\;\;\rightarrow \;\;s'(t) = a$$
+</div>
+
+The numerator is now $a  (t + td) - a  (t) = a t + a \, dt - a t = a \, dt$. Dividing this by $dt$ gives $a$ for all $dt$ larger than zero. We are driving at a constant speed of $a$. Let us have a look at
+
+<div class = "equation">
+$$s(t) = at^2\;\;\rightarrow \;\;s'(t) = a\,2t$$
+</div>
+
+These results can be generalized to the form
+
+<div class = "equation">
+$$s(t) = at^k\;\;\rightarrow \;\;s'(t) = a\,k\,t^{k - 1}$$
+</div>
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 
 </div>
 <script>
