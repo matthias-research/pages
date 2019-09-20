@@ -547,24 +547,26 @@ We cannot simply set $dt = 0$ because then we would have a zero in the denominat
 $$v(t) = \lim_{dt \to 0} \frac{s(t + dt) - s(t)}{dt}$$
 </div>
 
-which is the definition of a derivate. The full name of "calculus" is actually "calculus of 
-infinitesimals", the calculation with infinitesimal quantities. Let us now plug in some numbers to see 
-what happens with this limit. Let us assume that 
+which is the definition of a <span class = "emphasize">derivate</span>. The full name of "calculus" is actually "calculus of 
+infinitesimals", the calculation with infinitesimal quantities. 
+
+<h2>The rules</h2>
+Let us now plug in some numbers to see what this limit gives us. I will use $h = dt$ to make the equations easier to read. What happens if $s(t)$ is constant so $s(t) = a$. The numerator becomes $a - a$ and is zero for all $h$ larger than zero. This makes sense. If our kilometer status remains unchanged, our velocity is zero. We have
 
 <div class = "equation">
 $$s(t) = a\;\;\rightarrow \;\;s'(t) = 0$$
 </div>
 
-where $a$ is a constant. The numerator becomes $a - a$ and is zero for all $dt$ larger than zero. This makes sense. If our kilometer status remains unchanged, our velocity is zero. What about 
+The derivative of a function has the same name as the original with an apostrophe added. Our next example is $s(t) = at$. The numerator is now $a \cdot (t + h) - a t = a t + a h - a t = a h$. Dividing this by $h$ gives $a$ for all $h$. We are driving at a constant speed of $a$.
 
 <div class = "equation">
 $$s(t) = at\;\;\rightarrow \;\;s'(t) = a$$
 </div>
 
-The numerator is now $a  (t + td) - a  (t) = a t + a \, dt - a t = a \, dt$. Dividing this by $dt$ gives $a$ for all $dt$ larger than zero. We are driving at a constant speed of $a$. Let us have a look at
+Let us have a look at $s(t) = a t^2$. Now the numerator becomes $a \cdot (t + h)^2 - a t^2 = a\cdot(t^2 + 2 h t + h^2) - a t^2 = 2 a t h + a h^2$. Dividing this by $h$ gets us $2 a t - a h$. Now we can actually set $h = 0$ and get $2 a t$.
 
 <div class = "equation">
-$$s(t) = at^2\;\;\rightarrow \;\;s'(t) = a\,2t$$
+$$s(t) = a t^2\;\;\rightarrow \;\;s'(t) = a \; 2 t$$
 </div>
 
 These results can be generalized to the form
@@ -572,6 +574,12 @@ These results can be generalized to the form
 <div class = "equation">
 $$s(t) = at^k\;\;\rightarrow \;\;s'(t) = a\,k\,t^{k - 1}$$
 </div>
+
+This is one of a set of rules to differentiate functions. Another rule says that to compute the derivative of the sum of multiple terms, one can simply differentiate each term separately. The complete set of rules can be used to compute derivatives for almost every function in closed form without using the definition via the limit. As you will see, the rules we discussed here are sufficient to find the formula of the trajectory of the cannonball. 
+
+<h2>The formula of the trajectory<h2>
+
+
 
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 
