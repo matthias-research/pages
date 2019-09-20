@@ -547,8 +547,7 @@ We cannot simply set $dt = 0$ because then we would have a zero in the denominat
 $$v(t) = \lim_{dt \to 0} \frac{s(t + dt) - s(t)}{dt}$$
 </div>
 
-which is the definition of a <span class = "emphasize">derivate</span>. The full name of "calculus" is actually "calculus of 
-infinitesimals", the calculation with infinitesimal quantities. 
+which is the definition of a <span class = "emphasize">derivate</span>. In general, a derivative describes the <span class = "emphasize">rate of change</span> of the original function. The full name of "calculus" is actually "calculus of infinitesimals", the calculation with infinitesimal quantities. 
 
 <h2>The rules</h2>
 Let us now plug in some numbers to see what this limit gives us. I will use $h = dt$ to make the equations easier to read. What happens if $s(t)$ is constant so $s(t) = a$. The numerator becomes $a - a$ and is zero for all $h$ larger than zero. This makes sense. If our kilometer status remains unchanged, our velocity is zero. We have
@@ -575,9 +574,68 @@ These results can be generalized to the form
 $$s(t) = at^k\;\;\rightarrow \;\;s'(t) = a\,k\,t^{k - 1}$$
 </div>
 
-This is one of a set of rules to differentiate functions. Another rule says that to compute the derivative of the sum of multiple terms, one can simply differentiate each term separately. The complete set of rules can be used to compute derivatives for almost every function in closed form without using the definition via the limit. As you will see, the rules we discussed here are sufficient to find the formula of the trajectory of the cannonball. 
+This is one of a set of rules to differentiate functions. Another rule says that to compute the derivative of the sum of multiple terms, one can simply differentiate each term separately. The complete set of rules can be used to compute derivatives for almost every function in closed form without using the definition via the limit. We have derived the rules to differentiate <span class = "emphasize">polynomial</span> functions. These have the form
 
-<h2>The formula of the trajectory<h2>
+<div class = "equation">
+$$s(t) = a_0 + a_1 t + a_2 t^2 + a_3 t^3 + \dots$$
+</div>
+
+The derivative of a general polynomial is
+
+<div class = "equation">
+$$s(t) = a_1 + 2a_2t + 3a_3t^2 + \dots$$
+</div>
+
+The inverse of differentiating is called integrating. In genenal, integration is more difficult than differentiation because there is no set of rules that can be applied mechanically. Fortunately, for our example, polynomials can easily be integrated. If the derivative is given as
+
+<div class = "equation">
+$$s'(t) = a_0 + a_1 t + a_2 t^2$$
+</div>
+
+then the integral would be
+
+<div class = "equation">
+$$s(t) = a_0 t + \frac{1}{2} a_1 t^2 + \frac{1}{3} a_2 t^3 + c$$
+</div>
+
+This can easily be confirmed by applying the rules we discussed earlier. One important fact is that we can add an arbitrary number $c$. The reason is that the derivative of a constant is zero. We will need this constant to handle the initial conditions.
+
+<h2>The formula of the trajectory</h2>
+
+We already found the trajectory without the influence of gravity as
+
+<div class = "equation">
+$$\left[\begin{array}{c}x(t)\\y(t)\end{array}\right] = \left[\begin{array}{c}2t\\4t\end{array}\right]$$
+</div>
+
+Since gravity only acts along the vertical direction, the horizontal component is still correct. Have a look at our plots above to see that the ball indeed travels at a constant speed in the horizontal direction. We have to focus on the vertical direction only. 
+
+The acceleration of the ball is constant, so 
+
+<div class = "equation">
+$$a(t) = g$$
+</div>
+
+The acceleration defines the rate of change of the velocity. Therefore, the acceleration is the derivative of the velocity. To get the velocity, we need to integrate the acceleration. Using the rules above we get
+
+<div class = "equation">
+$$v(t) = v_0 + g t$$
+</div>
+
+I already replaced the free constant $c$ by the initial velocity $v_0$ so $v(0) = v_0$. This equation makes sense. The velocity has the initial value $v_0$ and then linearly decreases because $g$ is negative, i.e. points downwards. Integrating a second time gives us what we were looking for, the vertical component of the trajectory:
+
+<div class = "equation">
+$$y(t) = y_0 + v_0 t + g * \frac{1}{2} t^2$$
+</div>
+
+The fact that the formula contains $t$ squared gives it the shape of a parabola. For the specific values $y_0 = 0, v_0 = 4$ and $g = -1$, we end up with the 2d formula of the trajectory:
+
+<p class = "equation">
+$$\left[\begin{array}{c}x(t)\\y(t)\end{array}\right] = \left[\begin{array}{c}2t\\4t - \frac{1}{2}t^2\end{array}\right]$$
+</p>
+
+Here is a plot of <a target = "_blank" href = "http://www.google.com/search?q=4*x-0.5*x*x">$y(t)$</a>. The height of 8 meter corresponds to the height of the trajectory. The width tells us, that it takes 8 seconds for the ball to hit the ground. During this time it has traveled 16 meters in the horizontal direction.
+
 
 
 
