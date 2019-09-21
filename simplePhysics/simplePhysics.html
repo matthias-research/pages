@@ -518,36 +518,79 @@ Obviously, if we want to get the true trajectory we need to make our time step i
 <br><br>While a program cannot handle infinitely small time steps, there is a method in mathematics that can! This method is called <a target = "_blank" href = "https://en.wikipedia.org/wiki/Calculus">Calculus</a> and was - not surprisingly - invented by Newton. Without computers, his famous second law can only be solved with calculus. In contrast to a numeric solution, a solution that is found via calculus is called an <span class ="emphasize">analytic</span> solution. An analytic solution would describe the trajectory of our ball with a two dimensional function
 
 <p class = "equation">
-$$\left[\begin{array}{c}x(t)\\y(t)\end{array}\right]$$
+$$\left[\begin{array}{c}p_x(t)\\p_y(t)\end{array}\right]$$
 </p>
 
-which tells us where the ball is at any time $t$. Without gravity and the same initial conditions we had before, the solution would be:
+which tells us where the ball is in therms of the horizontal (x) and vertical coordinates (y) at any time $t$. Without gravity and the same initial conditions we had before, the solution would be:
 
 <p class = "equation">
-$$\left[\begin{array}{c}x(t)\\y(t)\end{array}\right] = \left[\begin{array}{c}2t\\4t\end{array}\right]$$
+$$\left[\begin{array}{c}p_x(t)\\p_y(t)\end{array}\right] = \left[\begin{array}{c}2t\\4t\end{array}\right]$$
 </p>
 
-Having an analytic solution is quite convenient. You simply plug in any time and out comes the exact location of the ball without any simulation! The problem with the analytic approach is that it adds a substantial amount of complexity to physics. First of all calculus is needed which scares many people. Second, solving the equations and the solutions themselves get pretty complex pretty quickly. Analytic solutions are functions in closed form. A closed form function can be expressed explicitly with mathematical symbols and operators. Unfortunately only simple problems such as ball in free flight have closed form solutions. Even the trajectory of a double pendulum cannot be written down as a closed form function. 
+Having an analytic solution is quite convenient. You simply plug in any time and out comes the exact location of the ball without any simulation! The problem with the analytic approach is that it adds a substantial amount of complexity to physics. First of all calculus is needed which scares many people. Second, solving the equations and the solutions themselves get pretty complex pretty quickly. Analytic solutions are functions in closed form. A closed form function can be expressed explicitly with mathematical symbols and operators. Unfortunately only simple problems such as ball in free flight have closed form solutions. Even the trajectory of a double pendulum cannot be written down as a closed form function. In contrast, finding this trajectory numerically is close to trivial as we will see later.
 <br><br>
 Nevertheless, calculus and analytic solutions can give us interesting insight into a problem. Also, calculus is a really clever and beautiful method. Therefore I will show you how the cannon ball problem can be solved analytically in the next chapter. You can skip this chapter if you wish. We will get back to numerical simulations afterwards. 
 
 <h1 id = "calculus">Calculus</h1>
 
-The idea is to compute the velocity function from the force function and the initial velocity. Then compute the position function from the force function and the initial prostion. Our force funtion is trivial since it is constant over time. The method to derive the velocity from the acceleration or the position from the velocity is called <span class "emphasize">integration</span>. The method for goint the other way is called <span class "emphasize">integration</span>. We will loook at differentiation first because it is easier to carry out. 
+Our global plan is this: We want to compute the analytic form of three functions, for the acceleration, for the velocity and the position at any time. For the case without gravity, we can write down these functions already. The acceleration is zero at any time:
 
-Let us assume you want to measure the instant velocity of your car while driving. The obvious method is to measure the distance you travel along the road and divide it by the time you needed. You could look at your dashboard at your kilometer status, drive for one hour and look again. This way you can compute the veolocity in kilometers per hour. Of course, this does not give you an average, not the instant velocity. You need to carry out the same procedure with a much smaller time interval. Ideally, the time interval is zero. Let us $s(t)$ the kilometer status at time $t$. Then $s(t + dt)$ is the kilometer status after a time interval $dt$. The letter $d$ stands for delta, or difference. The estimate of the velocity is them 
+<p class = "equation">
+$$\left[\begin{array}{c}a_x(t)\\a_y(t)\end{array}\right] = \left[\begin{array}{c}0\\0\end{array}\right]$$
+</p>
+
+The velocity remains equal to the initial velocity and is therefore independent of the time $t$
+
+<p class = "equation">
+$$\left[\begin{array}{c}v_x(t)\\v_y(t)\end{array}\right] = \left[\begin{array}{c}v_{0,x}\\v_{0,y}\end{array}\right]$$
+</p>
+
+The position moves along the velocity direction with constant speed (linear in $t$)
+
+<p class = "equation">
+$$\left[\begin{array}{c}p_x(t)\\p_y(t)\end{array}\right] = \left[\begin{array}{c}v_{0,x}\cdot t\\v_{0,y}\cdot t\end{array}\right]$$
+</p>
+
+If we consider gravity, we can easily write down the acceleration function as
+
+<p class = "equation">
+$$\left[\begin{array}{c}a_x(t)\\a_y(t)\end{array}\right] = \left[\begin{array}{c}0\\g\end{array}\right]$$
+</p>
+
+The acceleration is constant and only acts in the y-direction. Therefore, the x-component remains untouched by gravity. Have a look at the diagrams above to see that the ball flyes at a constant speed in the horizontal direction under gravity. We can now write
+
+<p class = "equation">
+$$\left[\begin{array}{c}v_x(t)\\v_y(t)\end{array}\right] = \left[\begin{array}{c}v_{0,x}\\v(t)\end{array}\right]$$
+</p>
+
+and
+
+<p class = "equation">
+$$\left[\begin{array}{c}p_x(t)\\p_y(t)\end{array}\right] = \left[\begin{array}{c}v_{0,x}\cdot t\\p(t)\end{array}\right]$$
+</p>
+
+What remains is the one-dimensional problem to find the functions $v(t)$ and $p(t)$ defining the velocity and position in the y-direction. To find them we need calculus.
+
+<br><br>
+At the core of calculus lies a method to compute the rate of change of a function $s(t)$. The rate of change $s'(t)$ is itself a function and tells us how rapidly $s(t)$ changes at time $t$. The function $s'(t)$ is called the <span class = "emphasize">derivative</span> of $s(t)$.
+
+In our case, the velocity describes the rate of change of the position and the acceleration the rate of change of the velocity. Let us see how the velocity at $t$ can be derived from the position function. For this, let us assume we want to measure the instant velocity of our car while driving. Since the velocity is measured in kilometers per hour we could look at the kilometer status on the dashboard, drive for one hour and check the kilometer status again. The difference between the two measurements gives us the velocity in kilometers per hour. Of course, this value is an average, not the instant velocity. For the current velocity we need to carry out the same procedure with a smaller time interval. If we use a minute which is 1/60 kilometer, we need to divide the distance we measure by the size of the time interval to get a measurement in kilometers per hour. Dividing by 1/60 means we need to multiply the number by 60. In general, the velocity is the distance traveled divided by the time used. Using one minute as interval still yields an averaged value. To get the current velocity need a time interval of length zero!
+
+<br><br>
+
+Let us define $s(t)$ to be the kilometer status at time $t$. Then $s(t + dt)$ is the kilometer status after a time interval $dt$. The letter $d$ stands for delta, or difference. The estimate of the velocity is them 
 
 <div class = "equation">
 $$v(t) \approx \frac{s(t + dt) - s(t)}{dt}$$
 </div>
 
-We cannot simply set $dt = 0$ because then we would have a zero in the denominator which gives us an undefined number. We we can do is this about what value $v(t)$ approaches as we make $dt$ smaller and smaller. This is called a limit in mathematics and can be written as
+We cannot simply set $dt = 0$ because then we would have a zero in the denominator which gives us an undefined number. What we can do is observing what value $v(t)$ approaches as we make $dt$ smaller and smaller. This is called a limit in mathematics and can be written as
 
 <div class = "equation">
 $$v(t) = \lim_{dt \to 0} \frac{s(t + dt) - s(t)}{dt}$$
 </div>
 
-which is the definition of a <span class = "emphasize">derivate</span>. In general, a derivative describes the <span class = "emphasize">rate of change</span> of the original function. The full name of "calculus" is actually "calculus of infinitesimals", the calculation with infinitesimal quantities. 
+which is the definition of a <span class = "emphasize">derivate</span>. The full name of "calculus" is actually "calculus of infinitesimals", the calculation with infinitesimal quantities, in this case an infinitesimal time interval. 
 
 <h2>The rules</h2>
 Let us now plug in some numbers to see what this limit gives us. I will use $h = dt$ to make the equations easier to read. What happens if $s(t)$ is constant so $s(t) = a$. The numerator becomes $a - a$ and is zero for all $h$ larger than zero. This makes sense. If our kilometer status remains unchanged, our velocity is zero. We have
