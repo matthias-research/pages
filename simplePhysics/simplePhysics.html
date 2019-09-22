@@ -187,6 +187,7 @@ a {
   <a href = "#firstSimulation">First simulation</a>
   <a href = "#firstProgram">First program</a>
   <a href = "#calculus">Calculus</a>
+  <a href = "#bindingForces">Binding forces</a>
 </div>
 
 <!-- mobile -->
@@ -679,12 +680,120 @@ $$\left[\begin{array}{c}x(t)\\y(t)\end{array}\right] = \left[\begin{array}{c}2t\
 
 Here is a plot of <a target = "_blank" href = "http://www.google.com/search?q=4*x-0.5*x*x">$y(t)$</a>. The height of 8 meter corresponds to the height of the trajectory. The width tells us, that it takes 8 seconds for the ball to hit the ground. During this time it has traveled 16 meters in the horizontal direction.
 
+<h1 id = "bindingForces">Binding Forces</h1>
+
+It is almost trivial to handle gravity in a simulation. Typically, it takes a single line of code in which the gravitational acceleration multiplied by the time step size is added to the velocity of the objects. The main reason is that gravity is a very weak force much weaker than the binding forces that hold objects together. Quite often we want binding forces to be infinitely stiff. Examples are rigid bodies, the inextensibility of cloth or the incompressibility of water. Stiff systems and large forces cause problems in numerical simulations. To illustrate this, our next example is a pendulum. This time, our ball is not allowed to move freely. It is attached to the origin of the coordinate system with a rigid link of length $r$. In this case, the mass of the ball $m$ plays a roll too.
+
+<h2>The pendulum</h2>
+
+To model the link of length $r$ we need a force that pushes the ball away from the origin if its distance to the origin is less than $r$. If the distance is larger than $r$, the force should pull it toward the origin. We have looked at the Lennard-Jones forces that act between atoms or moleculas. At a higher level, binding forces are typically handled with an even simpler force model, namely <a target = "_blank" href = "https://en.wikipedia.org/wiki/Hooke%27s_law">Hooke's law</a>. Here, the interaction between two bodies or particles is modeled as a spring with the formula
+
+<p class = "equation">
+$$\mathbf{f} = -k \Delta \mathbf{x}$$
+</p>
+
+The capital Greek delta $\Delta$ is used for a finite sized difference in contrast to the lower case "d" for the infinite differences of calculus. The quantity $\Delta \mathbf{x}$ is the elongation of the spring which is measured as the difference between the rest length and the current length and can be positive or negative. I have used a bold face for both the elongation and the the force because both are vectors. Both vectors are parallel to the line between the participating objects. The spring constant or stiffness $k$ is a constant scalar (a single number) which relates the elongation to the force. The higher this constant, the stiffer the spring. 
+
+We will now use this formula to simulate a pendulum. As before, we represent the position of the ball with a two dimensional vector 
+
+<p class = "equation">
+$$\mathbf{p} = \left[\begin{array}{c}p_x\\p_y\end{array}\right]$$
+</p>
+
+The force acts along the line between the origin (where the ball is attached) and the ball itself. In our case, it has the same direction as the position. Therefore, all we have to do is scale $\mathbf{p}$ with the right factor. For this we need to measure the current length $l$ of the spring. Using the famous <a target = "_blank" href = "https://en.wikipedia.org/wiki/Pythagorean_theorem">Pythagorean theorem</a> we get
+
+<p class = "equation">
+$$l = \sqrt{p_x^2 + p_y^2}$$
+</p>
+
+The vector $\mathbf{p}$ has length $l$ while the elongation is $l - r$. Therefore, we can compute the elongation as
+
+<p class = "equation">
+$$\Delta \mathbf{x} = \left[\begin{array}{c}p_x\\p_y\end{array}\right]\frac{l-r}{l}$$
+</p>
+resulting in the spring force
+
+<p class = "equation">
+$$\Delta \mathbf{f} = -k \left[\begin{array}{c}p_x\\p_y\end{array}\right]\frac{l-r}{l}$$
+</p>
+
+We have worked out everything we need for our pendulum simulation. 
+
+<pre class = "code" data-language="javascript"><code class = "codefont"> 
+	var gravity = -10;
+	var k = 1000;
+	var r = 0.3;
+	var startPos = { x : r, y : 0 };
+	var startVel = { x : 0, y : 0 };
+	
+	var ball = {
+		pos : startPos,
+		vel : startVel,
+		radius : 0.05,
+		mass : 1
+	};
+	
+	function simulate()
+	{
+		ball.vel.y += timeStep * gravity;
+
+		var l = Math.sqrt(
+			ball.pos.x * ball.pos.x + 
+			ball.pos.y * ball.pos.y);
+			
+		var fx = -k * ball.pos.x / l * (l - r);	
+		var fy = -k * ball.pos.y / l * (l - r);	
+
+		ball.vel.x += timeStep * fx / ball.mass;
+		ball.vel.y += timeStep * fy / ball.mass;
+
+		ball.pos.x += timeStep * ball.vel.x;
+		ball.pos.y += timeStep * ball.vel.y;
+	}
+</code></pre>	
+	
+Note that the spring force is a force and not an acceleration. To get the acceleration we need to divide the force by the mass! I also adjusted the draw function to draw a simple pendulum.
+	
+<pre class = "code" data-language="javascript"><code class = "codefont"> 
+	function draw() 
+	{
+		var canvas = document.getElementById("myCanvas");
+		var c = canvas.getContext("2d");
+		var scale = 600;		
+		c.clearRect(0, 0, canvas.width, canvas.height);
+
+		var ox = canvas.width / 2;
+		var oy = 20;
+		var bx = ox + scale * ball.pos.x;
+		var by = oy - scale * ball.pos.y;		
+		
+		// link
+		
+		c.strokeStyle = "#000000";
+		c.lineWidth = 3;
+		
+		c.beginPath();
+		c.moveTo(ox, oy); c.lineTo(bx, by);
+		c.stroke();
+		
+		// ball
+		
+		c.fillStyle = "#FF0000";
+		c.beginPath();			
+		c.arc(bx, by, ball.radius * scale, 0, Math.PI*2, true); 
+		c.closePath();
+		c.fill();
+	}	
+</code></pre>	
+
+<a target = "_blank" href="pendulum1.html">Try it yourself</a>
 
 
 
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 
 </div>
+
 <script>
 
 // https://www.w3schools.com/howto/tryit.asp?filename=tryhow_js_search_menu
