@@ -131,7 +131,7 @@ Your browser does not support the HTML5 canvas tag.</canvas>
   You can use the mouse to drag the masses. The mouse pointer is attached to the weights via a spring. This allows you to experience the weight variation and the stiffness of the rods.
   </li>  
   <li><b>Number of sub-steps</b><br>
-  We have set the number of sub-steps to 50. Almost all demos work well with 20. The only reason to go higher is to reduce the amount of energy loss. Note that effect of compliance is independent of the number of sub-steps.
+  The crucial idea to tremendously increase the convergence rate of PBD was to replace iterations by sub-steps. We have set the number of sub-steps to 50. Almost all demos work well with 20. The only reason to go higher is to reduce the amount of energy loss. Note that effect of compliance is independent of the number of sub-steps due to the XPBD update.
   </li>
   <li><b>Force labels</b><br>
   Set the equilibrium position and turn on force labels. As you can see, the forces correspond to 10 times the weight below each link since gravity is 10. At the same time, the elongations are zero if the compliance is zero (corresponding to infinite stiffness). If you increase the compliance the elongations become proportional (via inverse compliance) to the forces. This is best seen with high edge damping. Pull on the weights to see what happens.</li>
