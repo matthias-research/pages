@@ -4,13 +4,18 @@ th, td {
 body {
 	font-family: verdana; 
 	line-height: 1.5;
-	font-size: 25px;
-	padding: 30px 30px 30px 30px;
+	font-size: 16px;
+	padding: 20px 30px;
 }
+.title {
+	font-size: 50px;
+}
+/*
 .title {
 	font-weight: normal;
 	font-size: 50px;
 }
+*/
 .subtitle {
 	font-weight: normal;
 	font-size: 25px;
@@ -24,7 +29,7 @@ body {
   background-color: #555555;
   border: none;
   color: white;
-  padding: 10px 10px;
+  padding: 8px 8px;
   margin: 5px 0px 5px 0px;  
   border-radius: 5px;
   text-align: center;
@@ -32,24 +37,4 @@ body {
   display: inline-block;
   font-size: 18px;
 }
-/*
-img { 
-   border:1px solid #021a40;
-}
-*/
 
-@media only screen and (max-device-width : 640px) {
-.button {
-	font-size: 40px;
-	}
-body {
-	font-size: 40px;
-}
-#title {
-	font-weight: normal;
-	font-size: 80px;
-}
-#subtitle {
-	font-size: 40px;
-}
-}
