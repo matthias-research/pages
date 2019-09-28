@@ -1,0 +1,226 @@
+<!-- Matthias Müller -->
+
+<!DOCTYPE html>
+<html>
+
+<style>
+body {setup
+	padding: 10px 50px;
+	font-family: verdana; 
+	line-height: 1.5;
+	font-size: 15px;
+}
+</style>
+
+<title>2D Fluid</title>
+<body>
+
+<h1>2D Fluid</h1>
+
+<canvas id="myCanvas" width="600" height="600" style="border:3px solid #d3d3d3;">
+Your browser does not support the HTML5 canvas tag.</canvas>
+
+<br>
+
+
+<script>
+
+	// global params
+
+	var gravity = -10;
+	var particleRadius = 0.01;
+	var kernelRadius = 3.0 * particleRadius;
+	var gridSpacing = kernelRadius * 1.5;
+	var unilateral = true;
+
+	var timeStep = 0.01;
+	var maxVel = 0.5 * particleRadius;
+
+	var numIters = 1;
+	var numSubSteps = 10;
+
+	// boundary
+	
+	var boundaries = [
+		{ left : -1.1, right : -1.0, bottom : 0, top : 1.5 },
+		{ left : 1.0, right : 1.1, bottom : 0, top : 1.5 },
+		{ left : -0.2, right : 0.3, bottom : 0.3, top : 0.6 }
+	];
+	
+	var fluidOrig = { left : - 0.3, bottom : 0.8 };
+
+	var numX = 15;
+	var numY = 100;
+	var numParticles = numX * numY;
+	
+	var particles = {
+		pos : new Float32Array(2 * numParticles),
+		prev : new Float32Array(2 * numParticles),
+		vel : new Float32Array(2 * numParticles)
+	}
+	
+	var i, j;
+
+	function setup()
+	{
+		var d = 2 * particleRadius;
+		var nr = 0;
+		for (i = 0; i < numX; i++) {
+			for (j = 0; j < numY; j++) {
+				particles.pos[nr] = fluidOrig.left + i * d;
+				particles.pos[nr + 1] = fluidOrig.bottom + j * d;
+				particles.vel[nr] = 0.0;
+				particles.vel[nr + 1] = 0.0;
+				nr += 2;				
+			}
+		}
+	}
+	
+	function solveBoundaries()
+	{
+		var nr = 0;
+		for (i = 0; i < numParticles; i++) {
+			var px = particles.pos[nr];
+			var py = particles.pos[nr + 1];
+			
+			if (py < 0.0)		// ground
+				particles.pos[nr + 1] = 0.0;
+				
+			for (j = 0; j < boundaries.length; j++) {
+				b = boundaries[j];
+				if (px < b.left || px > b.right || py < b.bottom || py > b.top)
+					continue;
+					
+				if (px < (b.left + b.right) * 0.5) 
+					particles.pos[nr] = b.left;
+				else
+					particles.pos[nr] = b.right;
+					
+				if (py < (b.bottom + b.top) * 0.5)
+					particles.pos[nr + 1] = b.bottom;
+				else
+					particles.pos[nr + 1] = b.top;
+			}
+		
+			nr += 2;
+		}
+	}
+	
+	function solveFluid()
+	{
+	}
+	
+	function simulate()
+	{
+		var dt = timeStep / numSubSteps;
+		var step;
+		
+		for (step = 0; step < numSubSteps; step ++) {
+			
+			// predict
+			
+			var nr = 0;
+			for (i = 0; i < numParticles; i++) {
+				particles.vel[nr + 1] += gravity * dt;
+				particles.prev[nr] = particles.pos[nr];
+				particles.prev[nr + 1] = particles.pos[nr + 1];
+				particles.pos[nr] += particles.vel[nr] * dt;
+				particles.pos[nr + 1] += particles.vel[nr + 1] * dt;
+				nr += 2;
+			}
+
+			// solve
+			
+			solveBoundaries();
+			solveFluid();
+			
+			// derive velocities
+			
+			nr = 0;
+			for (i = 0; i < numParticles; i++) {
+				var vx = particles.pos[nr] - particles.prev[nr];
+				var vy = particles.pos[nr + 1] - particles.prev[nr + 1];
+
+				// CFL
+				
+				var v = Math.sqrt(vx * vx + vy * vy);
+				if (v > maxVel) {
+					vx *= maxVel / v;
+					vy *= maxVel / v;
+					particles.pos[nr] = particles.prev[nr] + vx;
+					particles.pos[nr + 1] = particles.prev[nr + 1] + vy;
+				}				
+				particles.vel[nr] = vx / dt;
+				particles.vel[nr + 1] = vy / dt;
+				nr += 2;
+			}
+		}		
+	}
+	
+	function draw() 
+	{
+		var canvas = document.getElementById("myCanvas");
+		var c = canvas.getContext("2d");
+		c.clearRect(0, 0, canvas.width, canvas.height);
+
+		var scale = 200;		
+		
+		var ox = canvas.width / 2;
+		var oy = canvas.height - 20;
+		var i;
+		
+		// particles
+
+		c.fillStyle = "#0000FF";
+		
+		var nr = 0;
+		for (i = 0; i < numParticles; i++) {
+		
+			var px = ox + particles.pos[nr] * scale;
+			var py = oy - particles.pos[nr + 1] * scale;
+			
+			nr += 2;
+
+			c.beginPath();			
+			c.arc(
+				px, py, particleRadius * scale, 0, Math.PI*2, true); 
+			c.closePath();
+			c.fill();
+		}
+		
+		// boundaries
+
+		c.fillStyle = "#eeeeee";
+		
+		for (i = 0; i < boundaries.length; i++) {
+			var b = boundaries[i];
+			var left = ox + b.left * scale;
+			var width = (b.right - b.left) * scale;
+			var top = oy - b.top * scale;
+			var height = (b.top - b.bottom) * scale; 
+			
+			c.beginPath();
+			c.rect(left, top, width, height);
+			c.stroke();			
+		}
+		
+		c.beginPath();
+		c.moveTo(0, oy); c.lineTo(canvas.width, oy);
+		c.stroke();
+	}	
+		
+	function step() 
+	{
+		simulate();		
+		draw();
+		window.requestAnimationFrame(step);
+	}
+		
+	// main
+	
+	setup();
+	step();
+
+</script> 
+</body>
+</html>
