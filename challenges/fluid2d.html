@@ -25,12 +25,33 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 
 <script>
 
+	class Vector {
+		constructor(size) { 
+			this.vals = new Int32Array(size); 
+			this.maxSize = size;
+			this.size = 0;
+		}
+		clear() {
+			this.size = 0;
+		}
+		pushBack(val) {
+			if (this.size >= this.maxSize) {
+				this.maxSize *= 2;
+				this.vals = new Int32Array(this.maxSize);
+			}
+			this.vals[this.size++] = val;
+		}
+	}
+
 	// global params
 
 	var gravity = -10;
 	var particleRadius = 0.01;
+	var particleDiameter = 2 * particleRadius;
+	var restDensity = 1.0 / (particleDiameter * particleDiameter);
 	var kernelRadius = 3.0 * particleRadius;
 	var gridSpacing = kernelRadius * 1.5;
+	var invGridSpacing = 1.0 / gridSpacing;
 	var unilateral = true;
 
 	var timeStep = 0.01;
@@ -61,19 +82,41 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 	
 	var i, j;
 
+	var hash = {
+		size : 170111,
+	
+		first : new Int32Array(size),
+		marks : new Int32Array(size),
+		currentMark : 0,
+	
+		ids  : new Int32Array(numParticles),
+		next : new Int32Array(numParticles),
+		
+		orig : { left : -10.0, bottom : -1.0 }		
+	}
+	
+	var firstNeighbor = new Int32Array(numParticles + 1);
+	var neighbors = new Vector(10 * numParticles);
+	
+	var grads = new Float32Array(1000);
+		
 	function setup()
 	{
-		var d = 2 * particleRadius;
 		var nr = 0;
 		for (i = 0; i < numX; i++) {
 			for (j = 0; j < numY; j++) {
-				particles.pos[nr] = fluidOrig.left + i * d;
-				particles.pos[nr + 1] = fluidOrig.bottom + j * d;
+				particles.pos[nr] = fluidOrig.left + i * particleDiameter;
+				particles.pos[nr + 1] = fluidOrig.bottom + j * particleDiameter;
 				particles.vel[nr] = 0.0;
 				particles.vel[nr + 1] = 0.0;
 				nr += 2;				
 			}
 		}
+		
+		for (i = 0; i < firstSize; i++) {
+			hash.first[i] = -1;
+			hash.marks[i] = 0;
+		}			
 	}
 	
 	function solveBoundaries()
@@ -90,28 +133,188 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 				b = boundaries[j];
 				if (px < b.left || px > b.right || py < b.bottom || py > b.top)
 					continue;
-					
+				
+				var dx, dy;
 				if (px < (b.left + b.right) * 0.5) 
-					particles.pos[nr] = b.left;
+					dx = b.left - px;
 				else
-					particles.pos[nr] = b.right;
+					dx = b.right - px;
 					
 				if (py < (b.bottom + b.top) * 0.5)
-					particles.pos[nr + 1] = b.bottom;
+					dy = b.bottom - py;
 				else
-					particles.pos[nr + 1] = b.top;
+					dy = b.top - py;
+					
+				if (Math.abs(dx) < Math.abs(dy))
+					particles.pos[nr] += dx;
+				else
+					particles.pos[nr+1] += dy;
 			}
 		
 			nr += 2;
 		}
 	}
 	
+	function pushBack(array, size, maxSize, val) {
+	
+		if (size < maxSize)
+			array[size++] = val;
+		else
+			array = new Int32Array(maxSize * 2);
+			
+	}
+
+	
+	function findNeighbors() 
+	{
+		// hash particles
+		
+		hash.currentMark++;
+		
+		var pos = 0;
+		
+		for (i = 0; i < numParticles; i++) {
+			var px = particles.pos[2 * i] - hash.orig.left;
+			var py = particles.pos[2 * i + 1] - hash.orig.bottom;
+			
+			px = Math.floor(px * invGridSpacing);
+			py = Math.floor(py * invGridSpacing);
+			
+			var = h = ((px * 92837111) ^ (py * 689287499)) % hash.size;
+						
+			if (hash.marks[h] != hash.currentMark) {				
+				hash.marks[h] = hash.currentMark;
+				hash.first[h] = -1;
+			}
+
+			hash.next[pos] = hash.first[h];
+			hash.first[h] = pos;
+			hash.ids[pos] = id;
+			pos++;
+		}
+		
+		// collect neighbors
+		
+		neighbors.clear();
+
+		var h2 = gridSpacing * gridSpacing;
+
+		for (i = 0; i < numParticles; i++) {
+			firstNeighbor[i] = neighbors.size;
+			
+			var px = particles.pos[2 * i] - hash.orig.left;
+			var py = particles.pos[2 * i + 1] - hash.orig.bottom;
+			
+			px = Math.floor(px * invGridSpacing);
+			py = Math.floor(py * invGridSpacing);
+			
+			var x, y;
+			
+			for (x = px - 1; x <= px + 1; x++) {
+				for (y = py - 1; y <= py + 1; y++) {
+						
+					var = h = ((x * 92837111) ^ (y * 689287499)) % hash.size;
+						
+					if (hash.marks[h] != hash.currentMark) 
+						continue;
+				
+					var pos = hash.first[h];
+					while (pos >= 0) 
+					{
+						var id = hash.ids[pos];
+						pos = hash.next[pos];
+						
+						var dx = particles.pos[2 * id] - px;
+						var dy = particles.pos[2 * id + 1] - py;
+						
+						if (dx * dx + dy * dy < h2) 
+							neighbors.pushBack(id);
+					}
+				}
+			}
+		}
+		firstNeighbor[numParticles] = neighbors.size;
+	}
+
+	
 	function solveFluid()
 	{
+		var h = kernelRadius;
+		var h2 = h * h;
+		var s = kernelScale;
+
+		var avgRho = 0.0;
+
+		for (i = 0; i < numParticles; i++) {
+
+			var px = particles.pos[2 * i];
+			var py = particles.pos[2 * i + 1];
+
+			var first = firstNeighbor[i];
+			var last = firstNeighbor[i + 1];
+			var num = last - first;
+
+			var rho = 0.0;
+			var sumGrad2 = 0.0;
+
+			var gradix = 0.0;
+			var gradiy = 0.0;
+
+			for (j = 0; j < num; j++) {
+				var id = neighbors[first + j];
+				
+				var nx = particles.pos[2 * id] - px;
+				var ny = particles.pos[2 * id + 1] - py;
+				
+				var r = Math.sqrt(nx * nx + ny * ny);
+				nx /= r;
+				ny /= r;
+				
+				if (r > h) {
+					grads[2 * j] = 0.0;
+					grads[2 * j + 1] = 0.0;
+				}
+				else {
+					var r2 = r * r;
+					var w = (h2 - r2);
+					rho += s * w * w * w;
+					var grad = (s * 3.0 * w * w * (-2.0 * r)) / restDensity;
+					grads[j] = nx * grad;
+					grads[j + 1] = ny * grad;
+					gradix -= nx * grad;
+					gradiy -= ny * grad;
+					sumGrad2 += grad * grad;
+				}
+			}
+			sumGrad2 += (gradix * gradix + gradiy * gradiy);
+
+			avgRho += rho;
+
+			var C = rho / restDensity - 1.0f;
+			if (unilateral && C < 0.0f)
+				continue;
+
+			var lambda = -C / (sumGrad2 + 0.0001f);
+
+			for (j = 0; j < num; j++) {
+				var id = neighbors[first + j];
+				if (id == i) {
+					particles.pos[2 * id] += lambda * gradix;
+					particles.pos[2 * id + 1] += lambda * gradiy;
+				
+				}
+				else {
+					particles.pos[2 * id].pos += lambda * grads[2 * j];
+					particles.pos[2 * id + 1].pos += lambda * grads[2 * j + 1];
+				}
+			}
+		}
 	}
 	
 	function simulate()
 	{
+		findNeighbors();
+		
 		var dt = timeStep / numSubSteps;
 		var step;
 		
