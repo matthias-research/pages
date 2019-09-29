@@ -37,7 +37,10 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 		pushBack(val) {
 			if (this.size >= this.maxSize) {
 				this.maxSize *= 2;
+				var old = this.vals;
 				this.vals = new Int32Array(this.maxSize);
+				for (i = 0; i < old.length; i++)
+					this.vals[i] = old[i];
 			}
 			this.vals[this.size++] = val;
 		}
@@ -50,6 +53,11 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 	var particleDiameter = 2 * particleRadius;
 	var restDensity = 1.0 / (particleDiameter * particleDiameter);
 	var kernelRadius = 3.0 * particleRadius;
+	var h2 = kernelRadius * kernelRadius;
+	var kernelScale = 4.0 / (Math.PI * h2 * h2 * h2 * h2);		
+	// 2d poly6 (SPH based shallow water simulation
+
+	
 	var gridSpacing = kernelRadius * 1.5;
 	var invGridSpacing = 1.0 / gridSpacing;
 	var unilateral = true;
@@ -63,8 +71,8 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 	// boundary
 	
 	var boundaries = [
-		{ left : -1.1, right : -1.0, bottom : 0, top : 1.5 },
-		{ left : 1.0, right : 1.1, bottom : 0, top : 1.5 },
+		{ left : -1.1, right : -1.0, bottom : -1, top : 1.5 },
+		{ left : 1.0, right : 1.1, bottom : -1, top : 1.5 },
 		{ left : -0.2, right : 0.3, bottom : 0.3, top : 0.6 }
 	];
 	
@@ -81,18 +89,19 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 	}
 	
 	var i, j;
+	
+	var hashSize = 170111;
 
 	var hash = {
-		size : 170111,
+		size : hashSize,
 	
-		first : new Int32Array(size),
-		marks : new Int32Array(size),
+		first : new Int32Array(hashSize),
+		marks : new Int32Array(hashSize),
 		currentMark : 0,
 	
-		ids  : new Int32Array(numParticles),
 		next : new Int32Array(numParticles),
 		
-		orig : { left : -10.0, bottom : -1.0 }		
+		orig : { left : -100.0, bottom : -1.0 }		
 	}
 	
 	var firstNeighbor = new Int32Array(numParticles + 1);
@@ -113,7 +122,7 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 			}
 		}
 		
-		for (i = 0; i < firstSize; i++) {
+		for (i = 0; i < hashSize; i++) {
 			hash.first[i] = -1;
 			hash.marks[i] = 0;
 		}			
@@ -121,10 +130,9 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 	
 	function solveBoundaries()
 	{
-		var nr = 0;
 		for (i = 0; i < numParticles; i++) {
-			var px = particles.pos[nr];
-			var py = particles.pos[nr + 1];
+			var px = particles.pos[2 * i];
+			var py = particles.pos[2 * i + 1];
 			
 			if (py < 0.0)		// ground
 				particles.pos[nr + 1] = 0.0;
@@ -146,51 +154,36 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 					dy = b.top - py;
 					
 				if (Math.abs(dx) < Math.abs(dy))
-					particles.pos[nr] += dx;
+					particles.pos[2 * i] += dx;
 				else
-					particles.pos[nr+1] += dy;
-			}
-		
-			nr += 2;
+					particles.pos[2 * i + 1] += dy;
+			}		
 		}
 	}
-	
-	function pushBack(array, size, maxSize, val) {
-	
-		if (size < maxSize)
-			array[size++] = val;
-		else
-			array = new Int32Array(maxSize * 2);
-			
-	}
-
-	
+		
 	function findNeighbors() 
 	{
 		// hash particles
 		
 		hash.currentMark++;
 		
-		var pos = 0;
 		
 		for (i = 0; i < numParticles; i++) {
-			var px = particles.pos[2 * i] - hash.orig.left;
-			var py = particles.pos[2 * i + 1] - hash.orig.bottom;
+			var px = particles.pos[2 * i];
+			var py = particles.pos[2 * i + 1];
 			
-			px = Math.floor(px * invGridSpacing);
-			py = Math.floor(py * invGridSpacing);
+			var gx = Math.floor((px - hash.orig.left) * invGridSpacing);
+			var gy = Math.floor((py - hash.orig.bottom) * invGridSpacing);
 			
-			var = h = ((px * 92837111) ^ (py * 689287499)) % hash.size;
+			var h = (Math.abs((gx * 92837111) ^ (gy * 689287499))) % hash.size;
 						
 			if (hash.marks[h] != hash.currentMark) {				
 				hash.marks[h] = hash.currentMark;
 				hash.first[h] = -1;
 			}
 
-			hash.next[pos] = hash.first[h];
-			hash.first[h] = pos;
-			hash.ids[pos] = id;
-			pos++;
+			hash.next[i] = hash.first[h];
+			hash.first[h] = i;
 		}
 		
 		// collect neighbors
@@ -202,33 +195,32 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 		for (i = 0; i < numParticles; i++) {
 			firstNeighbor[i] = neighbors.size;
 			
-			var px = particles.pos[2 * i] - hash.orig.left;
-			var py = particles.pos[2 * i + 1] - hash.orig.bottom;
+			var px = particles.pos[2 * i];
+			var py = particles.pos[2 * i + 1];
 			
-			px = Math.floor(px * invGridSpacing);
-			py = Math.floor(py * invGridSpacing);
+			var gx = Math.floor((px - hash.orig.left) * invGridSpacing);
+			var gy = Math.floor((py - hash.orig.bottom) * invGridSpacing);
 			
 			var x, y;
 			
-			for (x = px - 1; x <= px + 1; x++) {
-				for (y = py - 1; y <= py + 1; y++) {
+			for (x = gx - 1; x <= gx + 1; x++) {
+				for (y = gy - 1; y <= gy + 1; y++) {
 						
-					var = h = ((x * 92837111) ^ (y * 689287499)) % hash.size;
+					var h = (Math.abs((x * 92837111) ^ (y * 689287499))) % hash.size;
 						
 					if (hash.marks[h] != hash.currentMark) 
 						continue;
 				
-					var pos = hash.first[h];
-					while (pos >= 0) 
+					var id = hash.first[h];
+					while (id >= 0) 
 					{
-						var id = hash.ids[pos];
-						pos = hash.next[pos];
-						
 						var dx = particles.pos[2 * id] - px;
 						var dy = particles.pos[2 * id + 1] - py;
 						
 						if (dx * dx + dy * dy < h2) 
 							neighbors.pushBack(id);
+
+						id = hash.next[id];						
 					}
 				}
 			}
@@ -261,7 +253,7 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 			var gradiy = 0.0;
 
 			for (j = 0; j < num; j++) {
-				var id = neighbors[first + j];
+				var id = neighbors.vals[first + j];
 				
 				var nx = particles.pos[2 * id] - px;
 				var ny = particles.pos[2 * id + 1] - py;
@@ -279,8 +271,8 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 					var w = (h2 - r2);
 					rho += s * w * w * w;
 					var grad = (s * 3.0 * w * w * (-2.0 * r)) / restDensity;
-					grads[j] = nx * grad;
-					grads[j + 1] = ny * grad;
+					grads[2 * j] = nx * grad;
+					grads[2 * j + 1] = ny * grad;
 					gradix -= nx * grad;
 					gradiy -= ny * grad;
 					sumGrad2 += grad * grad;
@@ -290,22 +282,22 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 
 			avgRho += rho;
 
-			var C = rho / restDensity - 1.0f;
-			if (unilateral && C < 0.0f)
+			var C = rho / restDensity - 1.0;
+			if (unilateral && C < 0.0)
 				continue;
 
-			var lambda = -C / (sumGrad2 + 0.0001f);
+			var lambda = -C / (sumGrad2 + 0.0001);
 
 			for (j = 0; j < num; j++) {
-				var id = neighbors[first + j];
+				var id = neighbors.vals[first + j];
 				if (id == i) {
 					particles.pos[2 * id] += lambda * gradix;
 					particles.pos[2 * id + 1] += lambda * gradiy;
 				
 				}
 				else {
-					particles.pos[2 * id].pos += lambda * grads[2 * j];
-					particles.pos[2 * id + 1].pos += lambda * grads[2 * j + 1];
+					particles.pos[2 * id] += lambda * grads[2 * j];
+					particles.pos[2 * id + 1] += lambda * grads[2 * j + 1];
 				}
 			}
 		}
