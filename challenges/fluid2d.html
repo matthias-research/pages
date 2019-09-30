@@ -70,16 +70,24 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 
 	// boundary
 	
+	var width = 0.6;
+	var height = 2.0;
+	var drawScale = 100;
+	
 	var boundaries = [
-		{ left : -1.1, right : -1.0, bottom : -1, top : 1.5 },
-		{ left : 1.0, right : 1.1, bottom : -1, top : 1.5 },
+		{ left : -width * 0.5 - 0.1, right : -width * 0.5, bottom : -1, top : height },
+		{ left : width * 0.5, right : width * 0.5 + 0.1, bottom : -1, top : height },
 		{ left : -0.2, right : 0.3, bottom : 0.3, top : 0.6 }
 	];
 	
 	var fluidOrig = { left : - 0.3, bottom : 0.8 };
 
+//	var numX = 20;
+//	var numY = 750;
+
 	var numX = 15;
-	var numY = 100;
+	var numY = 500;
+
 	var numParticles = numX * numY;
 	
 	var particles = {
@@ -135,7 +143,7 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 			var py = particles.pos[2 * i + 1];
 			
 			if (py < 0.0)		// ground
-				particles.pos[nr + 1] = 0.0;
+				particles.pos[2 * i + 1] = 0.0;
 				
 			for (j = 0; j < boundaries.length; j++) {
 				b = boundaries[j];
@@ -259,8 +267,10 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 				var ny = particles.pos[2 * id + 1] - py;
 				
 				var r = Math.sqrt(nx * nx + ny * ny);
-				nx /= r;
-				ny /= r;
+				if (r > 0) {
+					nx /= r;
+					ny /= r;
+				}
 				
 				if (r > h) {
 					grads[2 * j] = 0.0;
@@ -357,8 +367,6 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 		var canvas = document.getElementById("myCanvas");
 		var c = canvas.getContext("2d");
 		c.clearRect(0, 0, canvas.width, canvas.height);
-
-		var scale = 200;		
 		
 		var ox = canvas.width / 2;
 		var oy = canvas.height - 20;
@@ -371,14 +379,14 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 		var nr = 0;
 		for (i = 0; i < numParticles; i++) {
 		
-			var px = ox + particles.pos[nr] * scale;
-			var py = oy - particles.pos[nr + 1] * scale;
+			var px = ox + particles.pos[nr] * drawScale;
+			var py = oy - particles.pos[nr + 1] * drawScale;
 			
 			nr += 2;
 
 			c.beginPath();			
 			c.arc(
-				px, py, particleRadius * scale, 0, Math.PI*2, true); 
+				px, py, particleRadius * drawScale, 0, Math.PI*2, true); 
 			c.closePath();
 			c.fill();
 		}
@@ -389,10 +397,10 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 		
 		for (i = 0; i < boundaries.length; i++) {
 			var b = boundaries[i];
-			var left = ox + b.left * scale;
-			var width = (b.right - b.left) * scale;
-			var top = oy - b.top * scale;
-			var height = (b.top - b.bottom) * scale; 
+			var left = ox + b.left * drawScale;
+			var width = (b.right - b.left) * drawScale;
+			var top = oy - b.top * drawScale;
+			var height = (b.top - b.bottom) * drawScale; 
 			
 			c.beginPath();
 			c.rect(left, top, width, height);
