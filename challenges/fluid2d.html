@@ -17,11 +17,12 @@ body {setup
 
 <h1>2D Fluid</h1>
 
-<canvas id="myCanvas" width="800" height="600" style="border:3px solid #d3d3d3;">
-Your browser does not support the HTML5 canvas tag.</canvas>
-
+<span id = "ms">0.000</span> ms per frame
+<br>
 <br>
 
+<canvas id="myCanvas" width="800" height="600" style="border:3px solid #d3d3d3;">
+Your browser does not support the HTML5 canvas tag.</canvas>
 
 <script>
 
@@ -74,6 +75,8 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 
 	var numIters = 1;
 	var numSubSteps = 10;
+	
+	var vorticityConfinment = 0.0003;
 
 	// boundary
 	
@@ -91,7 +94,7 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 //	var numY = 750;
 
 	var numX = 10;
-	var numY = 1000;
+	var numY = 500;
 	var numParticles = numX * numY;
 	
 	var particles = {
@@ -249,7 +252,7 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 	}
 
 	
-	function solveFluid()
+	function solveFluid(lastStep)
 	{
 		var h = kernelRadius;
 		var h2 = h * h;
@@ -271,14 +274,21 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 
 			var gradix = 0.0;
 			var gradiy = 0.0;
+			
+			var vorticity = 0.0;
 
 			for (j = 0; j < num; j++) {
 				var id = neighbors.vals[first + j];
 				
-				var nx = particles.pos[2 * id] - px;
-				var ny = particles.pos[2 * id + 1] - py;
+				var qx = particles.pos[2 * id];
+				var qy = particles.pos[2 * id + 1];				
+				var rx = qx - px;
 				
-				var r = Math.sqrt(nx * nx + ny * ny);
+				var ry = qy - py;
+				var r = Math.sqrt(rx * rx + ry * ry);
+				var nx = rx;
+				var ny = ry;
+				
 				if (r > 0) {
 					nx /= r;
 					ny /= r;
@@ -291,13 +301,21 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 				else {
 					var r2 = r * r;
 					var w = (h2 - r2);
-					rho += s * w * w * w;
+					var kernel = s * w * w * w;
+					rho += kernel;
 					var grad = (s * 3.0 * w * w * (-2.0 * r)) / restDensity;
 					grads[2 * j] = nx * grad;
 					grads[2 * j + 1] = ny * grad;
 					gradix -= nx * grad;
 					gradiy -= ny * grad;
 					sumGrad2 += grad * grad;
+					
+					if (lastStep && vorticityConfinment > 0.0) {
+						var vx = qx - particles.prev[2 * id];
+						var vy = qy - particles.prev[2 * id + 1];				
+						
+						vorticity += kernel * (rx * vy - ry * vx);
+					}
 				}
 			}
 			sumGrad2 += (gradix * gradix + gradiy * gradiy);
@@ -320,6 +338,21 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 				else {
 					particles.pos[2 * id] += lambda * grads[2 * j];
 					particles.pos[2 * id + 1] += lambda * grads[2 * j + 1];
+				}
+				
+				if (lastStep && vorticityConfinment > 0.0) {
+															
+					var rx = particles.pos[2 * id] - px;
+					var ry = particles.pos[2 * id + 1] - py;				
+					var r2 = rx * rx + ry * ry;
+					if (r2 < h2) {
+						var w = (h2 - r2);
+						var kernel = s * w * w * w;
+						var vx = -ry * vorticity;
+						var vy = rx * vorticity;					
+						particles.pos[2 * id] += vorticityConfinment * kernel * vx;
+						particles.pos[2 * id + 1] += vorticityConfinment * kernel * vy;
+					}
 				}
 			}
 		}
@@ -349,7 +382,7 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 			// solve
 			
 			solveBoundaries();
-			solveFluid();
+			solveFluid(step == numSubSteps - 1);
 			
 			// derive velocities
 			
@@ -422,9 +455,27 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 		c.stroke();
 	}	
 		
+	var timeFrames = 0;
+	var timeSum = 0;
+	
 	function step() 
 	{
+		var startTime = performance.now();
+		
 		simulate();		
+		
+		var endTime = performance.now();
+
+		timeSum += endTime - startTime; 
+		timeFrames++;
+		
+		if (timeFrames > 10) {
+			timeSum /= timeFrames;
+			document.getElementById("ms").innerHTML = timeSum.toFixed(3);		
+			timeFrames = 0;
+			timeSum = 0;
+		}		
+		
 		draw();
 		window.requestAnimationFrame(step);
 	}
