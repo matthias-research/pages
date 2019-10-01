@@ -271,14 +271,21 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 
 			var gradix = 0.0;
 			var gradiy = 0.0;
+			
+			var vorticity = 0.0;
 
 			for (j = 0; j < num; j++) {
 				var id = neighbors.vals[first + j];
 				
-				var nx = particles.pos[2 * id] - px;
-				var ny = particles.pos[2 * id + 1] - py;
+				var qx = particles.pos[2 * id];
+				var qy = particles.pos[2 * id + 1];				
+				var rx = qx - px;
 				
-				var r = Math.sqrt(nx * nx + ny * ny);
+				var ry = qy - py;
+				var r = Math.sqrt(rx * rx + ry * ry);
+				var nx = rx;
+				var ny = ry;
+				
 				if (r > 0) {
 					nx /= r;
 					ny /= r;
@@ -291,13 +298,19 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 				else {
 					var r2 = r * r;
 					var w = (h2 - r2);
-					rho += s * w * w * w;
+					var kernel = s * w * w * w;
+					rho += kernel;
 					var grad = (s * 3.0 * w * w * (-2.0 * r)) / restDensity;
 					grads[2 * j] = nx * grad;
 					grads[2 * j + 1] = ny * grad;
 					gradix -= nx * grad;
 					gradiy -= ny * grad;
 					sumGrad2 += grad * grad;
+
+					var vx = qx - particles.prev[2 * id];
+					var vy = qy - particles.prev[2 * id + 1];				
+					
+					vorticity += kernel * (rx * vy - ry * vx);
 				}
 			}
 			sumGrad2 += (gradix * gradix + gradiy * gradiy);
@@ -320,6 +333,18 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 				else {
 					particles.pos[2 * id] += lambda * grads[2 * j];
 					particles.pos[2 * id + 1] += lambda * grads[2 * j + 1];
+				}
+															
+				var rx = particles.pos[2 * id] - px;
+				var ry = particles.pos[2 * id + 1] - py;				
+				var r2 = rx * rx + ry * ry;
+				if (r2 < h2) {
+					var w = (h2 - r2);
+					var kernel = s * w * w * w;
+					var vx = -ry * vorticity;
+					var vy = rx * vorticity;					
+					particles.pos[2 * id] += 0.0001 * kernel * vx;
+					particles.pos[2 * id + 1] += 0.0001 * kernel * vy;
 				}
 			}
 		}
