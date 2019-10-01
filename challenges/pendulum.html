@@ -66,10 +66,8 @@ h1 {
 Matthias M&uuml;ller, Nvidia
 <br>
 <br>
+<h3 style = "color: #B93226;">This simulation shows that extended position based dynamics (XPBD) is a strong competitor to state of the art simulation methods in terms of accuracy and stability. To understand why and how to use the demo see the text below.</h3>.
 <br>
-This pendulum simulation shows <b>single step XPBD</b> in action. Two small modifications in our original position based dynamics method <b>PBD</b> turns the latter from a toy used in games to a serious competitor of physical simulation methods even surpassing their accuracy while staying as simple as <b>PBD</b>. We describe the method <a href = "https://matthias-research.github.io/pages/publications/smallsteps.pdf" target="_blank" class="paperButton"> here</a>. The pendulum simulation showcases the following features: It handles stiff systems with large mass ratios. (Zero compliance means infinite stiffness). It shows high frequency details and a high level of energy conservation both which are difficult to achieve with implicit global solvers. All quantities have physical units and internal forces can easily be evaluated. It removes the conceptual differences of <b>PBD</b> to the backward Euler method. It also generalizes beyond the distance constraints we show here.
-<br><br>
-The challenge is to <b>beat our method</b> in terms of simplicity, speed, stability or accuracy. The html document you see here is self-contained. It includes the GUI, the rendering and the complete simulation code. You can have a look at it <a href = "https://github.com/matthias-research/pages/blob/master/challenges/pendulum.html" target = "_blank">here</a>. The solver itself only takes 100 lines of code (lines 460-560) which you can simply replace it with your own solution. We provide some hints on how to play with this demo below. You can also leave a comment there.
 
 <table>
   <tr>
@@ -124,6 +122,9 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 </td>
 </table>
 <p>
+This pendulum simulation shows <b>single step XPBD</b> in action. Two small modifications in our original position based dynamics method <b>PBD</b> turns the latter from a toy used in games into a serious competitor of physical simulation methods even surpassing their accuracy while staying as simple as <b>PBD</b>. We describe the method <a href = "https://matthias-research.github.io/pages/publications/smallsteps.pdf" target="_blank" class="paperButton"> here</a>. The pendulum simulation showcases the following features: It handles stiff systems with large mass ratios. (Zero compliance means infinite stiffness). It shows high frequency details and a high level of energy conservation both of which are difficult to achieve with implicit global solvers. All quantities have physical units and internal forces can easily be evaluated. It removes the conceptual differences of <b>PBD</b> to the backward Euler method. It also generalizes beyond the distance constraints we show here.
+<br><br>
+The challenge is to <b>beat our method</b> in terms of simplicity, speed, stability or accuracy. The html document you see here is self-contained. It includes the GUI, the rendering and the complete simulation code. You can have a look at it <a href = "https://github.com/matthias-research/pages/blob/master/challenges/pendulum.html" target = "_blank">here</a>. The solver itself only takes 100 lines of code (lines 460-560) which you can simply replace it with your own solution.
 <ul>
   <li><b>The triple pendulum</b><br>
   The demo starts with a triple pendulum. The reason is that there are quite a few double pendulum simulations on the web. While their reduced coordinates formulation is reasonable complex, the equations for the triple pendulum cover an entire page. Although our method conserves energy quite well, the simulation comes to a stop eventually. If you want to look at it forever, turn on "Enforce energy conservation". I do not recommend to use this feature in general however. </li>
