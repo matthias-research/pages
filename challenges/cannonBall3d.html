@@ -2,7 +2,7 @@
 
 <html>
 <head>
-	<title>My first three.js app</title>
+	<title>Cannon Ball 3d</title>
 	<style>
 		body { margin: 0; }
 		canvas { width: 100%; height: 100% }
@@ -22,11 +22,19 @@
 	{
 		var geometry = new THREE.BoxGeometry( 1, 1, 1 );
 		geometry.computeFaceNormals();
-		var material = new THREE.MeshBasicMaterial( { color: 0xaaaaaa } );
+		
+		var material = new THREE.MeshPhongMaterial( { color: 0xFF8000, side: THREE.DoubleSide } );
+		
+//		var material = new THREE.MeshBasicMaterial( { color: 0xaaaaaa } );
 		cube = new THREE.Mesh( geometry, material );
 		cube.position.y = 1;
 		cube.castShadow = true;
 		scene.add( cube );
+		
+		var object = new THREE.Mesh( new THREE.TorusKnotBufferGeometry( 0.5, 0.1, 200, 100 ), material );
+		object.position.set( 0, 3, 0 );
+		scene.add( object );
+
 	}
 	
 	function update() 
