@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+	<title>My first three.js app</title>
+	<style>
+		body { margin: 0; }
+		canvas { width: 100%; height: 100% }
+	</style>
+</head>
+	
+<body>
+
+<script type = "module">
+
+	import * as THREE from './three/three.module.js';
+	import { OrbitControls } from './three/OrbitControls.js';
+
+	var cube;
+
+	function setup() 
+	{
+		var geometry = new THREE.BoxGeometry( 1, 1, 1 );
+		geometry.computeFaceNormals();
+		var material = new THREE.MeshBasicMaterial( { color: 0xaaaaaa } );
+		cube = new THREE.Mesh( geometry, material );
+		cube.position.y = 1;
+		cube.castShadow = true;
+		scene.add( cube );
+	}
+	
+	function update() 
+	{
+		cube.rotation.x += 0.01;
+		cube.rotation.y += 0.01;
+	}
+	
+	
+	// -- environment setup -------------------------------------------------
+	
+	var scene = new THREE.Scene();
+	var camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.01, 100 );
+	camera.position.set( 0, 3, -10 );
+	camera.lookAt( new THREE.Vector3( 0, 2, 0 ) );
+		
+	var renderer = new THREE.WebGLRenderer();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	renderer.shadowMap.enabled = true;
+	renderer.shadowMapSoft = true;
+
+	document.body.appendChild( renderer.domElement );
+
+	var controls = new OrbitControls( camera, renderer.domElement );
+	controls.minDistance = 10;
+	controls.maxDistance = 50;
+	controls.maxPolarAngle = Math.PI / 2;
+	
+	scene = new THREE.Scene();
+	scene.background = new THREE.Color( 0x000000 );
+	scene.fog = new THREE.Fog( 0x000000, 1, 100 );
+
+//	clock = new THREE.Clock();
+
+	// lights
+
+	var ambient = new THREE.AmbientLight( 0xffffff, 0.8 );
+	scene.add( ambient );
+	
+	var spotLight = new THREE.SpotLight( 0xffffff, 1 );
+	spotLight.position.set( 5, 10, 5 );
+	spotLight.angle = Math.PI / 5;
+	spotLight.penumbra = 0.55;
+	spotLight.decay = 5;
+	spotLight.distance = 200;
+
+	spotLight.castShadow = true;
+	spotLight.shadow.mapSize.width = 1024;
+	spotLight.shadow.mapSize.height = 1024;
+	spotLight.shadow.camera.near = 1;
+	spotLight.shadow.camera.far = 200;
+	scene.add( spotLight );
+	
+	// ground
+
+	var mesh = new THREE.Mesh( new THREE.PlaneBufferGeometry( 2000, 2000 ), new THREE.MeshPhongMaterial( { color: 0x999999, depthWrite: false } ) );
+	mesh.rotation.x = - Math.PI / 2;
+	mesh.receiveShadow = true;
+
+	scene.add( mesh );
+
+	var grid = new THREE.GridHelper( 200, 100, 0x000000, 0x000000 );
+	grid.material.opacity = 0.2;
+	grid.material.transparent = true;
+	scene.add( grid );
+
+	setup();
+
+	var animate = function () {
+		requestAnimationFrame( animate );
+		
+		update();
+
+		renderer.render( scene, camera );
+	};
+
+	animate();
+</script>
+
+</body>
+</html>
