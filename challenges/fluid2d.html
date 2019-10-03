@@ -381,38 +381,23 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 		
 	function applyViscosity(pnr, dt)
 	{
-		var h = kernelRadius;
-		var h2 = h * h;
-		
-		var px = particles.pos[2 * pnr];
-		var py = particles.pos[2 * pnr + 1];
-		var avgVelX = 0.0;
-		var avgVelY = 0.0;
-		var kernelSum = 0.0;
-
 		var first = firstNeighbor[i];
 		var num = firstNeighbor[i + 1] - first;
-		
-		for (j = 0; j < num; j++) {
-		
-			var id = neighbors.vals[first + j];				
-			var qx = particles.pos[2 * id];				
-			var qy = particles.pos[2 * id + 1];
-			var r2 = (px - qx) * (px - qx) + (py - qy) * (py - qy);
-			var w = (h2 - r2);
-			var kernel = kernelScale * w * w * w;
-			kernel = 1.0;
-			
-			avgVelX += kernel * particles.vel[2 * id];
-			avgVelY += kernel * particles.vel[2 * id + 1];
-			kernelSum += kernel;
-		}
-		
-		if (kernelSum == 0)
+
+		if (num == 0)
 			return;
-		
-		avgVelX /= kernelSum;
-		avgVelY /= kernelSum;
+
+		var avgVelX = 0.0;
+		var avgVelY = 0.0;
+			
+		for (j = 0; j < num; j++) {
+			var id = neighbors.vals[first + j];				
+			avgVelX += particles.vel[2 * id];
+			avgVelY += particles.vel[2 * id + 1];
+		}
+				
+		avgVelX /= num;
+		avgVelY /= num;
 		
 		var deltaX = avgVelX - particles.vel[2 * pnr];
 		var deltaY = avgVelY - particles.vel[2 * pnr + 1];
