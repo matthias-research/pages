@@ -7,6 +7,10 @@
 <head>
 <style>
 
+.emphasize {
+	color: #A93226; 
+	font-weight: bold;
+}
 
 </style>
 </head>
@@ -18,15 +22,16 @@
 <div class = "title" >Challenges</div>
 <br>
 
-Reviewers often require a comparison of the proposed method with previous approaches. However, comparisons in paper are difficult in a series of ways:
-
+<span class = "emphasize">Position Based Dynamics</span> is a simple simulation method that has been extensively used in games and the movie industry. It has also the reputation of being non-physical and too simplistic. Not many people realize that two small changes have turned the toy into a serious competitor of state of the art simulation methods in the four categories
 <ul>
-<li>The authors pick the competitor. Is that the state of the art method?</li>
-<li>The authors pick the scene. Is it representative? Would the competitor beat the proposed method in other scenes?</li>
-<li>The competitors do not have the chance to optimize their method for the given experiment.</li>
-</ul> 
+<li><span class = "emphasize">accuracy</span>
+<li><span class = "emphasize">stability</span>
+<li><span class = "emphasize">speed</span>
+<li><span class = "emphasize">simplicity</span>
+</ul>
+as we describe <a href = "https://matthias-research.github.io/pages/publications/smallsteps.pdf" target="_blank"> here</a>. To show this, we have created simulations that are written in Javascript, fully contained in the html pages and visible on github.
+The challenge is to <span class = "emphasize">replace the simulation part of the code with your own to beat PBD </span>in any of the above categories. So far we have one, more will follow soon...
 
-Here I start a new experiment. There are a series of challenges. Everybody is welcome to challenge our results. There is no deadline. Everybody can take as much time as they need to optimize and tune their methods. So far we have one challenge but more will follow:
 <br>
 <br>
 <a href = "pendulum.html" class="button" target = "_blank" style = "  background-color: #A93226;">The n-pendulum</a>  

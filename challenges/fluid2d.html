@@ -8,7 +8,18 @@ body {setup
 	padding: 10px 50px;
 	font-family: verdana; 
 	line-height: 1.5;
-	font-size: 15px;
+	font-size: 15px;	
+}
+.button {
+  background-color: #555555;
+  border: none;
+  color: white;
+  padding: 8px 8px;
+  border-radius: 5px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
 }
 </style>
 
@@ -20,6 +31,11 @@ body {setup
 <span id = "ms">0.000</span> ms per frame
 <br>
 <br>
+  <button onclick="setup(10, 1000)" class="button">1000 x 10</button>
+  <button onclick="setup(10, 200)" class="button">200 x 10</button>
+  <button onclick="setup(40, 100)" class="button">100 x 50</button>
+  <button onclick="setup(100, 100)" class="button">100 x 100</button>
+	<br><br>
 
 <canvas id="myCanvas" width="800" height="600" style="border:3px solid #d3d3d3;">
 Your browser does not support the HTML5 canvas tag.</canvas>
@@ -58,26 +74,19 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 
 	var gravity = -10;
 	var particleRadius = 0.01;
-	var particleDiameter = 2 * particleRadius;
-	var restDensity = 1.0 / (particleDiameter * particleDiameter);
-	var kernelRadius = 3.0 * particleRadius;
-	var h2 = kernelRadius * kernelRadius;
-	var kernelScale = 4.0 / (Math.PI * h2 * h2 * h2 * h2);		
-	// 2d poly6 (SPH based shallow water simulation
-
-	
-	var gridSpacing = kernelRadius * 1.5;
-	var invGridSpacing = 1.0 / gridSpacing;
 	var unilateral = true;
+	var viscosity = 0.5;
 
 	var timeStep = 0.01;
-	var maxVel = 0.4 * particleRadius;
-
 	var numIters = 1;
 	var numSubSteps = 10;
-	
-	var vorticityConfinment = 0.0003;
+		
+	var maxParticles = 10000;
 
+	var numX = 10;
+	var numY = 1000;
+	var numParticles = numX * numY;
+	
 	// boundary
 	
 	var width = 1.0;
@@ -89,43 +98,37 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 	];
 	
 	var fluidOrig = { left : - 0.3, bottom : 1.8 };
-
-//	var numX = 20;
-//	var numY = 750;
-
-	var numX = 10;
-	var numY = 500;
-	var numParticles = numX * numY;
 	
+	// derived params
+	
+	var particleDiameter = 2 * particleRadius;
+	var restDensity = 1.0 / (particleDiameter * particleDiameter);
+	var kernelRadius = 3.0 * particleRadius;
+	var h2 = kernelRadius * kernelRadius;
+	var kernelScale = 4.0 / (Math.PI * h2 * h2 * h2 * h2);		
+	// 2d poly6 (SPH based shallow water simulation
+	
+	var gridSpacing = kernelRadius * 1.5;
+	var invGridSpacing = 1.0 / gridSpacing;
+
+	var maxVel = 0.4 * particleRadius;
+		
 	var particles = {
-		pos : new Float32Array(2 * numParticles),
-		prev : new Float32Array(2 * numParticles),
-		vel : new Float32Array(2 * numParticles)
+		pos : new Float32Array(2 * maxParticles),
+		prev : new Float32Array(2 * maxParticles),
+		vel : new Float32Array(2 * maxParticles)
 	}
 	
 	var i, j;
-	
-	var hashSize = 370111;
-
-	var hash = {
-		size : hashSize,
-	
-		first : new Int32Array(hashSize),
-		marks : new Int32Array(hashSize),
-		currentMark : 0,
-	
-		next : new Int32Array(numParticles),
-		
-		orig : { left : -100.0, bottom : -1.0 }		
-	}
-	
-	var firstNeighbor = new Int32Array(numParticles + 1);
-	var neighbors = new Vector(10 * numParticles);
-	
-	var grads = new Float32Array(1000);
-		
-	function setup()
+				
+	function setup(initNumX, initNumY)
 	{
+		if (initNumX * initNumY > maxParticles)
+			return;
+		numX = initNumX;
+		numY = initNumY;
+		numParticles = numX * numY;
+
 		var nr = 0;
 		for (j = 0; j < numY; j++) {
 			for (i = 0; i < numX; i++) {
@@ -183,7 +186,26 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 			}		
 		}
 	}
+
+	// -----------------------------------------------------------------------------------
+	
+	var hashSize = 370111;
+
+	var hash = {
+		size : hashSize,
+	
+		first : new Int32Array(hashSize),
+		marks : new Int32Array(hashSize),
+		currentMark : 0,
+	
+		next : new Int32Array(maxParticles),
 		
+		orig : { left : -100.0, bottom : -1.0 }		
+	}
+	
+	var firstNeighbor = new Int32Array(maxParticles + 1);
+	var neighbors = new Vector(10 * maxParticles);
+				
 	function findNeighbors() 
 	{
 		// hash particles
@@ -250,24 +272,24 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 		}
 		firstNeighbor[numParticles] = neighbors.size;
 	}
-
 	
-	function solveFluid(lastStep)
+	// -----------------------------------------------------------------------------------
+	
+	var grads = new Float32Array(1000);
+		
+	function solveFluid()
 	{
 		var h = kernelRadius;
 		var h2 = h * h;
-		var s = kernelScale;
-
 		var avgRho = 0.0;
 
 		for (i = 0; i < numParticles; i++) {
-
+		
 			var px = particles.pos[2 * i];
 			var py = particles.pos[2 * i + 1];
 
 			var first = firstNeighbor[i];
-			var last = firstNeighbor[i + 1];
-			var num = last - first;
+			var num = firstNeighbor[i + 1] - first;
 
 			var rho = 0.0;
 			var sumGrad2 = 0.0;
@@ -275,19 +297,12 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 			var gradix = 0.0;
 			var gradiy = 0.0;
 			
-			var vorticity = 0.0;
-
 			for (j = 0; j < num; j++) {
-				var id = neighbors.vals[first + j];
-				
-				var qx = particles.pos[2 * id];
-				var qy = particles.pos[2 * id + 1];				
-				var rx = qx - px;
-				
-				var ry = qy - py;
-				var r = Math.sqrt(rx * rx + ry * ry);
-				var nx = rx;
-				var ny = ry;
+			
+				var id = neighbors.vals[first + j];				
+				var nx = particles.pos[2 * id] - px;				
+				var ny = particles.pos[2 * id + 1] - py;
+				var r = Math.sqrt(nx * nx + ny * ny);
 				
 				if (r > 0) {
 					nx /= r;
@@ -301,21 +316,13 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 				else {
 					var r2 = r * r;
 					var w = (h2 - r2);
-					var kernel = s * w * w * w;
-					rho += kernel;
-					var grad = (s * 3.0 * w * w * (-2.0 * r)) / restDensity;
+					rho += kernelScale * w * w * w;
+					var grad = (kernelScale * 3.0 * w * w * (-2.0 * r)) / restDensity;					
 					grads[2 * j] = nx * grad;
 					grads[2 * j + 1] = ny * grad;
 					gradix -= nx * grad;
 					gradiy -= ny * grad;
-					sumGrad2 += grad * grad;
-					
-					if (lastStep && vorticityConfinment > 0.0) {
-						var vx = qx - particles.prev[2 * id];
-						var vy = qy - particles.prev[2 * id + 1];				
-						
-						vorticity += kernel * (rx * vy - ry * vx);
-					}
+					sumGrad2 += grad * grad;					
 				}
 			}
 			sumGrad2 += (gradix * gradix + gradiy * gradiy);
@@ -329,6 +336,7 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 			var lambda = -C / (sumGrad2 + 0.0001);
 
 			for (j = 0; j < num; j++) {
+			
 				var id = neighbors.vals[first + j];
 				if (id == i) {
 					particles.pos[2 * id] += lambda * gradix;
@@ -339,25 +347,57 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 					particles.pos[2 * id] += lambda * grads[2 * j];
 					particles.pos[2 * id + 1] += lambda * grads[2 * j + 1];
 				}
-				
-				if (lastStep && vorticityConfinment > 0.0) {
-															
-					var rx = particles.pos[2 * id] - px;
-					var ry = particles.pos[2 * id + 1] - py;				
-					var r2 = rx * rx + ry * ry;
-					if (r2 < h2) {
-						var w = (h2 - r2);
-						var kernel = s * w * w * w;
-						var vx = -ry * vorticity;
-						var vy = rx * vorticity;					
-						particles.pos[2 * id] += vorticityConfinment * kernel * vx;
-						particles.pos[2 * id + 1] += vorticityConfinment * kernel * vy;
-					}
-				}
 			}
 		}
 	}
 	
+	// -----------------------------------------------------------------------------------
+		
+	function applyViscosity(pnr, dt)
+	{
+	return;
+		var h = kernelRadius;
+		var h2 = h * h;
+		
+		var px = particles.pos[2 * pnr];
+		var py = particles.pos[2 * pnr + 1];
+		var avgVelX = 0.0;
+		var avgVelY = 0.0;
+		var kernelSum = 0.0;
+
+		var first = firstNeighbor[i];
+		var num = firstNeighbor[i + 1] - first;
+		
+		for (j = 0; j < num; j++) {
+		
+			var id = neighbors.vals[first + j];				
+			var qx = particles.pos[2 * id];				
+			var qy = particles.pos[2 * id + 1];
+			var r2 = (px - qx) * (px - qx) + (py - qy) * (py - qy);
+			var w = (h2 - r2);
+			var kernel = kernelScale * w * w * w;
+			kernel = 1.0;
+			
+			avgVelX += kernel * particles.vel[2 * id];
+			avgVelY += kernel * particles.vel[2 * id + 1];
+			kernelSum += kernel;
+		}
+		
+		if (kernelSum == 0)
+			return;
+		
+		avgVelX /= kernelSum;
+		avgVelY /= kernelSum;
+		
+		var deltaX = avgVelX - particles.vel[2 * pnr];
+		var deltaY = avgVelY - particles.vel[2 * pnr + 1];
+		
+		particles.vel[2 * pnr] += viscosity * deltaX;
+		particles.vel[2 * pnr + 1] += viscosity * deltaY;
+	}
+	
+	// -----------------------------------------------------------------------------------
+		
 	function simulate()
 	{
 		findNeighbors();
@@ -369,43 +409,43 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 			
 			// predict
 			
-			var nr = 0;
 			for (i = 0; i < numParticles; i++) {
-				particles.vel[nr + 1] += gravity * dt;
-				particles.prev[nr] = particles.pos[nr];
-				particles.prev[nr + 1] = particles.pos[nr + 1];
-				particles.pos[nr] += particles.vel[nr] * dt;
-				particles.pos[nr + 1] += particles.vel[nr + 1] * dt;
-				nr += 2;
+				particles.vel[2 * i + 1] += gravity * dt;
+				particles.prev[2 * i] = particles.pos[2 * i];
+				particles.prev[2 * i + 1] = particles.pos[2 * i + 1];
+				particles.pos[2 * i] += particles.vel[2 * i] * dt;
+				particles.pos[2 * i + 1] += particles.vel[2 * i + 1] * dt;
 			}
 
 			// solve
 			
 			solveBoundaries();
-			solveFluid(step == numSubSteps - 1);
+			solveFluid();
 			
 			// derive velocities
 			
-			nr = 0;
 			for (i = 0; i < numParticles; i++) {
-				var vx = particles.pos[nr] - particles.prev[nr];
-				var vy = particles.pos[nr + 1] - particles.prev[nr + 1];
-
+				var vx = particles.pos[2 * i] - particles.prev[2 * i];
+				var vy = particles.pos[2 * i + 1] - particles.prev[2 * i + 1];
+				
 				// CFL
 				
 				var v = Math.sqrt(vx * vx + vy * vy);
 				if (v > maxVel) {
 					vx *= maxVel / v;
 					vy *= maxVel / v;
-					particles.pos[nr] = particles.prev[nr] + vx;
-					particles.pos[nr + 1] = particles.prev[nr + 1] + vy;
+					particles.pos[2 * i] = particles.prev[2 * i] + vx;
+					particles.pos[2 * i + 1] = particles.prev[2 * i + 1] + vy;
 				}				
-				particles.vel[nr] = vx / dt;
-				particles.vel[nr + 1] = vy / dt;
-				nr += 2;
+				particles.vel[2 * i] = vx / dt;
+				particles.vel[2 * i + 1] = vy / dt;
+				
+				applyViscosity(i, dt);
 			}
-		}		
+		}
 	}
+	
+	// -----------------------------------------------------------------------------------
 	
 	function draw() 
 	{
@@ -416,7 +456,7 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 		var nr = 0;
 		for (i = 0; i < numParticles; i++) {
 
-			if ((Math.floor(i / (200 * numX)) % 2) == 0)
+			if ((Math.floor(i / 1000) % 2) == 0)
 				c.fillStyle = "#0000FF";
 			else
 				c.fillStyle = "#FF0000";
@@ -455,6 +495,8 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 		c.stroke();
 	}	
 		
+	// -----------------------------------------------------------------------------------
+		
 	var timeFrames = 0;
 	var timeSum = 0;
 	
@@ -482,7 +524,7 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 		
 	// main
 	
-	setup();
+	setup(10, 1000);
 	step();
 
 </script> 
