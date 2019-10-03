@@ -21,12 +21,35 @@ body {setup
   display: inline-block;
   font-size: 16px;
 }
+.slider {
+  -webkit-appearance: none;
+  width: 80px;
+  height: 6px;
+  border-radius: 5px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+.slider:hover {
+  opacity: 1;
+}
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #202020;
+  cursor: pointer;
+}
 </style>
 
-<title>2D Fluid</title>
+<title>2D Particle Fluid</title>
 <body>
 
-<h1>2D Fluid</h1>
+<h1>2D Particle Fluid</h1>
 
 <span id = "ms">0.000</span> ms per frame
 <br>
@@ -35,13 +58,15 @@ body {setup
   <button onclick="setup(10, 200)" class="button">200 x 10</button>
   <button onclick="setup(40, 100)" class="button">100 x 50</button>
   <button onclick="setup(100, 100)" class="button">100 x 100</button>
+    <span style = "margin: 0px 0px 0px 20px;">Visconsity</span> <td><input type = "range" min = "0" max = "10" value = "0" id = "viscositySlider" class = "slider"></td>
+
 	<br><br>
 
 <canvas id="myCanvas" width="800" height="600" style="border:3px solid #d3d3d3;">
 Your browser does not support the HTML5 canvas tag.</canvas>
 
 <script>
-
+		
 	class Vector {
 		constructor(size) { 
 			this.vals = new Int32Array(size); 
@@ -75,7 +100,7 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 	var gravity = -10;
 	var particleRadius = 0.01;
 	var unilateral = true;
-	var viscosity = 0.5;
+	var viscosity = 0.0;
 
 	var timeStep = 0.01;
 	var numIters = 1;
@@ -118,6 +143,7 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 		prev : new Float32Array(2 * maxParticles),
 		vel : new Float32Array(2 * maxParticles)
 	}
+
 	
 	var i, j;
 				
@@ -355,7 +381,6 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 		
 	function applyViscosity(pnr, dt)
 	{
-	return;
 		var h = kernelRadius;
 		var h2 = h * h;
 		
@@ -521,11 +546,17 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 		draw();
 		window.requestAnimationFrame(step);
 	}
-		
+	
+	document.getElementById("viscositySlider").oninput = function() {
+		viscosity = this.value / 15;	
+//		document.getElementById("viscosity").innerHTML = viscosity.toString();
+	}
+			
 	// main
 	
 	setup(10, 1000);
 	step();
+	
 
 </script> 
 </body>
