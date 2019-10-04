@@ -183,7 +183,7 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 			
 			if (py < 0.0) {		// ground
 				particles.pos[2 * i + 1] = 0.0;
-				particles.pos[2 * i] = 0.0;
+//				particles.pos[2 * i] = 0.0;
 			}
 			
 			if (px < -minX) 
@@ -305,6 +305,8 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 	// -----------------------------------------------------------------------------------
 	
 	var grads = new Float32Array(1000);
+	
+	var sand = false;
 		
 	function solveFluid()
 	{
@@ -337,21 +339,23 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 					nx /= r;
 					ny /= r;
 				}
-								
-				if (r < 2 * particleRadius) {
-					var d = 0.5 * (2 * particleRadius - r);
-					particles.pos[2 * i] -= nx * d;
-					particles.pos[2 * i + 1] -= ny * d;
-					particles.pos[2 * id] += nx * d;
-					particles.pos[2 * id + 1] += ny * d;
-					/*
-					var tx = ny;
-					var ty = -nx;
-					var vx0 = particles.pos[2 * id] - paricles.prev[2 * id];
-					var vy0 = particles.pos[2 * id + 1] - paricles.prev[2 * id + 1];
-					*/
+					
+				if (sand) {
+					if (r < 2 * particleRadius) {
+						var d = 0.5 * (2 * particleRadius - r);
+						particles.pos[2 * i] -= nx * d;
+						particles.pos[2 * i + 1] -= ny * d;
+						particles.pos[2 * id] += nx * d;
+						particles.pos[2 * id + 1] += ny * d;
+						/*
+						var tx = ny;
+						var ty = -nx;
+						var vx0 = particles.pos[2 * id] - paricles.prev[2 * id];
+						var vy0 = particles.pos[2 * id + 1] - paricles.prev[2 * id + 1];
+						*/
+					}
+					continue;				
 				}
-				continue;				
 				
 				if (r > h) {
 					grads[2 * j] = 0.0;
@@ -369,29 +373,27 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 					sumGrad2 += grad * grad;					
 				}
 			}
-			if (false) {
-				sumGrad2 += (gradix * gradix + gradiy * gradiy);
+			sumGrad2 += (gradix * gradix + gradiy * gradiy);
 
-				avgRho += rho;
+			avgRho += rho;
 
-				var C = rho / restDensity - 1.0;
-				if (unilateral && C < 0.0)
-					continue;
+			var C = rho / restDensity - 1.0;
+			if (unilateral && C < 0.0)
+				continue;
 
-				var lambda = -C / (sumGrad2 + 0.0001);
+			var lambda = -C / (sumGrad2 + 0.0001);
 
-				for (j = 0; j < num; j++) {
+			for (j = 0; j < num; j++) {
+			
+				var id = neighbors.vals[first + j];
+				if (id == i) {
+					particles.pos[2 * id] += lambda * gradix;
+					particles.pos[2 * id + 1] += lambda * gradiy;
 				
-					var id = neighbors.vals[first + j];
-					if (id == i) {
-						particles.pos[2 * id] += lambda * gradix;
-						particles.pos[2 * id + 1] += lambda * gradiy;
-					
-					}
-					else {
-						particles.pos[2 * id] += lambda * grads[2 * j];
-						particles.pos[2 * id + 1] += lambda * grads[2 * j + 1];
-					}
+				}
+				else {
+					particles.pos[2 * id] += lambda * grads[2 * j];
+					particles.pos[2 * id + 1] += lambda * grads[2 * j + 1];
 				}
 			}
 		}
