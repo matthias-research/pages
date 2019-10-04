@@ -67,27 +67,6 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 
 <script>
 		
-	class Vector {
-		constructor(size) { 
-			this.vals = new Int32Array(size); 
-			this.maxSize = size;
-			this.size = 0;
-		}
-		clear() {
-			this.size = 0;
-		}
-		pushBack(val) {
-			if (this.size >= this.maxSize) {
-				this.maxSize *= 2;
-				var old = this.vals;
-				this.vals = new Int32Array(this.maxSize);
-				for (i = 0; i < old.length; i++)
-					this.vals[i] = old[i];
-			}
-			this.vals[this.size++] = val;
-		}
-	}
-
 	var canvas = document.getElementById("myCanvas");
 	var c = canvas.getContext("2d");
 		
@@ -146,7 +125,28 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 
 	
 	var i, j;
-				
+
+	class Vector {
+		constructor(size) { 
+			this.vals = new Int32Array(size); 
+			this.maxSize = size;
+			this.size = 0;
+		}
+		clear() {
+			this.size = 0;
+		}
+		pushBack(val) {
+			if (this.size >= this.maxSize) {
+				this.maxSize *= 2;
+				var old = this.vals;
+				this.vals = new Int32Array(this.maxSize);
+				for (i = 0; i < old.length; i++)
+					this.vals[i] = old[i];
+			}
+			this.vals[this.size++] = val;
+		}
+	}
+	
 	function setup(initNumX, initNumY)
 	{
 		if (initNumX * initNumY > maxParticles)
@@ -159,6 +159,7 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 		for (j = 0; j < numY; j++) {
 			for (i = 0; i < numX; i++) {
 				particles.pos[nr] = fluidOrig.left + i * particleDiameter;
+				particles.pos[nr] += 0.00001 * (j % 2);
 				particles.pos[nr + 1] = fluidOrig.bottom + j * particleDiameter;
 				particles.vel[nr] = 0.0;
 				particles.vel[nr + 1] = 0.0;
@@ -180,8 +181,10 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 			var px = particles.pos[2 * i];
 			var py = particles.pos[2 * i + 1];
 			
-			if (py < 0.0) 		// ground
+			if (py < 0.0) {		// ground
 				particles.pos[2 * i + 1] = 0.0;
+				particles.pos[2 * i] = 0.0;
+			}
 			
 			if (px < -minX) 
 				particles.pos[2 * i] = -minX;
@@ -334,6 +337,21 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 					nx /= r;
 					ny /= r;
 				}
+								
+				if (r < 2 * particleRadius) {
+					var d = 0.5 * (2 * particleRadius - r);
+					particles.pos[2 * i] -= nx * d;
+					particles.pos[2 * i + 1] -= ny * d;
+					particles.pos[2 * id] += nx * d;
+					particles.pos[2 * id + 1] += ny * d;
+					/*
+					var tx = ny;
+					var ty = -nx;
+					var vx0 = particles.pos[2 * id] - paricles.prev[2 * id];
+					var vy0 = particles.pos[2 * id + 1] - paricles.prev[2 * id + 1];
+					*/
+				}
+				continue;				
 				
 				if (r > h) {
 					grads[2 * j] = 0.0;
@@ -351,27 +369,29 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 					sumGrad2 += grad * grad;					
 				}
 			}
-			sumGrad2 += (gradix * gradix + gradiy * gradiy);
+			if (false) {
+				sumGrad2 += (gradix * gradix + gradiy * gradiy);
 
-			avgRho += rho;
+				avgRho += rho;
 
-			var C = rho / restDensity - 1.0;
-			if (unilateral && C < 0.0)
-				continue;
+				var C = rho / restDensity - 1.0;
+				if (unilateral && C < 0.0)
+					continue;
 
-			var lambda = -C / (sumGrad2 + 0.0001);
+				var lambda = -C / (sumGrad2 + 0.0001);
 
-			for (j = 0; j < num; j++) {
-			
-				var id = neighbors.vals[first + j];
-				if (id == i) {
-					particles.pos[2 * id] += lambda * gradix;
-					particles.pos[2 * id + 1] += lambda * gradiy;
+				for (j = 0; j < num; j++) {
 				
-				}
-				else {
-					particles.pos[2 * id] += lambda * grads[2 * j];
-					particles.pos[2 * id + 1] += lambda * grads[2 * j + 1];
+					var id = neighbors.vals[first + j];
+					if (id == i) {
+						particles.pos[2 * id] += lambda * gradix;
+						particles.pos[2 * id + 1] += lambda * gradiy;
+					
+					}
+					else {
+						particles.pos[2 * id] += lambda * grads[2 * j];
+						particles.pos[2 * id + 1] += lambda * grads[2 * j + 1];
+					}
 				}
 			}
 		}
