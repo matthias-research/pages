@@ -220,9 +220,9 @@ The challenge is to <b>beat our method</b> in terms of simplicity, speed, stabil
 		globalDampingCoeff = Number(coeff);		
 		document.getElementById("globalDamping").innerHTML = coeff;
 	}
-	
+	 
 	function setupMass(value, output, pointNr) {
-		var masses = ["0.1", "0.5", "1.0", "2.0", "10"];
+		var masses = ["0.001", "0.5", "1.0", "2.0", "10"];
 		var m = masses[value];
 		document.getElementById(output).innerHTML = m;
 		points[pointNr].invMass = 1.0 / Number(m);
@@ -421,7 +421,7 @@ The challenge is to <b>beat our method</b> in terms of simplicity, speed, stabil
 			avgX = (avgX + x) / 2; avgY = (avgY + y) / 2;
 
 			if (showForces)			
-				c.fillText("  f=" + p.force.toFixed(0) + "N, dx=" + p.elongation.toFixed(2) + "m", avgX, avgY);
+				c.fillText("  f=" + p.force.toFixed(0) + "N, dx=" + p.elongation.toFixed(4) + "m", avgX, avgY);
 			
 		}
 		c.lineWidth = 1;

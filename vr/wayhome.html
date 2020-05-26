@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+	<title>WebXR Test</title>
+	<style>
+		body { margin: 0; }
+		canvas { width: 100%; height: 100% }
+	</style>
+</head>
+	
+<body>
+
+<script type = "module">
+
+import * as THREE from './three/build/three.module.js';
+
+import { BoxLineGeometry} from './three/examples/jsm/geometries/BoxLineGeometry.js';
+import { VRButton } from './three/examples/jsm/webxr/VRButton.js';
+import { GLTFLoader } from './three/examples/jsm/loaders/GLTFLoader.js';
+
+let camera, clock, scene, renderer, room, cube, 
+	birdModel, birdAnimations, birdMixer;
+
+function onUpdate() {
+	const delta = clock.getDelta();
+	cube.rotateX(0.2 * delta);
+	cube.rotateY(0.2 * delta);
+	if ( birdMixer ) birdMixer.update( delta );
+	
+	renderer.render(scene, camera);
+}
+
+function onWindowResize() {
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize( window.innerWidth, window.innerHeight);
+}
+
+function init() {
+	clock = new THREE.Clock();
+	
+	// scene
+	
+	scene = new THREE.Scene();
+	scene.background = new THREE.Color(0x000000);
+	
+	// camera
+	
+	camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 30);
+	camera.position.set(0, 1, 3);
+	scene.add(camera);
+	
+	// room
+	
+	room = new THREE.LineSegments(
+		new BoxLineGeometry(10, 6, 10, 10, 10, 10),
+		new THREE.LineBasicMaterial( { color: 0x808080})
+	);
+	room.geometry.translate(0,3,0);
+	scene.add(room);
+	
+	// light
+	
+	const light = new THREE.HemisphereLight( 0xffffff, 0x444444);
+	light.position.set(1,1,1);
+	scene.add(light);
+	
+	// renderer
+	
+	renderer = new THREE.WebGLRenderer( {antialias: true});
+	renderer.setPixelRatio(window.devicePixelRatio);
+	renderer.setSize(window.innerWidth, window.innerHeight);
+	document.body.appendChild(renderer.domElement);
+
+	// enable VR
+	renderer.xr.enabled = true;
+	document.body.appendChild( VRButton.createButton( renderer ) );	
+
+	// objects
+	
+	const texture = new THREE.TextureLoader().load('images/pummel.png');
+	texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+	
+	const geometry = new THREE.BoxGeometry(1,1,1);
+	const material = new THREE.MeshPhongMaterial({color : 0x00ff00, map: texture});
+	cube = new THREE.Mesh(geometry, material);
+	cube.position.y = 1;
+//	scene.add(cube);
+		
+	var loader = new GLTFLoader();
+
+	// Load a glTF resource
+	loader.load(
+		// resource URL
+		'./models/bird.glb',
+		// called when the resource is loaded
+		function ( model ) {
+
+			scene.add( model.scene );
+
+//			model.animations; // Array<THREE.AnimationClip>
+//			model.scene; // THREE.Group
+//			model.scenes; // Array<THREE.Group>
+//			model.cameras; // Array<THREE.Camera>
+//			model.asset; // Object
+			
+			birdMixer = new THREE.AnimationMixer(model.scene);
+			var action = birdMixer.clipAction( model.animations[ 3 ] );
+			action.play();
+
+			const birdTexture = new THREE.TextureLoader().load('./models/bird.png');
+			birdTexture.flipY = false;
+			
+//			var mixer = new THREE.AnimationMixer( model );
+//			var action = mixer.clipAction( model.animations[ 0 ] );
+//			action.play();
+
+			model.scene.traverse( function ( child ) {
+
+				if ( child.isMesh ) {	
+
+					child.castShadow = true;
+					child.receiveShadow = true;
+					child.material
+					child.material.map = birdTexture;
+				}		
+			});
+		},
+		// called while loading is progressing
+		function ( xhr ) {
+
+			console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
+
+		},
+		// called when loading has errors
+		function ( error ) {
+
+			console.log( error );
+
+		}
+	);
+
+	// start
+	
+	window.addEventListener('resize', onWindowResize, false);
+	renderer.setAnimationLoop(onUpdate);	
+}
+
+init();
+
+</script>
+
+</body>
+</html>
