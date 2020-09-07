@@ -33,6 +33,10 @@
 			var cameraDirX = new THREE.Vector3(0.0, 0.0, 0.0);
 			var cameraDirY = new THREE.Vector3(0.0, 0.0, 0.0);
 			var cameraDirZ = new THREE.Vector3(0.0, 0.0, 0.0);
+
+			// physics
+
+			var gravity = new THREE.Vector3(0.0, -10.0, 0.0);
 					
 			init();
 			animate();			
@@ -80,12 +84,13 @@
 					side: THREE.DoubleSide
 				} );
 
-				var geometry = new THREE.SphereGeometry( 0.2, 20, 20 );
+				// var geometry = new THREE.SphereGeometry( 0.2, 20, 20 );
 
-				var object = new THREE.Mesh( geometry, material );
-				object.position.set(0, 0.5, 0);
-				object.castShadow = true;
-				scene.add( object );
+				// var object = new THREE.Mesh( geometry, material );
+				// object.position.set(0, 0.5, 0);
+				// object.castShadow = true;
+				// object.layers.enable( 1 );
+				// scene.add( object );
 
 				var ground = new THREE.Mesh(
 					new THREE.PlaneBufferGeometry( 20, 20, 1, 1 ),
@@ -155,11 +160,201 @@
 
 			}
 
+			// Pose  -----------------------------------------------------------
+
+			class Pose {
+				constructor() {
+					this.p = new THREE.Vector3(0.0, 0.0, 0.0);
+					this.q = new THREE.Quaternion(0.0, 0.0, 0.0, 1.0);					
+				}
+				transform(v) {
+					v.applyQuaternion(this.q);
+					v.add(this.p);
+				}
+				rotate(v) {
+					v.applyQuaternion(this.q);
+				}
+				invTransform(v) {
+					v.sub(this.p);
+					v.applyQuaternion(this.q.conjugate());
+				}
+				rotateInv(v) {
+					v.applyQuaternion(this.q.conjugate());
+				}
+				transform(pose) {
+					this.q.multiply(pose.q);
+					this.rotate(pose.t);
+					pose.t.add(this.p);
+				}
+				copy(pose) {
+					this.p.copy(pose.p);
+					this.q.copy(pose.q);
+				}
+				clone(pose) {
+					this.p = pose.p.clone();
+					this.q = pose.q.clone();
+				}
+			}
+
+			// Rigid body class  -----------------------------------------------------------
+
+			class Body {
+				constructor(pose, mesh) 
+				{ 
+					this.pose = pose.clone();
+					this.prevPose = pose.clone();
+					this.origPose = pose.clone();
+					this.vel = new THREE.Vector3(0.0, 0.0, 0.0);
+					this.omega = new THREE.Vector3(0.0, 0.0, 0.0);
+					this.tempQ = new THREE.Quaternion(0.0, 0.0, 0.0, 1.0);
+					this.tempV = new THREE.Vector3(0.0, 0.0, 0.0);
+					
+					this.invMass = 1.0;
+					this.invInertia = new THREE.Vector3();
+					this.mesh = mesh;
+					this.tempV.set(1.0, 1.0, 1.0);
+					this.mesh.matrixWorld.compose(this.pose.p, this.pose.q, this.tempV);	
+					mesh.userData.physicsBody = this;
+				}
+
+				setBox(wx, wy, wz, density = 1.0) {
+					let mass = wx * wy * wz * density;
+					this.invMass = 1.0 / mass;
+					mass /= 12.0;
+					this.invInertia.set(
+						1.0 / (wy * wy + wz * wz) / mass,
+						1.0 / (wz * wz + wx * wx) / mass,
+						1.0 / (wx * wx + wy * wy) / mass);
+				}
+
+				rotateLinearized(rot, scale = 0.0) {
+					this.tempQ.set(rot.x * scale, rot.y * scale, rot.z * scale, 0.0);					
+					this.tempQ.multiply(this.pose.q);
+					this.pose.q.set(this.pose.q.x + 0.5 * this.tempQ.x, this.pose.q.y + 0.5 * this.tempQ.y, 
+							this.pose.q.z + 0.5 * this.tempQ.z, this.pose.q.w + 0.5 * this.tempQ.w);
+					this.pose.q.normalize();
+				}
+
+				integrate(dt) {
+					this.prevPose.copy(this.pose);
+					this.vel.addScaledVector(gravity, dt);					
+					this.pose.p.addScaledVector(this.vel, dt);
+					rotateLinearized(this.omega, dt);
+				}
+
+				update(dt) {
+					this.vel.subVectors(this.pose.p, this.prevPose.p);
+					this.vel.set(this.vel.x / dt, this.vel.y / dt, this.vel.z / dt);
+					this.tempQ.multiplyQuaternions(this.pose.q, this.prevPose.q.conjugate());
+					this.omega.set(2.0 / dt * tempQ.q.x, 2.0 / dt * tempQ.y, 2.0 / dt * tempQ.z);
+					if (this.tempQ.w < 0.0)
+						this.omega.set(-this.omega.x, -this.omega.y, -this.omega.z);
+
+					this.tempV.set(1.0, 1.0, 1.0);
+					this.mesh.matrixWorld.compose(this.pose.p, this.pose.q, this.tempV);
+				}
+
+				applyCorrection(corr, pos = null) {
+					if (pos === null) 
+						this.tempV.copy(corr);
+					else {
+						this.pose.p.addScaledVector(corr, this.invMass);
+						this.tempV.subVectors(pos, pose.p);
+						this.tempV.cross(corr);
+					}
+					this.pose.rotateInv(this.tempV);
+					this.tempV.set(this.invInertia.x * this.tempV.x, 
+						this.invInertia.y * this.tempV.y, this.invInertia.z * this.tempV.z);
+					this.pose.rotate(this.tempV);
+					rotateLinearized(this.tempV);
+				}
+
+				getInverseMass(normal, pos = null) {
+					if (pos === null) 
+						this.tempV.copy(normal);
+					else {
+						this.tempV.subVectors(pos, pose.p);
+						this.tempV.cross(normal);
+					}
+					this.pose.rotateInv(this.tempV);
+					let w = 
+						this.tempV.x * this.tempV.x * invInertia.x +
+						this.tempV.y * this.tempV.y * invInertia.y +
+						this.tempV.z * this.tempV.z * invInertia.z;
+					if (pos !== null)
+						w += this.invMass;
+					return w;
+				}
+
+				applyPairPosCorrection(body1, corr, compliance, dt, pos0 = null, pos1 = null) {
+					this.tempV.copy(corr);
+					let C = corr.length();
+					if ( C == 0.0)
+						return;
+					this.tempV.normalize();
+
+					let w0 = 0.0;
+					let w1 = 0.0;
+					let w0 = getPosInverseMass(this.tempV, pos0);
+					let w1 = body1 ? body1.getPosInverseMass(this.tempV, pos1) : 0.0;
+
+					let w = w0 + w1;
+					if (w == 0.0)
+						return;
+
+					let lambda = -C / (w + compliance / dt / dt);
+					this.tempV.multiplyScalar(-lambda);
+					applyPosCorrection(this.tempV, pos0);
+					if (body1) {
+						this.tempV.multiplyScalar(-1.0);
+						body1.applyPosCorrection(this.tempV, pos1);
+					}
+				}
+			}
+
+			// Joint class  -----------------------------------------------------------
+
+			class Joint {
+				constructor(body0, body1, localPose0, localPose1) 
+				{ 
+					this.body0 = body0;
+					this.body1 = body1;
+					this.localPose0 = localPose0.clone();
+					this.localPose1 = localPose1.clone();
+					this.globalPose0 = localPose0.clone();
+					this.globalPose1 = localPose1.clone();
+					this.corr = new THREE.Vector3(0.0, 0.0, 0.0);
+					this.compliance = 0.0;
+				}
+
+				solve(dt) {
+					this.globalPos0.copy(this.localPos0);
+					if (body0)
+						body0.pose.transform(this.globalPos0);
+					this.globalPos1.copy(this.localPos1);
+					if (body1)
+						body1.pose.transform(this.globalPos1);
+					this.corr.subVectors(this.globalPos1, this.globalPos0);
+
+					if (this.body0 === null)
+						this.body0.applyPairCorrection(this.body1, this.corr, this.compliance, dt, 
+							this.gloabePos0.p, this.globalPose1.p);
+					else {
+						this.corr.multiplyScalar(-1.0);
+						this.body1.applyPairCorrection(this.body0, this.corr, this.compliance, dt, 
+							this.gloabePos1.p, this.globalPose0.p);
+					}
+				}
+			}
+
+			var bodies = [];
+			var joints = [];
+
 			// create objects  -----------------------------------------------------------
 
 			function createObjects(){
                 
-				let numObjects = 20;
+				let numObjects = 100;
 				let dx = 0.02;
 				let dy = 0.04;
 				let dz = 0.02;
@@ -170,7 +365,9 @@
                 let quat = {x: 0, y: 0, z: 0, w: 1};
                 let mass = dx * dy * dz;
 
-				let lastBody;
+				let pose = new Pose();
+
+				let lastBody = null;
 								
 				for (let i = 0; i < numObjects; i++) {                
 
@@ -178,8 +375,9 @@
 
 					let boxVis = new THREE.Mesh(new THREE.BoxBufferGeometry(), new THREE.MeshPhongMaterial({color: 0xf78a1d}));
 
-					boxVis.position.set(pos.x, pos.y - i * dy, pos.z);
-					boxVis.scale.set(dims.x, dims.y, dims.z);
+					boxVis.scale.set(dims.x, dims.y - 0.006, dims.z);
+					boxVis.name = "box " + i;
+					boxVis.layers.enable( 1 );
 
 					boxVis.castShadow = true;
 					boxVis.receiveShadow = true;
@@ -187,40 +385,28 @@
 					scene.add(boxVis);
 
 					// physics
-                
-					// transform.setIdentity();
-					// transform.setOrigin( new Ammo.btVector3( pos.x, pos.y - i * dy, pos.z) );
-					// transform.setRotation( new Ammo.btQuaternion( quat.x, quat.y, quat.z, quat.w ) );
-					// motionState = new Ammo.btDefaultMotionState( transform );
 
-					// let boxColShape = new Ammo.btBoxShape( new Ammo.btVector3( dims.x * 0.5, dims.y * 0.5, dims.z * 0.5 ) );
-					// boxColShape.setMargin( 0.001 );
+					pose.p.set(pos.x, pos.y - i * dy, pos.z);
 
-					// localInertia = new Ammo.btVector3( 0, 0, 0 );
-					// boxColShape.calculateLocalInertia( mass, localInertia );
+					let box = new Body(pose, boxVis);
+					bodies.push(box);
 
-					// rbInfo = new Ammo.btRigidBodyConstructionInfo( mass, motionState, boxColShape, localInertia );
-					// let boxBody = new Ammo.btRigidBody( rbInfo );
+					let joint = new Joint()
 
-					// physicsWorld.addRigidBody( boxBody, colGroupGreenBall, colGroupRedBall );
-                
-					// boxVis.userData.physicsBody = boxBody;
-					// rigidBodies.push(boxVis);
-
-					// // create joint
+					joints.push(joint);
 					
-					// let s = i % 2 == 0 ? -0.5 : 0.5;
-					// let lastPivot = new Ammo.btVector3( s * dims.x, -0.5 * dims.y, s * dims.z );
-					// let pivot = new Ammo.btVector3( s * dims.x, 0.5 * dims.y, s * dims.z );
-					// let p2p;
-					// if (i == 0)
-					// 	p2p = new Ammo.btPoint2PointConstraint( boxBody, pivot);
-					// else
-					// 	p2p = new Ammo.btPoint2PointConstraint( lastBody, boxBody, lastPivot, pivot);
+					let s = i % 2 == 0 ? -0.5 : 0.5;
+					let lastPivot = new Ammo.btVector3( s * dims.x, -0.5 * dims.y, s * dims.z );
+					let pivot = new Ammo.btVector3( s * dims.x, 0.5 * dims.y, s * dims.z );
+					let p2p;
+					if (i == 0)
+						p2p = new Ammo.btPoint2PointConstraint( boxBody, pivot);
+					else
+						p2p = new Ammo.btPoint2PointConstraint( lastBody, boxBody, lastPivot, pivot);
 						
-					// physicsWorld.addConstraint( p2p, false );
+					physicsWorld.addConstraint( p2p, false );
 					
-					// lastBody = boxBody;
+					lastBody = boxBody;
 				}
 			}
 
@@ -269,6 +455,7 @@
 				if (intersects.length > 0) {
 					grabbedObject = intersects[0].object;	// 0 is closest
 					grabDistance = intersects[0].distance;
+					console.log(grabbedObject.name);
 				}
 			}
 
@@ -308,7 +495,7 @@
 
 			function onWheel( evt ) 
 			{
-				handleCameraZoom(evt.deltaY * 0.1 );
+				handleCameraZoom(-evt.deltaY * 0.1 );
 			}
 
 			var touchCoords = [ { x : 0.0, y : 0.0}, { x : 0.0, y : 0.0}];
