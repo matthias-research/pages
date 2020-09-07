@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>test three.js</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	</head>
+	
+	<body>
+
+		<div id="container"></div>
+
+		<script src="https://threejs.org/build/three.js"></script>
+
+		<script type="module">
+		
+			var scene;
+			var camera;
+			var renderer;
+			var container = document.getElementById( 'container' );
+
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+
+			var grabbedObject = null;
+			var grabDistance = 0.0;
+
+			var raycaster = new THREE.Raycaster();
+			raycaster.layers.set( 1 );
+			var mousePos = new THREE.Vector2();
+			var mouseDown = false;
+			var cameraLookAt = new THREE.Vector3(0.0, 1.0, 0.0);
+			var cameraDirX = new THREE.Vector3(0.0, 0.0, 0.0);
+			var cameraDirY = new THREE.Vector3(0.0, 0.0, 0.0);
+			var cameraDirZ = new THREE.Vector3(0.0, 0.0, 0.0);
+					
+			init();
+			animate();			
+
+			function init() {
+			
+				scene = new THREE.Scene();
+				
+				// Lights
+				
+				scene.add( new THREE.AmbientLight( 0x505050 ) );	
+				scene.fog = new THREE.Fog( 0x000000, 0, 15 );				
+
+				var spotLight = new THREE.SpotLight( 0xffffff );
+				spotLight.angle = Math.PI / 5;
+				spotLight.penumbra = 0.2;
+				spotLight.position.set( 2, 3, 3 );
+				spotLight.castShadow = true;
+				spotLight.shadow.camera.near = 3;
+				spotLight.shadow.camera.far = 10;
+				spotLight.shadow.mapSize.width = 1024;
+				spotLight.shadow.mapSize.height = 1024;
+				scene.add( spotLight );
+
+				var dirLight = new THREE.DirectionalLight( 0x55505a, 1 );
+				dirLight.position.set( 0, 3, 0 );
+				dirLight.castShadow = true;
+				dirLight.shadow.camera.near = 1;
+				dirLight.shadow.camera.far = 10;
+
+				dirLight.shadow.camera.right = 1;
+				dirLight.shadow.camera.left = - 1;
+				dirLight.shadow.camera.top	= 1;
+				dirLight.shadow.camera.bottom = - 1;
+
+				dirLight.shadow.mapSize.width = 1024;
+				dirLight.shadow.mapSize.height = 1024;
+				scene.add( dirLight );
+				
+				// Geometry
+
+				var material = new THREE.MeshPhongMaterial( {
+					color: 0x80ee10,
+					shininess: 100,
+					side: THREE.DoubleSide
+				} );
+
+				var geometry = new THREE.SphereGeometry( 0.2, 20, 20 );
+
+				var object = new THREE.Mesh( geometry, material );
+				object.position.set(0, 0.5, 0);
+				object.castShadow = true;
+				scene.add( object );
+
+				var ground = new THREE.Mesh(
+					new THREE.PlaneBufferGeometry( 20, 20, 1, 1 ),
+					new THREE.MeshPhongMaterial( { color: 0xa0adaf, shininess: 150 } )
+				);
+
+				ground.rotation.x = - Math.PI / 2; // rotates X/Y to X/Z
+				ground.receiveShadow = true;
+				scene.add( ground );
+				
+				var helper = new THREE.GridHelper( 20, 50 );
+				helper.material.opacity = 0.5;
+				helper.material.transparent = true;
+				helper.position.set(0, 0.001, 0);
+				scene.add( helper );				
+				
+				// Renderer
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.shadowMap.enabled = true;
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				window.addEventListener( 'resize', onWindowResize, false );
+				container.appendChild( renderer.domElement );
+				
+				// Camera
+						
+				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 1000);
+				camera.position.set( 0, 1, 3 );				
+				camera.lookAt(cameraLookAt);
+				camera.updateMatrixWorld();	
+				
+				scene.add( camera );
+
+				createObjects();
+
+				// interaction
+
+				container.addEventListener( 'mousedown', onMouse, false );
+				container.addEventListener( 'mousemove', onMouse, false );
+				container.addEventListener( 'mouseup', onMouse, false );
+				container.addEventListener( 'wheel', onWheel, false );
+				container.addEventListener( 'touchstart', onTouch, false );
+				container.addEventListener( 'touchend', onTouch, false );
+				container.addEventListener( 'touchmove', onTouch, false );			
+			}
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+				render();
+			}
+
+			function render() {
+				renderer.render( scene, camera );
+			}
+
+			function onWindowResize() {
+
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			// create objects  -----------------------------------------------------------
+
+			function createObjects(){
+                
+				let numObjects = 20;
+				let dx = 0.02;
+				let dy = 0.04;
+				let dz = 0.02;
+
+                let pos = {x: 0, y: numObjects * dy - dy, z: dz};
+
+                let dims = {x: dx, y: dy, z: dz};
+                let quat = {x: 0, y: 0, z: 0, w: 1};
+                let mass = dx * dy * dz;
+
+				let lastBody;
+								
+				for (let i = 0; i < numObjects; i++) {                
+
+					// graphics
+
+					let boxVis = new THREE.Mesh(new THREE.BoxBufferGeometry(), new THREE.MeshPhongMaterial({color: 0xf78a1d}));
+
+					boxVis.position.set(pos.x, pos.y - i * dy, pos.z);
+					boxVis.scale.set(dims.x, dims.y, dims.z);
+
+					boxVis.castShadow = true;
+					boxVis.receiveShadow = true;
+
+					scene.add(boxVis);
+
+					// physics
+                
+					// transform.setIdentity();
+					// transform.setOrigin( new Ammo.btVector3( pos.x, pos.y - i * dy, pos.z) );
+					// transform.setRotation( new Ammo.btQuaternion( quat.x, quat.y, quat.z, quat.w ) );
+					// motionState = new Ammo.btDefaultMotionState( transform );
+
+					// let boxColShape = new Ammo.btBoxShape( new Ammo.btVector3( dims.x * 0.5, dims.y * 0.5, dims.z * 0.5 ) );
+					// boxColShape.setMargin( 0.001 );
+
+					// localInertia = new Ammo.btVector3( 0, 0, 0 );
+					// boxColShape.calculateLocalInertia( mass, localInertia );
+
+					// rbInfo = new Ammo.btRigidBodyConstructionInfo( mass, motionState, boxColShape, localInertia );
+					// let boxBody = new Ammo.btRigidBody( rbInfo );
+
+					// physicsWorld.addRigidBody( boxBody, colGroupGreenBall, colGroupRedBall );
+                
+					// boxVis.userData.physicsBody = boxBody;
+					// rigidBodies.push(boxVis);
+
+					// // create joint
+					
+					// let s = i % 2 == 0 ? -0.5 : 0.5;
+					// let lastPivot = new Ammo.btVector3( s * dims.x, -0.5 * dims.y, s * dims.z );
+					// let pivot = new Ammo.btVector3( s * dims.x, 0.5 * dims.y, s * dims.z );
+					// let p2p;
+					// if (i == 0)
+					// 	p2p = new Ammo.btPoint2PointConstraint( boxBody, pivot);
+					// else
+					// 	p2p = new Ammo.btPoint2PointConstraint( lastBody, boxBody, lastPivot, pivot);
+						
+					// physicsWorld.addConstraint( p2p, false );
+					
+					// lastBody = boxBody;
+				}
+			}
+
+	
+
+			// scene interaction -----------------------------------------------------------
+
+			function handleCameraMotion(dx, dy) {
+				let scale = 0.01;
+				let prev = camera.position.distanceTo(cameraLookAt);
+				cameraDirZ.subVectors(cameraLookAt, camera.position);
+				cameraDirX.set(cameraDirZ.z, 0.0, -cameraDirZ.x, 0.0);
+				cameraDirX.normalize();
+				cameraDirY.crossVectors(cameraDirZ, cameraDirX);
+				cameraDirY.normalize();
+				camera.position.addScaledVector(cameraDirX, scale * dx);
+				camera.position.addScaledVector(cameraDirY, scale * dy);
+				cameraDirZ.subVectors(cameraLookAt, camera.position);
+				cameraDirZ.normalize();
+				let delta = camera.position.distanceTo(cameraLookAt) - prev;
+				camera.position.addScaledVector(cameraDirZ, -delta);
+				camera.lookAt(cameraLookAt);
+			}
+
+			function handleCameraZoom(d) {
+				let scale = 1.0 - 0.003 * d;
+				let dist = camera.position.distanceTo(cameraLookAt);
+				if (d > 0.0 && dist < 1.0 || d < 0.0 && dist > 5.0)
+					return;
+
+				camera.position.set(
+					cameraLookAt.x + (camera.position.x - cameraLookAt.x) * scale,				
+					cameraLookAt.y + (camera.position.y - cameraLookAt.y) * scale,				
+					cameraLookAt.z + (camera.position.z - cameraLookAt.z) * scale);	
+				camera.updateMatrixWorld();
+			}
+
+			function startGrab(x, y) {
+				grabbedObject = null;
+				mousePos.x = ( x / window.innerWidth ) * 2 - 1;
+				mousePos.y = - ( y / window.innerHeight ) * 2 + 1;
+				raycaster.setFromCamera( mousePos, camera );
+
+				var intersects = raycaster.intersectObjects( scene.children );
+
+				if (intersects.length > 0) {
+					grabbedObject = intersects[0].object;	// 0 is closest
+					grabDistance = intersects[0].distance;
+				}
+			}
+
+			function moveGrabbed(x, y) {
+				if (!grabbedObject)
+					return;
+
+				mousePos.x = ( x / window.innerWidth ) * 2 - 1;
+				mousePos.y = - ( y / window.innerHeight ) * 2 + 1;
+				raycaster.setFromCamera( mousePos, camera );
+				raycaster.ray.origin + raycaster.ray.direction * grabDistance;
+			}
+
+			function endGrab() {
+				grabbedObject = null;
+			}
+						
+			
+			function onMouse( evt ) 
+			{
+				event.preventDefault();
+				if (evt.type == "mousedown") {
+					startGrab(evt.clientX, evt.clientY);
+					mouseDown = true;
+				}
+				else if (evt.type == "mousemove" && mouseDown) {
+					if (grabbedObject)
+						moveGrabbed(evt.clientX, evt.clientY);
+					else
+						handleCameraMotion(evt.movementX, evt.movementY);
+				}
+				else if (evt.type == "mouseup" || evt.type == "mouseout") {
+					mouseDown = false;
+					endGrab();
+				}
+			}
+
+			function onWheel( evt ) 
+			{
+				handleCameraZoom(evt.deltaY * 0.1 );
+			}
+
+			var touchCoords = [ { x : 0.0, y : 0.0}, { x : 0.0, y : 0.0}];
+
+			function onTouch( evt ) {
+				event.preventDefault();
+
+				if (evt.type == "touchdown") {
+					if (evt.touches.length == 1)
+						startGrab(evt.touches[0].clientX, evt.touches[0].clientY);
+				}
+
+				if (evt.type == "touchmove") {
+					if (grabbedObject) {
+						moveGrabbed(evt.touches[0].clientX, evt.touches[0].clientY);
+					}
+					else {
+						if (evt.touches.length == 1) {
+							handleCameraMotion(
+								evt.touches[0].clientX - touchCoords[0].x,
+								evt.touches[0].clientY - touchCoords[0].y);
+						}
+						else if (evt.touches.length == 2) {
+							let px = (touchCoords[1].x - touchCoords[0].x);
+							let py = (touchCoords[1].y - touchCoords[0].y);
+							let p = Math.sqrt(px * px + py * py);
+							let dx = (evt.touches[1].clientX - evt.touches[0].clientX);
+							let dy = (evt.touches[1].clientY - evt.touches[0].clientY);
+							let d = Math.sqrt(dx * dx + dy * dy);
+							handleCameraZoom(d - p);
+						}
+					}
+				}
+				else if (evt.type == "touchup") {
+					if (evt.touches.length == 0)
+						endGrab();
+				}
+				if (evt.touches.length <= 2) {
+					for (let i = 0; i < evt.touches.length; i++) {
+						touchCoords[i].x = evt.touches[i].clientX;
+						touchCoords[i].y = evt.touches[i].clientY;
+					}
+				}				
+			}					
+
+		</script>
+
+	</body>
+</html>
