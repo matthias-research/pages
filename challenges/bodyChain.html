@@ -44,6 +44,8 @@
 
 			var raycaster = new THREE.Raycaster();
 			raycaster.layers.set( 1 );
+			raycaster.params.Mesh.threshold = 3;
+
 			var mousePos = new THREE.Vector2();
 			var mouseDown = false;
 			var cameraLookAt = new THREE.Vector3(0.0, 2.5, 0.0);
@@ -112,7 +114,7 @@
 				ground.receiveShadow = true;
 				scene.add( ground );
 				
-				var helper = new THREE.GridHelper( 20, 50 );
+				var helper = new THREE.GridHelper( 20, 20 );
 				helper.material.opacity = 0.5;
 				helper.material.transparent = true;
 				helper.position.set(0, 0.001, 0);
@@ -221,21 +223,23 @@
 					this.p = new THREE.Vector3(0.0, 0.0, 0.0);
 					this.q = new THREE.Quaternion(0.0, 0.0, 0.0, 1.0);					
 				}
+				rotate(v) {
+					v.applyQuaternion(this.q);
+				}
+				invRotate(v) {
+					let inv = this.q.clone();
+					inv.conjugate();
+					v.applyQuaternion(inv);
+				}
 				transform(v) {
 					v.applyQuaternion(this.q);
 					v.add(this.p);
 				}
-				rotate(v) {
-					v.applyQuaternion(this.q);
-				}
 				invTransform(v) {
 					v.sub(this.p);
-					v.applyQuaternion(this.q.conjugate());
+					this.invRotate(v);
 				}
-				rotateInv(v) {
-					v.applyQuaternion(this.q.conjugate());
-				}
-				transform(pose) {
+				transformPose(pose) {
 					this.q.multiply(pose.q);
 					this.rotate(pose.p);
 					pose.p.add(this.p);
@@ -331,7 +335,7 @@
 						n.subVectors(pos, this.pose.p);
 						n.cross(normal);
 					}
-					this.pose.rotateInv(n);
+					this.pose.invRotate(n);
 					let w = 
 						n.x * n.x * this.invInertia.x +
 						n.y * n.y * this.invInertia.y +
@@ -353,7 +357,7 @@
 						dq.subVectors(pos, this.pose.p);
 						dq.cross(corr);
 					}
-					this.pose.rotateInv(dq);
+					this.pose.invRotate(dq);
 					dq.set(this.invInertia.x * dq.x, 
 						this.invInertia.y * dq.y, this.invInertia.z * dq.z);
 					this.pose.rotate(dq);
@@ -363,6 +367,8 @@
 						this.applyRotation(dq);
 				}
 			}
+
+			// ------------------------------------------------------------------------------------
 
 			function applyBodyPairCorrection(body0, body1, corr, compliance, dt, pos0 = null, pos1 = null, 
 				velocityLevel = false) 
@@ -392,6 +398,43 @@
 				}
 			}
 
+			// ------------------------------------------------------------------------------------------------
+
+			function limitAngle(body0, body1, n, a, b, minAngle, maxAngle, compliance, dt)
+			{
+				let c = a.clone();
+				c.cross(b);
+
+				let phi = Math.asin(c.dot(n));
+				if (a.dot(b) < 0.0)
+					phi = Math.PI - phi;
+
+				if (phi > Math.PI)
+					phi -= 2.0 * Math.PI;
+				if (phi < -Math.PI)
+					phi += 2.0 * Math.PI;
+
+				if (phi < minAngle || phi > maxAngle) {
+					phi = Math.min(Math.max(minAngle, phi), maxAngle);
+
+					let q = new THREE.Quaternion();
+					q.setFromAxisAngle(n, phi);
+
+					let omega = a.clone();
+					omega.applyQuaternion(q);
+					omega.cross(b);
+
+					// if (!omega.isZero()) {
+					// 	Vec3 n = omega;
+					// 	double d = n.normalize();				
+					// 	if (d > maxCorr)
+					// 		omega = maxCorr * n;
+					// }
+
+					applyBodyPairCorrection(body0, body1, omega, compliance, dt);
+				}
+			}	
+
 			// Joint class  -----------------------------------------------------------
 
 			class Joint {
@@ -403,28 +446,33 @@
 					this.localPose1 = localPose1.clone();
 					this.globalPose0 = localPose0.clone();
 					this.globalPose1 = localPose1.clone();
-					this.corr = new THREE.Vector3(0.0, 0.0, 0.0);
+					
 					this.compliance = 0.0;
 					this.rotDamping = 0.0;
 					this.transDamping = 0.0;
+					this.maxSwing = 2.0 * Math.PI;
+					this.maxTwist = 2.0 * Math.PI;
 				}
 
 				updateGlobalPoses() {
 					this.globalPose0.copy(this.localPose0);
 					if (this.body0)
-						this.body0.pose.transform(this.globalPose0);
+						this.body0.pose.transformPose(this.globalPose0);
 					this.globalPose1.copy(this.localPose1);
 					if (this.body1)
-						this.body1.pose.transform(this.globalPose1);
+						this.body1.pose.transformPose(this.globalPose1);
 				}
 
 				solvePos(dt) {
 					this.updateGlobalPoses();
 
 					// simple attachment
-					this.corr.subVectors(this.globalPose1.p, this.globalPose0.p);
-					applyBodyPairCorrection(this.body0, this.body1, this.corr, this.compliance, dt,
+					let corr = new THREE.Vector3();
+					corr.subVectors(this.globalPose1.p, this.globalPose0.p);
+					applyBodyPairCorrection(this.body0, this.body1, corr, this.compliance, dt,
 						this.globalPose0.p, this.globalPose1.p);
+
+					// swing limit
 				}
 
 				solveVel(dt) { 
@@ -515,7 +563,6 @@
 			}
 
 			function startGrab(x, y) {
-				grabbedObject = null;
 				mousePos.x = ( x / window.innerWidth ) * 2 - 1;
 				mousePos.y = - ( y / window.innerHeight ) * 2 + 1;
 				raycaster.setFromCamera( mousePos, camera );
@@ -523,10 +570,10 @@
 				var intersects = raycaster.intersectObjects( scene.children );
 
 				if (intersects.length > 0) {
-					let body = grabbedBody = intersects[0].object.userData.physicsBody;	
+					let body = intersects[0].object.userData.physicsBody;	
 					grabDistance = intersects[0].distance;
-					let pose0 = new Transform();
-					let pose1 = new Transform();
+					let pose0 = new Pose();
+					let pose1 = new Pose();
 
 					let hit = raycaster.ray.origin.clone();
 					hit.addScaledVector(raycaster.ray.direction, grabDistance);
@@ -534,6 +581,7 @@
 					body.pose.invTransform(hit);
 					pose0.p.copy(hit);					
 					grabJoint = new Joint(body, null, pose0, pose1);
+					grabJoint.compliance = 10.0;
 					joints.push(grabJoint);
 				}
 			}
@@ -545,8 +593,8 @@
 				mousePos.x = ( x / window.innerWidth ) * 2 - 1;
 				mousePos.y = - ( y / window.innerHeight ) * 2 + 1;
 				raycaster.setFromCamera( mousePos, camera );
-				grabJoint.pose1.p.copy(raycaster.ray.origin);
-				grabJoint.pose1.p.addScaledVector(raycaster.ray.direction, grabDistance);
+				grabJoint.localPose1.p.copy(raycaster.ray.origin);
+				grabJoint.localPose1.p.addScaledVector(raycaster.ray.direction, grabDistance);
 			}
 
 			function endGrab() {
@@ -565,7 +613,7 @@
 					mouseDown = true;
 				}
 				else if (evt.type == "mousemove" && mouseDown) {
-					if (grabbedObject)
+					if (grabJoint)
 						moveGrabbed(evt.clientX, evt.clientY);
 					else
 						handleCameraMotion(evt.movementX, evt.movementY);
@@ -592,7 +640,7 @@
 				}
 
 				if (evt.type == "touchmove") {
-					if (grabbedObject) {
+					if (grabJoint) {
 						moveGrabbed(evt.touches[0].clientX, evt.touches[0].clientY);
 					}
 					else {
