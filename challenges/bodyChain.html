@@ -13,7 +13,21 @@
 		<script src="https://threejs.org/build/three.js"></script>
 
 		<script type="module">
-		
+
+			// physics scene
+
+			var gravity = new THREE.Vector3(0.0, -10.0, 0.0);
+			var numSubsteps = 20;
+			var timeStep = 1.0 / 60.0;
+			var numObjects = 30;
+			var objectsSize = new THREE.Vector3(0.02, 0.04, 0.02);
+
+
+			var bodies = [];
+			var joints = [];
+
+			// visual scene
+
 			var scene;
 			var camera;
 			var renderer;
@@ -33,14 +47,7 @@
 			var cameraDirX = new THREE.Vector3(0.0, 0.0, 0.0);
 			var cameraDirY = new THREE.Vector3(0.0, 0.0, 0.0);
 			var cameraDirZ = new THREE.Vector3(0.0, 0.0, 0.0);
-
-			// physics
-
-			var gravity = new THREE.Vector3(0.0, -10.0, 0.0);
 					
-			init();
-			animate();			
-
 			function init() {
 			
 				scene = new THREE.Scene();
@@ -138,15 +145,52 @@
 				container.addEventListener( 'touchmove', onTouch, false );			
 			}
 
-			function animate() {
+			// create objects  -----------------------------------------------------------
 
-				requestAnimationFrame( animate );
-				render();
-			}
+			function createObjects() {
+                
+                let pos = new THREE.Vector3(0.0, numObjects * objectsSize.y + 0.2, 0.0);
+				let pose = new Pose();
+				let lastBody = null;
+				let jointPose0 = new Pose();
+				let jointPose1 = new Pose();
+								
+				for (let i = 0; i < numObjects; i++) {                
 
-			function render() {
-				renderer.render( scene, camera );
-			}
+					// graphics
+
+					let boxVis = new THREE.Mesh(new THREE.BoxBufferGeometry(), new THREE.MeshPhongMaterial({color: 0xf78a1d}));
+					boxVis.scale.set(objectsSize.x, objectsSize.y, objectsSize.z);
+					boxVis.name = "box " + i;
+					boxVis.layers.enable(1);
+					boxVis.castShadow = true;
+					boxVis.receiveShadow = true;
+
+					scene.add(boxVis);
+
+					// physics
+
+					pose.p.set(pos.x, pos.y - i * objectsSize.y, pos.z);
+
+					let boxBody = new Body(pose, boxVis);
+					boxBody.setBox(objectsSize);
+					bodies.push(boxBody);
+										
+					let s = i % 2 == 0 ? -0.5 : 0.5;
+					jointPose0.p.set(s * objectsSize.x, 0.5 * objectsSize.y, s * objectsSize.z);
+					jointPose1.p.set( s * objectsSize.x, -0.5 * objectsSize.y, s * objectsSize.z);
+
+					if (!lastBody) {
+						jointPose1.copy(jointPose0);
+						jointPose1.p.add(pose.p);
+					}
+
+					let joint = new Joint(boxBody, lastBody, jointPose0, jointPose1);
+					joints.push(joint);
+					
+					lastBody = boxBody;
+				}
+			}	
 
 			function onWindowResize() {
 
@@ -183,16 +227,18 @@
 				}
 				transform(pose) {
 					this.q.multiply(pose.q);
-					this.rotate(pose.t);
-					pose.t.add(this.p);
+					this.rotate(pose.p);
+					pose.p.add(this.p);
 				}
 				copy(pose) {
 					this.p.copy(pose.p);
 					this.q.copy(pose.q);
 				}
-				clone(pose) {
-					this.p = pose.p.clone();
-					this.q = pose.q.clone();
+				clone() {
+					var newPose = new Pose();
+					newPose.p = this.p.clone();
+					newPose.q = this.q.clone();
+					return newPose;
 				}
 			}
 
@@ -206,32 +252,30 @@
 					this.origPose = pose.clone();
 					this.vel = new THREE.Vector3(0.0, 0.0, 0.0);
 					this.omega = new THREE.Vector3(0.0, 0.0, 0.0);
-					this.tempQ = new THREE.Quaternion(0.0, 0.0, 0.0, 1.0);
-					this.tempV = new THREE.Vector3(0.0, 0.0, 0.0);
 					
 					this.invMass = 1.0;
-					this.invInertia = new THREE.Vector3();
+					this.invInertia = new THREE.Vector3(1.0, 1.0, 1.0);
 					this.mesh = mesh;
-					this.tempV.set(1.0, 1.0, 1.0);
-					this.mesh.matrixWorld.compose(this.pose.p, this.pose.q, this.tempV);	
+					this.mesh.position.copy(this.pose.p);
+					this.mesh.quaternion.copy(this.pose.q);
 					mesh.userData.physicsBody = this;
 				}
 
-				setBox(wx, wy, wz, density = 1.0) {
-					let mass = wx * wy * wz * density;
+				setBox(size, density = 1.0) {
+					let mass = size.x * size.y * size.z * density;
 					this.invMass = 1.0 / mass;
 					mass /= 12.0;
 					this.invInertia.set(
-						1.0 / (wy * wy + wz * wz) / mass,
-						1.0 / (wz * wz + wx * wx) / mass,
-						1.0 / (wx * wx + wy * wy) / mass);
+						1.0 / (size.y * size.y + size.z * size.z) / mass,
+						1.0 / (size.z * size.z + size.x * size.x) / mass,
+						1.0 / (size.x * size.x + size.y * size.y) / mass);
 				}
 
-				rotateLinearized(rot, scale = 0.0) {
-					this.tempQ.set(rot.x * scale, rot.y * scale, rot.z * scale, 0.0);					
-					this.tempQ.multiply(this.pose.q);
-					this.pose.q.set(this.pose.q.x + 0.5 * this.tempQ.x, this.pose.q.y + 0.5 * this.tempQ.y, 
-							this.pose.q.z + 0.5 * this.tempQ.z, this.pose.q.w + 0.5 * this.tempQ.w);
+				applyRotation(rot, scale = 1.0) {
+					let dq = new THREE.Quaternion(rot.x * scale, rot.y * scale, rot.z * scale, 0.0);					
+					dq.multiply(this.pose.q);
+					this.pose.q.set(this.pose.q.x + 0.5 * dq.x, this.pose.q.y + 0.5 * dq.y, 
+							this.pose.q.z + 0.5 * dq.z, this.pose.q.w + 0.5 * dq.w);
 					this.pose.q.normalize();
 				}
 
@@ -239,75 +283,78 @@
 					this.prevPose.copy(this.pose);
 					this.vel.addScaledVector(gravity, dt);					
 					this.pose.p.addScaledVector(this.vel, dt);
-					rotateLinearized(this.omega, dt);
+					this.applyRotation(this.omega, dt);
 				}
 
 				update(dt) {
 					this.vel.subVectors(this.pose.p, this.prevPose.p);
-					this.vel.set(this.vel.x / dt, this.vel.y / dt, this.vel.z / dt);
-					this.tempQ.multiplyQuaternions(this.pose.q, this.prevPose.q.conjugate());
-					this.omega.set(2.0 / dt * tempQ.q.x, 2.0 / dt * tempQ.y, 2.0 / dt * tempQ.z);
-					if (this.tempQ.w < 0.0)
+					this.vel.multiplyScalar(1.0 / dt);
+					let dq = new THREE.Quaternion();
+					dq.multiplyQuaternions(this.pose.q, this.prevPose.q.conjugate());
+					this.omega.set(dq.x * 2.0 / dt, dq.y * 2.0 / dt, dq.z * 2.0 / dt);
+					if (dq.w < 0.0)
 						this.omega.set(-this.omega.x, -this.omega.y, -this.omega.z);
 
-					this.tempV.set(1.0, 1.0, 1.0);
-					this.mesh.matrixWorld.compose(this.pose.p, this.pose.q, this.tempV);
-				}
-
-				applyCorrection(corr, pos = null) {
-					if (pos === null) 
-						this.tempV.copy(corr);
-					else {
-						this.pose.p.addScaledVector(corr, this.invMass);
-						this.tempV.subVectors(pos, pose.p);
-						this.tempV.cross(corr);
-					}
-					this.pose.rotateInv(this.tempV);
-					this.tempV.set(this.invInertia.x * this.tempV.x, 
-						this.invInertia.y * this.tempV.y, this.invInertia.z * this.tempV.z);
-					this.pose.rotate(this.tempV);
-					rotateLinearized(this.tempV);
+					this.mesh.position.copy(this.pose.p);
+					this.mesh.quaternion.copy(this.pose.q);
 				}
 
 				getInverseMass(normal, pos = null) {
+					let n = new THREE.Vector3();
 					if (pos === null) 
-						this.tempV.copy(normal);
+						n.copy(normal);
 					else {
-						this.tempV.subVectors(pos, pose.p);
-						this.tempV.cross(normal);
+						n.subVectors(pos, this.pose.p);
+						n.cross(normal);
 					}
-					this.pose.rotateInv(this.tempV);
+					this.pose.rotateInv(n);
 					let w = 
-						this.tempV.x * this.tempV.x * invInertia.x +
-						this.tempV.y * this.tempV.y * invInertia.y +
-						this.tempV.z * this.tempV.z * invInertia.z;
+						n.x * n.x * this.invInertia.x +
+						n.y * n.y * this.invInertia.y +
+						n.z * n.z * this.invInertia.z;
 					if (pos !== null)
 						w += this.invMass;
 					return w;
 				}
 
-				applyPairPosCorrection(body1, corr, compliance, dt, pos0 = null, pos1 = null) {
-					this.tempV.copy(corr);
+				applyCorrection(corr, pos = null) {
+					let dq = new THREE.Vector3();
+					if (pos === null) 
+						dq.copy(corr);
+					else {
+						this.pose.p.addScaledVector(corr, this.invMass);
+						dq.subVectors(pos, this.pose.p);
+						dq.cross(corr);
+					}
+					this.pose.rotateInv(dq);
+					dq.set(this.invInertia.x * dq.x, 
+						this.invInertia.y * dq.y, this.invInertia.z * dq.z);
+					this.pose.rotate(dq);
+					this.applyRotation(dq);
+				}
+
+				applyPairCorrection(body1, corr, compliance, dt, pos0 = null, pos1 = null) {
 					let C = corr.length();
 					if ( C == 0.0)
 						return;
-					this.tempV.normalize();
 
-					let w0 = 0.0;
-					let w1 = 0.0;
-					let w0 = getPosInverseMass(this.tempV, pos0);
-					let w1 = body1 ? body1.getPosInverseMass(this.tempV, pos1) : 0.0;
+					let normal = new THREE.Vector3();
+					normal.copy(corr);
+					normal.normalize();
+
+					let w0 = this.getInverseMass(normal, pos0);
+					let w1 = body1 ? body1.getInverseMass(normal, pos1) : 0.0;
 
 					let w = w0 + w1;
 					if (w == 0.0)
 						return;
 
 					let lambda = -C / (w + compliance / dt / dt);
-					this.tempV.multiplyScalar(-lambda);
-					applyPosCorrection(this.tempV, pos0);
+					normal.multiplyScalar(-lambda);
+					this.applyCorrection(normal, pos0);
 					if (body1) {
-						this.tempV.multiplyScalar(-1.0);
-						body1.applyPosCorrection(this.tempV, pos1);
+						normal.multiplyScalar(-1.0);
+						body1.applyCorrection(normal, pos1);
 					}
 				}
 			}
@@ -328,89 +375,51 @@
 				}
 
 				solve(dt) {
-					this.globalPos0.copy(this.localPos0);
-					if (body0)
-						body0.pose.transform(this.globalPos0);
-					this.globalPos1.copy(this.localPos1);
-					if (body1)
-						body1.pose.transform(this.globalPos1);
-					this.corr.subVectors(this.globalPos1, this.globalPos0);
+					this.globalPose0.copy(this.localPose0);
+					if (this.body0)
+						this.body0.pose.transform(this.globalPose0);
+					this.globalPose1.copy(this.localPose1);
+					if (this.body1)
+						this.body1.pose.transform(this.globalPose1);
+					this.corr.subVectors(this.globalPose1.p, this.globalPose0.p);
 
-					if (this.body0 === null)
-						this.body0.applyPairCorrection(this.body1, this.corr, this.compliance, dt, 
-							this.gloabePos0.p, this.globalPose1.p);
-					else {
+					if (this.body0 === null) {
 						this.corr.multiplyScalar(-1.0);
 						this.body1.applyPairCorrection(this.body0, this.corr, this.compliance, dt, 
-							this.gloabePos1.p, this.globalPose0.p);
+							this.globalPose1.p, this.globalPose0.p);
 					}
+					else 
+						this.body0.applyPairCorrection(this.body1, this.corr, this.compliance, dt, 
+							this.globalPose0.p, this.globalPose1.p);
 				}
 			}
 
-			var bodies = [];
-			var joints = [];
+			// Simulate -----------------------------------------------------------
 
-			// create objects  -----------------------------------------------------------
+			function simulate() {
+				let dt = timeStep / numSubsteps;
 
-			function createObjects(){
-                
-				let numObjects = 100;
-				let dx = 0.02;
-				let dy = 0.04;
-				let dz = 0.02;
+				for (let i = 0; i < numSubsteps; i++) {
+					for (let j = 0; j < bodies.length; j++) 
+						bodies[j].integrate(dt);
 
-                let pos = {x: 0, y: numObjects * dy - dy, z: dz};
+					for (let j = 0; j < joints.length; j++)
+						joints[j].solve(dt);
 
-                let dims = {x: dx, y: dy, z: dz};
-                let quat = {x: 0, y: 0, z: 0, w: 1};
-                let mass = dx * dy * dz;
-
-				let pose = new Pose();
-
-				let lastBody = null;
-								
-				for (let i = 0; i < numObjects; i++) {                
-
-					// graphics
-
-					let boxVis = new THREE.Mesh(new THREE.BoxBufferGeometry(), new THREE.MeshPhongMaterial({color: 0xf78a1d}));
-
-					boxVis.scale.set(dims.x, dims.y - 0.006, dims.z);
-					boxVis.name = "box " + i;
-					boxVis.layers.enable( 1 );
-
-					boxVis.castShadow = true;
-					boxVis.receiveShadow = true;
-
-					scene.add(boxVis);
-
-					// physics
-
-					pose.p.set(pos.x, pos.y - i * dy, pos.z);
-
-					let box = new Body(pose, boxVis);
-					bodies.push(box);
-
-					let joint = new Joint()
-
-					joints.push(joint);
-					
-					let s = i % 2 == 0 ? -0.5 : 0.5;
-					let lastPivot = new Ammo.btVector3( s * dims.x, -0.5 * dims.y, s * dims.z );
-					let pivot = new Ammo.btVector3( s * dims.x, 0.5 * dims.y, s * dims.z );
-					let p2p;
-					if (i == 0)
-						p2p = new Ammo.btPoint2PointConstraint( boxBody, pivot);
-					else
-						p2p = new Ammo.btPoint2PointConstraint( lastBody, boxBody, lastPivot, pivot);
-						
-					physicsWorld.addConstraint( p2p, false );
-					
-					lastBody = boxBody;
+					for (let j = 0; j < bodies.length; j++) 
+						bodies[j].update(dt);
 				}
 			}
 
-	
+			function animate() {
+				requestAnimationFrame( animate );
+				render();
+			}
+
+			function render() {
+				renderer.render( scene, camera );
+				simulate();
+			}			
 
 			// scene interaction -----------------------------------------------------------
 
@@ -539,7 +548,10 @@
 						touchCoords[i].y = evt.touches[i].clientY;
 					}
 				}				
-			}					
+			}
+
+			init();
+			animate();											
 
 		</script>
 
