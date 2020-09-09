@@ -129,6 +129,9 @@ class Body {
         if (dq.w < 0.0)
             this.omega.set(-this.omega.x, -this.omega.y, -this.omega.z);
 
+        // this.omega.multiplyScalar(1.0 - 1.0 * dt);
+        // this.vel.multiplyScalar(1.0 - 1.0 * dt);
+
         this.mesh.position.copy(this.pose.p);
         this.mesh.quaternion.copy(this.pose.q);
     }

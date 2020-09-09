@@ -1,14 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>PBD Body Chain.js</title>
+		<title>PBD Body Chain</title>
 		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <style>
+            th, td {
+                padding: 2px;
+            }
+            body {
+                padding: 10px 50px;
+                font-family: verdana; 
+                line-height: 1.5;
+                font-size: 15px;
+            }
+            h1 {
+                font-family: verdana; 
+            }
+            #gui {
+                padding: 10px;
+            }
+            .button {
+              background-color: #555555;
+              border: none;
+              color: white;
+              padding: 8px 8px;
+              border-radius: 5px;
+              text-align: center;
+              text-decoration: none;
+              display: inline-block;
+              font-size: 16px;
+            }
+            .slider {
+              -webkit-appearance: none;
+              width: 80px;
+              height: 6px;
+              border-radius: 5px;
+              background: #d3d3d3;
+              outline: none;
+              opacity: 0.7;
+              -webkit-transition: .2s;
+              transition: opacity .2s;
+            }
+            .slider:hover {
+              opacity: 1;
+            }
+            .slider::-webkit-slider-thumb {
+              -webkit-appearance: none;
+              appearance: none;
+              width: 15px;
+              height: 15px;
+              border-radius: 50%;
+              background: #202020;
+              cursor: pointer;
+            }
+            </style>        
 	</head>
 	
 	<body>
 
-		<div id="container"></div>
+        <h1>Chain of 100 Bodies</h1> Matthias M&uuml;ller, Nvidia
+        <br> <br>       
+        The challenge is to simulate a chain of 99 small boxes and one 100x the weight at the bottom.<br><br>
+        These are the specs:
+        <ul>
+            <li>Small boxes: 2cm x 4cm x 2cm, big box: 20cm x 4cm x 20cm</li>
+            <li>Gravity = -10 m/s^2</li>
+            <li>Joints attached alternating to opposite corners</li>
+            <li>Time step = 1/60s</li>
+        </ul>
+
+        Grab the boxes if you can. Hit [F5] to restart. <br> <br>
+          
+        <div id="container"></div>
+        
+        <a href = "https://github.com/matthias-research/pages/blob/master/challenges/PBD.js" class ="button" target = "_blank">PBD.js</a>        
+        <a href = "https://github.com/matthias-research/pages/blob/master/challenges/bodyChainPBD.html" class ="button" target = "_blank">bodyChainPBD.html</a>        
 
 		<script src="https://threejs.org/build/three.js"></script>
 
@@ -21,12 +88,13 @@
 			var gravity = new THREE.Vector3(0.0, -10.0, 0.0);
 			var numSubsteps = 40;
 			var timeStep = 1.0 / 60.0;
-			var rotDamping = 100.0;
-            var posDamping = 100.0;
 
 			var numObjects = 100;
 			var objectsSize = new THREE.Vector3(0.02, 0.04, 0.02);
 			var lastObjectsSize = new THREE.Vector3(0.2, 0.04, 0.2);
+
+			var rotDamping = 1000.0;
+            var posDamping = 1000.0;
 
 			var bodies = [];
 			var joints = [];
@@ -50,8 +118,8 @@
 
 			var mousePos = new THREE.Vector2();
 			var mouseDown = false;
-			var cameraLookAt = new THREE.Vector3(0.0, 2.5, 0.0);
-			var camPosition = new THREE.Vector3(0.0, 2.5, 5.0);
+			var cameraLookAt = new THREE.Vector3(0.0, 3.0, 0.0);
+			var camPosition = new THREE.Vector3(0.0, 3.0, 4.0);
 			var cameraDirX = new THREE.Vector3(0.0, 0.0, 0.0);
 			var cameraDirY = new THREE.Vector3(0.0, 0.0, 0.0);
 			var cameraDirZ = new THREE.Vector3(0.0, 0.0, 0.0);
@@ -99,14 +167,6 @@
 					side: THREE.DoubleSide
 				} );
 
-				// var geometry = new THREE.SphereGeometry( 0.2, 20, 20 );
-
-				// var object = new THREE.Mesh( geometry, material );
-				// object.position.set(0, 0.5, 0);
-				// object.castShadow = true;
-				// object.layers.enable( 1 );
-				// scene.add( object );
-
 				var ground = new THREE.Mesh(
 					new THREE.PlaneBufferGeometry( 20, 20, 1, 1 ),
 					new THREE.MeshPhongMaterial( { color: 0xa0adaf, shininess: 150 } )
@@ -127,7 +187,7 @@
 				renderer = new THREE.WebGLRenderer();
 				renderer.shadowMap.enabled = true;
 				renderer.setPixelRatio( window.devicePixelRatio );
-				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setSize( 0.8 * window.innerWidth, 0.5 * window.innerHeight );
 				window.addEventListener( 'resize', onWindowResize, false );
 				container.appendChild( renderer.domElement );
 				
@@ -263,8 +323,9 @@
 			}
 
 			function startGrab(x, y) {
-				mousePos.x = ( x / window.innerWidth ) * 2 - 1;
-				mousePos.y = - ( y / window.innerHeight ) * 2 + 1;
+                var rect = renderer.domElement.getBoundingClientRect();	
+				mousePos.x = ((x - rect.left) / rect.width ) * 2 - 1;
+				mousePos.y = -((y - rect.top) / rect.height ) * 2 + 1;
 				raycaster.setFromCamera( mousePos, camera );
 
 				var intersects = raycaster.intersectObjects( scene.children );
@@ -290,8 +351,9 @@
 				if (!grabJoint)
 					return;					
 
-				mousePos.x = ( x / window.innerWidth ) * 2 - 1;
-				mousePos.y = - ( y / window.innerHeight ) * 2 + 1;
+                var rect = renderer.domElement.getBoundingClientRect();	
+				mousePos.x = ((x - rect.left) / rect.width ) * 2 - 1;
+				mousePos.y = -((y - rect.top) / rect.height ) * 2 + 1;
 				raycaster.setFromCamera( mousePos, camera );
 				grabJoint.localPose1.p.copy(raycaster.ray.origin);
 				grabJoint.localPose1.p.addScaledVector(raycaster.ray.direction, grabDistance);
