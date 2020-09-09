@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>test three.js</title>
+		<title>PBD Body Chain.js</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 	</head>
@@ -12,15 +12,17 @@
 
 		<script src="https://threejs.org/build/three.js"></script>
 
-		<script type="module">
+		<script src="PBD.js"></script>
 
+		<script type="module">
+			
 			// physics scene
 
 			var gravity = new THREE.Vector3(0.0, -10.0, 0.0);
 			var numSubsteps = 40;
 			var timeStep = 1.0 / 60.0;
-			var rotDamping = 10.0;
-			var transDamping = 100.0;
+			var rotDamping = 100.0;
+            var posDamping = 100.0;
 
 			var numObjects = 100;
 			var objectsSize = new THREE.Vector3(0.02, 0.04, 0.02);
@@ -156,10 +158,12 @@
 			function createObjects() {
                 
                 let pos = new THREE.Vector3(0.0, (numObjects * objectsSize.y + lastObjectsSize.y) * 1.4 + 0.2, 0.0);
-				let pose = new Pose();
+				let pose = new PBD.Pose();
 				let lastBody = null;
-				let jointPose0 = new Pose();
-				let jointPose1 = new Pose();
+				let jointPose0 = new PBD.Pose();
+                let jointPose1 = new PBD.Pose();
+                jointPose0.q.setFromAxisAngle(new THREE.Vector3(0.0, 0.0, 1.0), 0.5 * Math.PI)
+                jointPose1.q.setFromAxisAngle(new THREE.Vector3(0.0, 0.0, 1.0), 0.5 * Math.PI)
 				let lastSize = objectsSize.clone();
 								
 				for (let i = 0; i < numObjects; i++) {                
@@ -181,12 +185,12 @@
 
 					pose.p.set(pos.x, pos.y - i * objectsSize.y, pos.z);
 
-					let boxBody = new Body(pose, boxVis);
+					let boxBody = new PBD.Body(pose, boxVis);
 					boxBody.setBox(size);
 					bodies.push(boxBody);
 										
 					let s = i % 2 == 0 ? -0.5 : 0.5;
-					jointPose0.p.set(s * size.x, 0.5 * size.y, s * size.z);
+                    jointPose0.p.set(s * size.x, 0.5 * size.y, s * size.z);
 					jointPose1.p.set( s * lastSize.x, -0.5 * lastSize.y, s * lastSize.z);
 
 					if (!lastBody) {
@@ -194,10 +198,10 @@
 						jointPose1.p.add(pose.p);
 					}
 
-					let joint = new Joint(boxBody, lastBody, jointPose0, jointPose1);
+					let joint = new PBD.Joint(PBD.JointType.SPHERICAL, boxBody, lastBody, jointPose0, jointPose1);
 					joint.rotDamping = rotDamping;
-					joint.transDamping = transDamping;
-					joints.push(joint);
+                    joint.posDamping = posDamping;
+                    joints.push(joint);
 					
 					lastBody = boxBody;
 					lastSize.copy(size);
@@ -216,310 +220,6 @@
 
 			}
 
-			// Pose  -----------------------------------------------------------
-
-			class Pose {
-				constructor() {
-					this.p = new THREE.Vector3(0.0, 0.0, 0.0);
-					this.q = new THREE.Quaternion(0.0, 0.0, 0.0, 1.0);					
-				}
-				rotate(v) {
-					v.applyQuaternion(this.q);
-				}
-				invRotate(v) {
-					let inv = this.q.clone();
-					inv.conjugate();
-					v.applyQuaternion(inv);
-				}
-				transform(v) {
-					v.applyQuaternion(this.q);
-					v.add(this.p);
-				}
-				invTransform(v) {
-					v.sub(this.p);
-					this.invRotate(v);
-				}
-				transformPose(pose) {
-					this.q.multiply(pose.q);
-					this.rotate(pose.p);
-					pose.p.add(this.p);
-				}
-				copy(pose) {
-					this.p.copy(pose.p);
-					this.q.copy(pose.q);
-				}
-				clone() {
-					var newPose = new Pose();
-					newPose.p = this.p.clone();
-					newPose.q = this.q.clone();
-					return newPose;
-				}
-			}
-
-			// Rigid body class  -----------------------------------------------------------
-
-			class Body {
-				constructor(pose, mesh) 
-				{ 
-					this.pose = pose.clone();
-					this.prevPose = pose.clone();
-					this.origPose = pose.clone();
-					this.vel = new THREE.Vector3(0.0, 0.0, 0.0);
-					this.omega = new THREE.Vector3(0.0, 0.0, 0.0);
-					
-					this.invMass = 1.0;
-					this.invInertia = new THREE.Vector3(1.0, 1.0, 1.0);
-					this.mesh = mesh;
-					this.mesh.position.copy(this.pose.p);
-					this.mesh.quaternion.copy(this.pose.q);
-					mesh.userData.physicsBody = this;
-				}
-
-				setBox(size, density = 1.0) {
-					let mass = size.x * size.y * size.z * density;
-					this.invMass = 1.0 / mass;
-					mass /= 12.0;
-					this.invInertia.set(
-						1.0 / (size.y * size.y + size.z * size.z) / mass,
-						1.0 / (size.z * size.z + size.x * size.x) / mass,
-						1.0 / (size.x * size.x + size.y * size.y) / mass);
-				}
-
-				applyRotation(rot, scale = 1.0) {
-
-					let maxPhi = 0.5;
-					let phi = rot.length();
-					if (Math.abs(phi) * scale > maxPhi) 		// safety
-						scale = maxPhi / phi;
-						
-					let dq = new THREE.Quaternion(rot.x * scale, rot.y * scale, rot.z * scale, 0.0);					
-					dq.multiply(this.pose.q);
-					this.pose.q.set(this.pose.q.x + 0.5 * dq.x, this.pose.q.y + 0.5 * dq.y, 
-							this.pose.q.z + 0.5 * dq.z, this.pose.q.w + 0.5 * dq.w);
-					this.pose.q.normalize();
-				}
-
-				integrate(dt) {
-					this.prevPose.copy(this.pose);
-					this.vel.addScaledVector(gravity, dt);					
-					this.pose.p.addScaledVector(this.vel, dt);
-					this.applyRotation(this.omega, dt);
-				}
-
-				update(dt) {
-					this.vel.subVectors(this.pose.p, this.prevPose.p);
-					this.vel.multiplyScalar(1.0 / dt);
-					let dq = new THREE.Quaternion();
-					dq.multiplyQuaternions(this.pose.q, this.prevPose.q.conjugate());
-					this.omega.set(dq.x * 2.0 / dt, dq.y * 2.0 / dt, dq.z * 2.0 / dt);
-					if (dq.w < 0.0)
-						this.omega.set(-this.omega.x, -this.omega.y, -this.omega.z);
-
-					this.mesh.position.copy(this.pose.p);
-					this.mesh.quaternion.copy(this.pose.q);
-				}
-
-				getVelocityAt(pos) {					
-					let vel = new THREE.Vector3(0.0, 0.0, 0.0);					
-					vel.subVectors(pos, this.pose.p);
-					vel.cross(this.omega);
-					vel.subVectors(this.vel, vel);
-					return vel;
-				}
-
-				getInverseMass(normal, pos = null) {
-					let n = new THREE.Vector3();
-					if (pos === null) 
-						n.copy(normal);
-					else {
-						n.subVectors(pos, this.pose.p);
-						n.cross(normal);
-					}
-					this.pose.invRotate(n);
-					let w = 
-						n.x * n.x * this.invInertia.x +
-						n.y * n.y * this.invInertia.y +
-						n.z * n.z * this.invInertia.z;
-					if (pos !== null)
-						w += this.invMass;
-					return w;
-				}
-
-				applyCorrection(corr, pos = null, velocityLevel = false) {
-					let dq = new THREE.Vector3();
-					if (pos === null) 
-						dq.copy(corr);
-					else {
-						if (velocityLevel)
-							this.vel.addScaledVector(corr, this.invMass);
-						else
-							this.pose.p.addScaledVector(corr, this.invMass);
-						dq.subVectors(pos, this.pose.p);
-						dq.cross(corr);
-					}
-					this.pose.invRotate(dq);
-					dq.set(this.invInertia.x * dq.x, 
-						this.invInertia.y * dq.y, this.invInertia.z * dq.z);
-					this.pose.rotate(dq);
-					if (velocityLevel)
-						this.omega.add(dq);
-					else 
-						this.applyRotation(dq);
-				}
-			}
-
-			// ------------------------------------------------------------------------------------
-
-			function applyBodyPairCorrection(body0, body1, corr, compliance, dt, pos0 = null, pos1 = null, 
-				velocityLevel = false) 
-			{
-				let C = corr.length();
-				if ( C == 0.0)
-					return;
-
-				let normal = new THREE.Vector3();
-				normal.copy(corr);
-				normal.normalize();
-
-				let w0 = body0 ? body0.getInverseMass(normal, pos0) : 0.0;
-				let w1 = body1 ? body1.getInverseMass(normal, pos1) : 0.0;
-
-				let w = w0 + w1;
-				if (w == 0.0)
-					return;
-
-				let lambda = -C / (w + compliance / dt / dt);
-				normal.multiplyScalar(-lambda);
-				if (body0)
-					body0.applyCorrection(normal, pos0, velocityLevel);
-				if (body1) {
-					normal.multiplyScalar(-1.0);
-					body1.applyCorrection(normal, pos1, velocityLevel);
-				}
-			}
-
-			// ------------------------------------------------------------------------------------------------
-
-			function limitAngle(body0, body1, n, a, b, minAngle, maxAngle, compliance, dt)
-			{
-				let c = a.clone();
-				c.cross(b);
-
-				let phi = Math.asin(c.dot(n));
-				if (a.dot(b) < 0.0)
-					phi = Math.PI - phi;
-
-				if (phi > Math.PI)
-					phi -= 2.0 * Math.PI;
-				if (phi < -Math.PI)
-					phi += 2.0 * Math.PI;
-
-				if (phi < minAngle || phi > maxAngle) {
-					phi = Math.min(Math.max(minAngle, phi), maxAngle);
-
-					let q = new THREE.Quaternion();
-					q.setFromAxisAngle(n, phi);
-
-					let omega = a.clone();
-					omega.applyQuaternion(q);
-					omega.cross(b);
-
-					// if (!omega.isZero()) {
-					// 	Vec3 n = omega;
-					// 	double d = n.normalize();				
-					// 	if (d > maxCorr)
-					// 		omega = maxCorr * n;
-					// }
-
-					applyBodyPairCorrection(body0, body1, omega, compliance, dt);
-				}
-			}	
-
-			// Joint class  -----------------------------------------------------------
-
-			class Joint {
-				constructor(body0, body1, localPose0, localPose1) 
-				{ 
-					this.body0 = body0;
-					this.body1 = body1;
-					this.localPose0 = localPose0.clone();
-					this.localPose1 = localPose1.clone();
-					this.globalPose0 = localPose0.clone();
-					this.globalPose1 = localPose1.clone();
-					
-					this.compliance = 0.0;
-					this.rotDamping = 0.0;
-					this.transDamping = 0.0;
-					this.maxSwing = 2.0 * Math.PI;
-					this.maxTwist = 2.0 * Math.PI;
-				}
-
-				updateGlobalPoses() {
-					this.globalPose0.copy(this.localPose0);
-					if (this.body0)
-						this.body0.pose.transformPose(this.globalPose0);
-					this.globalPose1.copy(this.localPose1);
-					if (this.body1)
-						this.body1.pose.transformPose(this.globalPose1);
-				}
-
-				solvePos(dt) {
-					this.updateGlobalPoses();
-
-					// simple attachment
-					let corr = new THREE.Vector3();
-					corr.subVectors(this.globalPose1.p, this.globalPose0.p);
-					applyBodyPairCorrection(this.body0, this.body1, corr, this.compliance, dt,
-						this.globalPose0.p, this.globalPose1.p);
-
-					// swing limit
-				}
-
-				solveVel(dt) { 
-					if (this.rotDamping > 0.0) {
-						let omega = new THREE.Vector3(0.0, 0.0, 0.0);
-						if (this.body0)
-							omega.sub(this.body0.omega);
-						if (this.body1)
-							omega.add(this.body1.omega); 
-						omega.multiplyScalar(Math.min(1.00, this.rotDamping * dt));
-						applyBodyPairCorrection(this.body0, this.body1, omega, 0.0, dt, 
-								null, null, true);
-					}
-					if (this.transDamping > 0.0) {
-						this.updateGlobalPoses();
-						let vel = new THREE.Vector3(0.0, 0.0, 0.0);
-						if (this.body0)
-							vel.sub(this.body0.getVelocityAt(this.globalPose0.p));
-						if (this.body1)
-							vel.add(this.body1.getVelocityAt(this.globalPose1.p));
-						vel.multiplyScalar(Math.min(1.0, this.transDamping * dt));
-						applyBodyPairCorrection(this.body0, this.body1, vel, 0.0, dt, 
-								this.globalPose0.p, this.globalPose1.p, true);
-					}
-				}	
-			}
-
-			// Simulate -----------------------------------------------------------
-
-			function simulate() {
-				let dt = timeStep / numSubsteps;
-
-				for (let i = 0; i < numSubsteps; i++) {
-					for (let j = 0; j < bodies.length; j++) 
-						bodies[j].integrate(dt);
-
-					for (let j = 0; j < joints.length; j++)
-						joints[j].solvePos(dt);
-
-					for (let j = 0; j < bodies.length; j++) 
-						bodies[j].update(dt);
-
-					for (let j = 0; j < joints.length; j++)
-						joints[j].solveVel(dt);
-				}
-			}
-
 			function animate() {
 				requestAnimationFrame( animate );
 				render();
@@ -527,7 +227,7 @@
 
 			function render() {
 				renderer.render( scene, camera );
-				simulate();
+				PBD.simulate(bodies, joints, timeStep, numSubsteps, gravity);
 			}			
 
 			// scene interaction -----------------------------------------------------------
@@ -572,15 +272,15 @@
 				if (intersects.length > 0) {
 					let body = intersects[0].object.userData.physicsBody;	
 					grabDistance = intersects[0].distance;
-					let pose0 = new Pose();
-					let pose1 = new Pose();
+					let pose0 = new PBD.Pose();
+					let pose1 = new PBD.Pose();
 
 					let hit = raycaster.ray.origin.clone();
 					hit.addScaledVector(raycaster.ray.direction, grabDistance);
 					pose1.p.copy(hit);
 					body.pose.invTransform(hit);
 					pose0.p.copy(hit);					
-					grabJoint = new Joint(body, null, pose0, pose1);
+					grabJoint = new PBD.Joint(PBD.JointType.SPHERICAL, body, null, pose0, pose1);
 					grabJoint.compliance = 10.0;
 					joints.push(grabJoint);
 				}
