@@ -1,0 +1,174 @@
+<!-- Five Minute Physics - Matthias Mueller -->
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>Tutorial 2</title>
+</head>
+
+<body>
+
+<canvas id="myCanvas" style="border:2px solid"></canvas>
+
+<script>
+
+	// drawing -------------------------------------------------------
+
+	var canvas = document.getElementById("myCanvas");
+	var c = canvas.getContext("2d");
+
+	canvas.width = Math.min(window.innerWidth, window.innerHeight) - 20;
+	canvas.height = canvas.width;
+
+	var simWidth = 2.0;
+	var simToCanvasScale = canvas.width / simWidth;
+
+	function canvasX(pos) {
+		return canvas.width / 2 + pos.x * simToCanvasScale;
+	}
+
+	function canvasY(pos) {
+		return canvas.height / 2 - pos.y * simToCanvasScale;
+	}
+
+	// vector math -------------------------------------------------------
+
+	function vecCopy(a, b) {
+		a.x = b.x;
+		a.y = b.y;
+	}
+
+	function vecAdd(c, a, b, scale = 1.0) {
+		c.x = a.x + b.x * scale;
+		c.y = a.y + b.y * scale;
+	}
+
+	function vecLength(a) {
+		return Math.sqrt(a.x * a.x + a.y * a.y);
+	}
+
+	function vecSub(c, a, b) {
+		c.x = a.x - b.x;
+		c.y = a.y - b.y;
+	}
+
+	function vecScale(a, scale) {
+		a.x *= scale;
+		a.y *= scale;
+	}
+
+	// simulation parameters -------------------------------------------------------
+
+	var numSteps = 100;
+	var timeStep = 1.0 / 60.0 / numSteps;
+	var gravity = { x: 0.0, y: -10.0};
+
+	// pendulum -------------------------------------------------------
+
+	var pendulum = [
+		{
+			invMass : 0.0,
+			pos : {x : 0.0, y : 0.0},
+		},
+		{
+			length : 0.5,
+			radius : 0.10,
+			invMass : 1.0 / 1.0,
+			pos : {x : 0.0, y : 0.5},
+			prev : {x : 0.0, y : 0.0},
+			vel : {x : 0.001, y : 0.0}
+		},
+		{
+			length : 0.3,
+			radius : 0.08,
+			invMass : 1.0 / 0.8,
+			pos : {x : 0.0, y : 0.8},
+			prev : {x : 0.0, y : 0.0},
+			vel : {x : 0.0, y : 0.0}
+		}
+	];
+
+	// draw -------------------------------------------------------
+
+	function draw() {
+		c.clearRect(0, 0, canvas.width, canvas.height);
+
+		c.lineWidth = "5";            
+		c.fillStyle = "#FF0000";
+		c.strokeStyle = "#000000";
+
+		for (i = 1; i < pendulum.length; i++) {
+			var p1 = pendulum[i-1].pos;
+			var p2 = pendulum[i].pos;
+
+			c.beginPath();
+			c.moveTo(canvasX(p1), canvasY(p1));
+			c.lineTo(canvasX(p2), canvasY(p2));
+			c.stroke();
+		}
+
+		for (i = 1; i < pendulum.length; i++) {
+			var p = pendulum[i].pos;
+			var r = pendulum[i].radius * simToCanvasScale;
+
+			c.beginPath();			
+			c.arc(canvasX(p), canvasY(p), r, 0.0, 2.0 * Math.PI); 
+			c.closePath();
+			c.fill();			
+		}
+	}
+
+	function simulate() {
+		for (step = 0; step < numSteps; step++) {
+
+			// integrate
+
+			for (i = 1; i < pendulum.length; i++) {
+				var p = pendulum[i];
+				vecCopy(p.prev, p.pos);
+				vecAdd(p.vel, p.vel, gravity, timeStep);
+				vecAdd(p.pos, p.pos, p.vel, timeStep);
+			}
+
+			// solve
+
+			for (i = 1; i < pendulum.length; i++) {
+
+				var w1 = pendulum[i-1].invMass;
+				var w2 = pendulum[i].invMass;
+				var w = w1 + w2;
+				if (w == 0.0)
+					continue;
+
+				var p1 = pendulum[i - 1];
+				var p2 = pendulum[i];
+				var corr = { x: 0.0, y: 0.0 };
+				vecSub(corr, p2.pos, p1.pos);
+				var dist = vecLength(corr);
+
+				vecScale(corr, (dist - p2.length) / dist);
+				vecAdd(p1.pos, p1.pos, corr, w1 / w);
+				vecAdd(p2.pos, p2.pos, corr, -w2 / w); 
+			}
+
+			// update velocity
+
+			for (i = 1; i < pendulum.length; i++) {
+				var p = pendulum[i];
+				vecSub(p.vel, p.pos, p.prev);
+				vecScale(p.vel, 1.0 / timeStep);
+			}
+		}	
+	}
+
+	function update() {
+		simulate();
+		draw();
+		requestAnimationFrame(update);
+	}
+	
+	update();
+
+</script> 
+</body>
+</html>
