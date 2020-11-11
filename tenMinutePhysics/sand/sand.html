@@ -80,6 +80,90 @@
 		return a.x * b.x + a.y * b.y;
 	}
 
+	// grid -------------------------------------------------------
+
+	var gridSpacing = kernelRadius * 1.5;
+	var invGridSpacing = 1.0 / gridSpacing;
+
+	var hashSize = 370111;
+
+	var hash = {
+		size : hashSize,
+
+		first : new Int32Array(hashSize),
+		next : new Int32Array(maxParticles),
+	}
+
+var firstNeighbor = new Int32Array(maxParticles + 1);
+var neighbors = new Vector(10 * maxParticles);
+			
+function findNeighbors() 
+{
+	// hash particles
+	
+	hash.currentMark++;
+	
+	
+	for (i = 0; i < numParticles; i++) {
+		var px = particles.pos[2 * i];
+		var py = particles.pos[2 * i + 1];
+		
+		var gx = Math.floor((px - hash.orig.left) * invGridSpacing);
+		var gy = Math.floor((py - hash.orig.bottom) * invGridSpacing);
+		
+		var h = (Math.abs((gx * 92837111) ^ (gy * 689287499))) % hash.size;
+					
+		if (hash.marks[h] != hash.currentMark) {				
+			hash.marks[h] = hash.currentMark;
+			hash.first[h] = -1;
+		}
+
+		hash.next[i] = hash.first[h];
+		hash.first[h] = i;
+	}
+	
+	// collect neighbors
+	
+	neighbors.clear();
+
+	var h2 = gridSpacing * gridSpacing;
+
+	for (i = 0; i < numParticles; i++) {
+		firstNeighbor[i] = neighbors.size;
+		
+		var px = particles.pos[2 * i];
+		var py = particles.pos[2 * i + 1];
+		
+		var gx = Math.floor((px - hash.orig.left) * invGridSpacing);
+		var gy = Math.floor((py - hash.orig.bottom) * invGridSpacing);
+		
+		var x, y;
+		
+		for (x = gx - 1; x <= gx + 1; x++) {
+			for (y = gy - 1; y <= gy + 1; y++) {
+					
+				var h = (Math.abs((x * 92837111) ^ (y * 689287499))) % hash.size;
+					
+				if (hash.marks[h] != hash.currentMark) 
+					continue;
+			
+				var id = hash.first[h];
+				while (id >= 0) 
+				{
+					var dx = particles.pos[2 * id] - px;
+					var dy = particles.pos[2 * id + 1] - py;
+					
+					if (dx * dx + dy * dy < h2) 
+						neighbors.pushBack(id);
+
+					id = hash.next[id];						
+				}
+			}
+		}
+	}
+	firstNeighbor[numParticles] = neighbors.size;
+}
+
 	// scene -------------------------------------------------------
 
 	var gravity = { x: 0.0, y: -10.0};
