@@ -1,15 +1,35 @@
-<!-- Five Minute Physics - Matthias Mueller -->
+<!-- Ten Minute Physics - Matthias Mueller -->
 
 <!DOCTYPE html>
 <html>
 <head>
-<title>Tutorial 2</title>
+	<title>Pendulum</title>
+	<style>
+		.button {
+		background-color: #606060;
+		border: none;
+		color: white;
+		padding: 15px 32px;
+		font-size: 16px;
+		margin: 4px 2px;
+		cursor: pointer;
+	}
+	</style>
 </head>
 
 <body>
 
-<canvas id="myCanvas" style="border:2px solid"></canvas>
-
+	<table style="width:100%">
+		<tr>
+			<td><button class="button" onclick="setupScene()">Restart</button></td>
+		</tr>
+		<tr>
+			<td>
+				<canvas id="myCanvas" style="border:2px solid"></canvas>
+			</td>
+		</tr>
+	</table>
+	
 <script>
 
 	// drawing -------------------------------------------------------
@@ -17,18 +37,20 @@
 	var canvas = document.getElementById("myCanvas");
 	var c = canvas.getContext("2d");
 
-	canvas.width = Math.min(window.innerWidth, window.innerHeight) - 20;
-	canvas.height = canvas.width;
+	canvas.width = window.innerWidth - 20;
+	canvas.height = window.innerHeight - 100;
 
-	var simWidth = 2.0;
-	var simToCanvasScale = canvas.width / simWidth;
+	var simMinWidth = 2.0;
+	var cScale = Math.min(canvas.width, canvas.height) / simMinWidth;
+	var simWidth = canvas.width / cScale;
+	var simHeight = canvas.height / cScale;
 
-	function canvasX(pos) {
-		return canvas.width / 2 + pos.x * simToCanvasScale;
+	function cX(pos) {
+		return pos.x * cScale;
 	}
 
-	function canvasY(pos) {
-		return canvas.height / 2 - pos.y * simToCanvasScale;
+	function cY(pos) {
+		return canvas.height - pos.y * cScale;
 	}
 
 	// vector math -------------------------------------------------------
@@ -63,30 +85,40 @@
 	var timeStep = 1.0 / 60.0 / numSteps;
 	var gravity = { x: 0.0, y: -10.0};
 
-	// pendulum -------------------------------------------------------
+	var pendulum = [];
 
-	var pendulum = [
+	function setupScene() 
+	{
+		var orig = { x: simWidth / 2.0, y: simHeight / 2.0};
+
+		var l1 = 0.5;
+		var l2 = 0.3;
+		var r1 = 0.1;
+		var r2 = 0.07;
+
+		pendulum = [
 		{
 			invMass : 0.0,
-			pos : {x : 0.0, y : 0.0},
+			pos : {x : orig.x, y : orig.y},
 		},
 		{
-			length : 0.5,
-			radius : 0.10,
-			invMass : 1.0 / 1.0,
-			pos : {x : 0.0, y : 0.5},
+			length : l1,
+			radius : r1,
+			invMass : 1.0 / (Math.PI * r1 * r1),
+			pos : {x : orig.x, y : orig.y + l1},
 			prev : {x : 0.0, y : 0.0},
-			vel : {x : 0.001, y : 0.0}
+			vel : {x : 0.0, y : 0.0}
 		},
 		{
-			length : 0.3,
-			radius : 0.08,
-			invMass : 1.0 / 0.8,
-			pos : {x : 0.0, y : 0.8},
+			length : l2,
+			radius : r2,
+			invMass : 1.0 / (Math.PI * r2 * r2),
+			pos : {x : orig.x + 0.00001, y : orig.y + l1 + l2},
 			prev : {x : 0.0, y : 0.0},
 			vel : {x : 0.0, y : 0.0}
 		}
-	];
+		];
+	}
 
 	// draw -------------------------------------------------------
 
@@ -102,17 +134,17 @@
 			var p2 = pendulum[i].pos;
 
 			c.beginPath();
-			c.moveTo(canvasX(p1), canvasY(p1));
-			c.lineTo(canvasX(p2), canvasY(p2));
+			c.moveTo(cX(p1), cY(p1));
+			c.lineTo(cX(p2), cY(p2));
 			c.stroke();
 		}
 
 		for (i = 1; i < pendulum.length; i++) {
 			var p = pendulum[i].pos;
-			var r = pendulum[i].radius * simToCanvasScale;
+			var r = pendulum[i].radius * cScale;
 
 			c.beginPath();			
-			c.arc(canvasX(p), canvasY(p), r, 0.0, 2.0 * Math.PI); 
+			c.arc(cX(p), cY(p), r, 0.0, 2.0 * Math.PI); 
 			c.closePath();
 			c.fill();			
 		}
@@ -167,6 +199,7 @@
 		requestAnimationFrame(update);
 	}
 	
+	setupScene();
 	update();
 
 </script> 

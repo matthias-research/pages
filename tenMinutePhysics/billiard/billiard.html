@@ -1,0 +1,174 @@
+<!-- Five Minute Physics - Matthias Mueller -->
+
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Billiard</title>
+</head>
+
+<body>
+
+<canvas id="myCanvas" style="border:2px solid"></canvas>
+
+<script>
+
+	// drawing -------------------------------------------------------
+
+	var canvas = document.getElementById("myCanvas");
+	var c = canvas.getContext("2d");
+
+	canvas.width = Math.min(window.innerWidth, window.innerHeight) - 20;
+	canvas.height = canvas.width;
+
+	var simWidth = 2.0;
+	var cScale = canvas.width / simWidth;
+
+	function cX(pos) {
+		return pos.x * cScale;
+	}
+
+	function cY(pos) {
+		return canvas.height - pos.y * cScale;
+	}
+
+// vector math -------------------------------------------------------
+
+	function vecCopy(a) {
+		return { x : a.x, y : a.y };
+	}
+
+	function vecAdd(a, b, scale = 1.0) {
+		return { x : a.x + scale * b.x, y : a.y + scale * b.y};
+	}
+
+	function vecSub(a, b, scale = 1.0) {
+		return { x : a.x - scale * b.x, y : a.y - scale * b.y};
+	}
+
+	function vecScale(a, scale) {
+		return { x : scale * a.x, y : scale * a.y}
+	}
+
+	function vecLength(a) {
+		return Math.sqrt(a.x * a.x + a.y * a.y);
+	}
+	
+	function vecDot(a, b) {
+		return a.x * b.x + a.y * b.y;
+	}
+
+	// scene -------------------------------------------------------
+
+	var gravity = { x: 0.0, y: 0.0};
+	var timeStep = 1.0 / 60.0;
+
+	var numBalls = 10;
+	var balls = [];
+	var restitution = 1.0;
+	
+	for (i = 0; i < numBalls; i++) {
+
+		var r = 0.05 + Math.random() * 0.1
+
+		balls.push(
+			{
+			radius : r, 
+			mass : Math.PI * r * r,
+			pos : {x : Math.random() * simWidth, y : Math.random() * simWidth},
+			vel : {x : Math.random() * 1.0, y : Math.random() * 1}
+		});
+	}
+
+	// draw -------------------------------------------------------
+
+	function draw() 
+	{
+		c.clearRect(0, 0, canvas.width, canvas.height);
+
+		c.fillStyle = "#FF0000";
+
+		for (i = 0; i < balls.length; i++) {
+			var ball = balls[i];
+			c.beginPath();			
+			c.arc(
+				cX(ball.pos), cY(ball.pos), cScale * ball.radius, 0.0, 2.0 * Math.PI); 
+			c.closePath();
+			c.fill();
+		}
+	}
+
+	function pairBounce(ball1, ball2) 
+	{
+		var dir = vecSub(ball2.pos, ball1.pos);
+		var d = vecLength(dir);
+
+		if (d > 0.0 && d < ball1.radius + ball2.radius) {
+			dir = vecScale(dir, 1.0 / d);
+			var corr = (ball1.radius + ball2.radius - d) / 2.0;
+			ball1.pos = vecSub(ball1.pos, dir, corr);
+			ball2.pos = vecAdd(ball2.pos, dir, corr);
+
+			var v1 = vecDot(ball1.vel, dir);
+			var v2 = vecDot(ball2.vel, dir);
+
+			// ball1.vel = vecAdd(ball1.vel, dir, v2 - v1);
+			// ball2.vel = vecAdd(ball2.vel, dir, v1 - v2);
+
+			var m1 = ball1.mass;
+			var m2 = ball2.mass;
+
+			var v1p = (m1 * v1 + m2 * v2 - m2 * (v1 - v2) * restitution) / (m1 + m2);
+			var v2p = (m1 * v1 + m2 * v2 - m1 * (v2 - v1) * restitution) / (m1 + m2);
+
+			ball1.vel = vecAdd(ball1.vel, dir, v1p - v1);
+			ball2.vel = vecAdd(ball2.vel, dir, v2p - v2);
+		}
+	}
+
+	function wallBounce(ball) 
+	{
+		if (ball.pos.x < ball.radius) {
+			ball.pos.x = ball.radius;
+			ball.vel.x = -ball.vel.x;
+		}
+		if (ball.pos.x > simWidth - ball.radius) {
+			ball.pos.x = simWidth - ball.radius;
+			ball.vel.x = -ball.vel.x;
+		}
+		if (ball.pos.y < ball.radius) {
+			ball.pos.y = ball.radius;
+			ball.vel.y = -ball.vel.y;
+		}
+
+		if (ball.pos.y > simWidth - ball.radius) {
+			ball.pos.y = simWidth - ball.radius;
+			ball.vel.y = -ball.vel.y;
+		}
+	}
+
+	function simulate() 
+	{
+		for (i = 0; i < balls.length; i++) {
+			ball = balls[i];
+			ball.vel = vecAdd(ball.vel, gravity, timeStep);
+			ball.pos = vecAdd(ball.pos, ball.vel, timeStep);
+
+			for (j = i + 1; j < balls.length; j++) 
+				pairBounce(ball, balls[j]);
+
+			wallBounce(ball);
+		}
+	}
+
+	function update() {
+		simulate();
+		draw();
+		requestAnimationFrame(update);
+	}
+	
+	update();
+	
+</script> 
+</body>
+</html>
