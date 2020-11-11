@@ -4,7 +4,7 @@
 <html>
 
 <head>
-	<title>Beads</title>
+	<title>Sand</title>
 	<style>
 		.button {
 		background-color: #606060;
@@ -89,27 +89,24 @@
 	var wireCenter = { x: simWidth / 2.0, y: simHeight / 2.0};
 	var wireRadius = simMinWidth * 0.4;
 
-	var numBalls = 5;
-	var balls = [];
-	var restitution = 1.0;	
+	var numParticles = 5;
+	var particles = [];
+	var particleRadius = 0.01;
 
 	function setupScene() 
 	{
-		balls = [];
-		for (i = 0; i < numBalls; i++) {
-			var r = 0.05 + Math.random() * 0.1;
-			var angle = Math.random() * Math.PI;
+		particles = [];
+		var num = 5;
+		var d = 2.0 * particleRadius;
+		var orig = { x: 0.5, y: 0.5};
 
-			balls.push(
-				{
-				radius : r, 
-				mass : Math.PI * r * r,
-				pos : {
-					x : wireCenter.x + wireRadius * Math.cos(angle), 
-					y : wireCenter.y + wireRadius * Math.sin(angle)},
-				prev : { x: 0, y : 0},
-				vel : {x : 0.0, y : 0.0},
-			});
+		for (i = 0; i < num; i++) {
+			for (j = 0; j < num; j++) {
+				particles.push({
+					pos: { x: orig.x + i * d, y : orig.y + j * d}, 
+					vel: {x: 0.0, y:0.0} }
+				)
+			}
 		}
 	}
 
@@ -120,83 +117,91 @@
 		c.clearRect(0, 0, canvas.width, canvas.height);
 
 		c.fillStyle = "#FF0000";
-		c.lineWidth = 2.0;
 
-		c.beginPath();
-		c.arc(cX(wireCenter), cY(wireCenter), cScale * wireRadius, 0.0, 2.0 * Math.PI);
-		c.stroke();
-
-		c.fillStyle = "#FF0000";
-
-		for (i = 0; i < balls.length; i++) {
-			var ball = balls[i];
+		for (i = 0; i < particles.length; i++) {
+			var p = particles[i];
 			c.beginPath();			
 			c.arc(
-				cX(ball.pos), cY(ball.pos), cScale * ball.radius, 0.0, 2.0 * Math.PI); 
+				cX(p.pos), cY(p.pos), cScale * particleRadius, 0.0, 2.0 * Math.PI); 
 			c.closePath();
 			c.fill();
 		}
 	}
 
-	function pairBounce(ball1, ball2) 
+	// draw -------------------------------------------------------
+
+	// var hash = {
+	// 	size: 10000,
+	// 	first: new Int32Array(size),
+	// 	next: new Int32Array(size),
+	// 	ids : new Int32Array(size)
+	// };
+
+	function initGrid() {
+
+		for (i = 0; i < balls.length; i++) {
+			ball = balls[i];
+			var xi = Math.floor(ball.pos.x / cellSize);
+			var yi = Math.floor(ball.pos.y / cellSize);
+		}
+	}
+
+	function handleCollision(p1, p2) 
 	{
 		var dir = vecSub(ball2.pos, ball1.pos);
 		var d = vecLength(dir);
 
-		if (d > 0.0 && d < ball1.radius + ball2.radius) {
+		if (d > 0.0 && d < 2.0 * particleRadius) {
 			dir = vecScale(dir, 1.0 / d);
-			var corr = (ball1.radius + ball2.radius - d) / 2.0;
-			ball1.pos = vecSub(ball1.pos, dir, corr);
-			ball2.pos = vecAdd(ball2.pos, dir, corr);
+			var corr = (2.0 * particleRadius - d) / 2.0;
+			p1.pos = vecSub(p1.pos, dir, corr);
+			p2.pos = vecAdd(p2.pos, dir, corr);
 
 			var v1 = vecDot(ball1.vel, dir);
 			var v2 = vecDot(ball2.vel, dir);
+			var avg = (v1 + v2) / 2.0;
 
-			var m1 = ball1.mass;
-			var m2 = ball2.mass;
-
-			var v1p = (m1 * v1 + m2 * v2 - m2 * (v1 - v2) * restitution) / (m1 + m2);
-			var v2p = (m1 * v1 + m2 * v2 - m1 * (v2 - v1) * restitution) / (m1 + m2);
-
-			ball1.vel = vecAdd(ball1.vel, dir, v1p - v1);
-			ball2.vel = vecAdd(ball2.vel, dir, v2p - v2);
+			p1.vel = vecAdd(p1.vel, dir, avg - v1);
+			p2.vel = vecAdd(p2.vel, dir, avg - v2);
 		}
 	}
 
-	function keepOnWire(ball) 
+	function wallBounce(p) 
 	{
-		var dir = vecSub(ball.pos, wireCenter);
-		var len = vecLength(dir);
-		var corr = (wireRadius - len) / len;
-		ball.pos = vecAdd(ball.pos, dir, corr);
-	//	ball.vel = vecAdd(ball.vel, dir, corr / timeStep);
+		if (p.pos.x < p.radius) {
+			p.pos.x = p.radius;
+			p.vel.x = -p.vel.x;
+		}
+		if (p.pos.x > simWidth - p.radius) {
+			p.pos.x = simWidth - p.radius;
+			p.vel.x = -p.vel.x;
+		}
+		if (p.pos.y < p.radius) {
+			p.pos.y = p.radius;
+			p.vel.y = -p.vel.y;
+		}
+
+		if (p.pos.y > simHeight - p.radius) {
+			p.pos.y = simHeight - p.radius;
+			p.vel.y = -p.vel.y;
+		}
 	}
 
 	function simulate() 
 	{
 		for (step = 0; step < numSteps; step++) {
-			for (i = 0; i < balls.length; i++) {
-				ball = balls[i];
-				ball.vel = vecAdd(ball.vel, gravity, timeStep);
-				ball.prev = vecCopy(ball.pos);
-				ball.pos = vecAdd(ball.pos, ball.vel, timeStep);
+			for (i = 0; i < partices.length; i++) {
+				p = particles[i];
+				p.vel = vecAdd(p.vel, gravity, timeStep);
+				p.pos = vecAdd(p.pos, p.vel, timeStep);
 			}
 
-			for (i = 0; i < balls.length; i++) {
-				ball = balls[i];
-				keepOnWire(ball);
-			}
+			for (i = 0; i < particles.length; i++)
+				wallBounds(particles[i]);
 
-			for (i = 0; i < balls.length; i++) {
-				ball = balls[i];
-				ball.vel = vecSub(ball.pos, ball.prev);
-				ball.vel = vecScale(ball.vel, 1.0 / timeStep);
-			}
-
-			for (i = 0; i < balls.length; i++) {
-				ball = balls[i];
-				for (j = i + 1; j < balls.length; j++) 
-					pairBounce(ball, balls[j]);
+			for (i = 0; i < particles.length; i++) {
+				for (j = i + 1; j < particles.length; j++) 
+					handleCollision(particles[i], particles[j]);
 			}
 		}
 	}

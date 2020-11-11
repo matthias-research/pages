@@ -1,4 +1,4 @@
-<!-- Five Minute Physics - Matthias Mueller -->
+<!-- Ten Minute Physics - Matthias Mueller -->
 
 <!DOCTYPE html>
 <html>
@@ -18,11 +18,13 @@
 	var canvas = document.getElementById("myCanvas");
 	var c = canvas.getContext("2d");
 
-	canvas.width = Math.min(window.innerWidth, window.innerHeight) - 20;
-	canvas.height = canvas.width;
+	canvas.width = window.innerWidth - 20;
+	canvas.height = window.innerHeight - 100;
 
-	var simWidth = 20.0;
-	var cScale = canvas.width / simWidth;
+	var simMinWidth = 20.0;
+	var cScale = Math.min(canvas.width, canvas.height) / simMinWidth;
+	var simWidth = canvas.width / cScale;
+	var simHeight = canvas.height / cScale;
 
 	function cX(pos) {
 		return pos.x * cScale;
@@ -39,7 +41,7 @@
 
 	var ball = {
 		radius : 0.2,
-		pos : {x : 0.0, y : 0.0},
+		pos : {x : 0.2, y : 0.2},
 		vel : {x : 10.0, y : 15.0}
 	};
 
