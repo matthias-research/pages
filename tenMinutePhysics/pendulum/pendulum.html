@@ -53,35 +53,35 @@
 		return canvas.height - pos.y * cScale;
 	}
 
-	// vector math -------------------------------------------------------
+// vector math -------------------------------------------------------
 
-	function vecCopy(a, b) {
-		a.x = b.x;
-		a.y = b.y;
+	function vecCopy(a) {
+		return { x : a.x, y : a.y };
 	}
 
-	function vecAdd(c, a, b, scale = 1.0) {
-		c.x = a.x + b.x * scale;
-		c.y = a.y + b.y * scale;
+	function vecAdd(a, b, scale = 1.0) {
+		return { x : a.x + scale * b.x, y : a.y + scale * b.y};
+	}
+
+	function vecSub(a, b, scale = 1.0) {
+		return { x : a.x - scale * b.x, y : a.y - scale * b.y};
+	}
+
+	function vecScale(a, scale) {
+		return { x : scale * a.x, y : scale * a.y}
 	}
 
 	function vecLength(a) {
 		return Math.sqrt(a.x * a.x + a.y * a.y);
 	}
-
-	function vecSub(c, a, b) {
-		c.x = a.x - b.x;
-		c.y = a.y - b.y;
-	}
-
-	function vecScale(a, scale) {
-		a.x *= scale;
-		a.y *= scale;
+	
+	function vecDot(a, b) {
+		return a.x * b.x + a.y * b.y;
 	}
 
 	// simulation parameters -------------------------------------------------------
 
-	var numSteps = 100;
+	var numSteps = 40;
 	var timeStep = 1.0 / 60.0 / numSteps;
 	var gravity = { x: 0.0, y: -10.0};
 
@@ -157,9 +157,9 @@
 
 			for (i = 1; i < pendulum.length; i++) {
 				var p = pendulum[i];
-				vecCopy(p.prev, p.pos);
-				vecAdd(p.vel, p.vel, gravity, timeStep);
-				vecAdd(p.pos, p.pos, p.vel, timeStep);
+				p.prev = vecCopy(p.pos);
+				p.vel = vecAdd(p.vel, gravity, timeStep);
+				p.pos = vecAdd(p.pos, p.vel, timeStep);
 			}
 
 			// solve
@@ -174,21 +174,20 @@
 
 				var p1 = pendulum[i - 1];
 				var p2 = pendulum[i];
-				var corr = { x: 0.0, y: 0.0 };
-				vecSub(corr, p2.pos, p1.pos);
+				var corr = vecSub(p2.pos, p1.pos);
 				var dist = vecLength(corr);
 
-				vecScale(corr, (dist - p2.length) / dist);
-				vecAdd(p1.pos, p1.pos, corr, w1 / w);
-				vecAdd(p2.pos, p2.pos, corr, -w2 / w); 
+				corr = vecScale(corr, (dist - p2.length) / dist);
+				p1.pos = vecAdd(p1.pos, corr, w1 / w);
+				p2.pos = vecAdd(p2.pos, corr, -w2 / w); 
 			}
 
 			// update velocity
 
 			for (i = 1; i < pendulum.length; i++) {
 				var p = pendulum[i];
-				vecSub(p.vel, p.pos, p.prev);
-				vecScale(p.vel, 1.0 / timeStep);
+				p.vel = vecSub(p.pos, p.prev);
+				p.vel = vecScale(p.vel, 1.0 / timeStep);
 			}
 		}	
 	}

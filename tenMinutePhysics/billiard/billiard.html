@@ -3,14 +3,34 @@
 <!DOCTYPE html>
 <html>
 
-<head>
-<title>Billiard</title>
-</head>
-
+	<head>
+		<title>Billiard</title>
+		<style>
+			.button {
+			background-color: #606060;
+			border: none;
+			color: white;
+			padding: 15px 32px;
+			font-size: 16px;
+			margin: 4px 2px;
+			cursor: pointer;
+		}
+		</style>
+	</head>
+	
 <body>
 
-<canvas id="myCanvas" style="border:2px solid"></canvas>
-
+	<table style="width:100%">
+		<tr>
+			<td><button class="button" onclick="setupScene()">Restart</button></td>
+		</tr>
+		<tr>
+			<td>
+				<canvas id="myCanvas" style="border:2px solid"></canvas>
+			</td>
+		</tr>
+	</table>
+	
 <script>
 
 	// drawing -------------------------------------------------------
@@ -18,11 +38,13 @@
 	var canvas = document.getElementById("myCanvas");
 	var c = canvas.getContext("2d");
 
-	canvas.width = Math.min(window.innerWidth, window.innerHeight) - 20;
-	canvas.height = canvas.width;
+	canvas.width = window.innerWidth - 20;
+	canvas.height = window.innerHeight - 100;
 
-	var simWidth = 2.0;
-	var cScale = canvas.width / simWidth;
+	var simMinWidth = 2.0;
+	var cScale = Math.min(canvas.width, canvas.height) / simMinWidth;
+	var simWidth = canvas.width / cScale;
+	var simHeight = canvas.height / cScale;
 
 	function cX(pos) {
 		return pos.x * cScale;
@@ -32,7 +54,7 @@
 		return canvas.height - pos.y * cScale;
 	}
 
-// vector math -------------------------------------------------------
+	// vector math -------------------------------------------------------
 
 	function vecCopy(a) {
 		return { x : a.x, y : a.y };
@@ -66,18 +88,23 @@
 	var numBalls = 10;
 	var balls = [];
 	var restitution = 1.0;
-	
-	for (i = 0; i < numBalls; i++) {
 
-		var r = 0.05 + Math.random() * 0.1
+	function setupScene() 
+	{
+		balls = [];	
+		for (i = 0; i < numBalls; i++) {
 
-		balls.push(
-			{
-			radius : r, 
-			mass : Math.PI * r * r,
-			pos : {x : Math.random() * simWidth, y : Math.random() * simWidth},
-			vel : {x : Math.random() * 1.0, y : Math.random() * 1}
-		});
+			var r = 0.05 + Math.random() * 0.1;
+
+			balls.push(
+				{
+				radius : r, 
+				mass : Math.PI * r * r,
+				pos : {x : Math.random() * simWidth, y : Math.random() * simHeight},
+				vel : {x : -1.0 + 2.0 * Math.random(),
+						y : -1.0 + 2.0 * Math.random() * 1}
+			});
+		}
 	}
 
 	// draw -------------------------------------------------------
@@ -112,9 +139,6 @@
 			var v1 = vecDot(ball1.vel, dir);
 			var v2 = vecDot(ball2.vel, dir);
 
-			// ball1.vel = vecAdd(ball1.vel, dir, v2 - v1);
-			// ball2.vel = vecAdd(ball2.vel, dir, v1 - v2);
-
 			var m1 = ball1.mass;
 			var m2 = ball2.mass;
 
@@ -141,8 +165,8 @@
 			ball.vel.y = -ball.vel.y;
 		}
 
-		if (ball.pos.y > simWidth - ball.radius) {
-			ball.pos.y = simWidth - ball.radius;
+		if (ball.pos.y > simHeight - ball.radius) {
+			ball.pos.y = simHeight - ball.radius;
 			ball.vel.y = -ball.vel.y;
 		}
 	}
@@ -167,6 +191,7 @@
 		requestAnimationFrame(update);
 	}
 	
+	setupScene();
 	update();
 	
 </script> 
