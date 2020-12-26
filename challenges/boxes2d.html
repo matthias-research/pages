@@ -1,0 +1,724 @@
+<!-- Matthias Müller -->
+
+<!DOCTYPE html>
+<html>
+
+<style>
+body {setup
+	padding: 10px 50px;
+	font-family: verdana; 
+	line-height: 1.5;
+	font-size: 15px;	
+}
+.button {
+  background-color: #555555;
+  border: none;
+  color: white;
+  padding: 8px 8px;
+  border-radius: 5px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+}
+.slider {
+  -webkit-appearance: none;
+  width: 80px;
+  height: 6px;
+  border-radius: 5px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+.slider:hover {
+  opacity: 1;
+}
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #202020;
+  cursor: pointer;
+}
+</style>
+
+<title>2D Boxes</title>
+<body>
+
+<h1>2D Boxes</h1>
+
+<span id = "ms">0.000</span> ms per frame
+<br>
+<br>
+  <button onclick="setup(20, 20)" class="button">create 100 boxes</button>
+    <span style = "margin: 0px 0px 0px 20px;">Visconsity</span> <td><input type = "range" min = "0" max = "10" value = "0" id = "viscositySlider" class = "slider"></td>
+
+	<br><br>
+
+<canvas id="myCanvas" width="800" height="600" style="border:3px solid #d3d3d3;">
+Your browser does not support the HTML5 canvas tag.</canvas>
+
+<script>
+		
+	// vector math -------------------------------------------------------
+
+	class Vec2 {
+		constructor(x = 0.0, y = 0.0) {
+			this.x = x;
+			this.y = y;
+		}
+		clone(v) {
+			return new Vec2(this.x, this.y);
+		}
+		assign(v) {
+			this.x = v.x; this.y = v.y;
+		}
+		sum(v1, v2, scale = 1.0) {
+			this.x = v1.x + scale * v2.x;
+			this.y = v1.y + scale * v2.y;
+		}
+		diff(v1, v2, scale = 1.0) {
+			this.x = v1.x - scale * v2.x;
+			this.y = v1.y - scale * v2.y;
+		}
+		add(v, scale = 1.0) {
+			this.x += scale * v.x;
+			this.y += scale * v.y;
+		}
+		scale(s) {
+			return new Vec2(this.x * s, this.y * s);
+		}
+		lengthSquared() 
+		{
+			return this.x * this.x + this.y * this.y;
+		}
+		length() {
+			return Math.sqrt(this.lengthSquared());
+		}
+		normalize() {
+			var l = this.length();
+			if (l == 0.0) 
+				return;
+			x /= l; y /= l;
+			return l;
+		}
+		dot(v) {
+			return this.x * v.x + this.y * v.y + this.z * v.z;
+		}
+		cross(a, b) {
+			return a.x * b.y - a.y * b.x;
+		}
+	}
+
+	class Transform {
+		constructor(pos, rot = 0.0) {
+			this.pos = pos.clone();
+			this.sin = 0.0;
+			this.cos = 0.0;
+			setRot(rot);
+		}
+		setPos(pos) {
+			this.trans.pos.assign(pos); 
+		}
+		setRot(rot) {
+			this.sin = Math.sin(rot);
+			this.cos = Math.cos(rot);
+			this.rot = rot;
+		}
+		clone() {
+			return new Transform(this.trans, this.rot);
+		}
+		assign(trans) {
+			this.trans.assign(trans.trans);
+			this.rot = trans.rot;
+		}
+		rot(v) {
+			var x = this.cos * v.x - this.sin * v.y; 
+			var y = this.sin * v.x + this.cos * v.y;
+			v.x = x; v.y = y;
+		}
+		invRot(v) {
+			var x = this.cos * v.x + this.sin * v.y; 
+			var y = -this.sin * v.x + this.cos * v.y;
+			v.x = x; v.y = y;
+		}
+		trans(v) {
+			var x = this.pos.x + this.cos * v.x - this.sin * v.y; 
+			var y = this.pos.y + this.sin * v.x + this.cos * v.y;
+			v.x = x; v.y = y;
+		}
+		invTrans(v) {
+			var x = this.cos * (v.x - this.pos.x) + this.sin * (v.y - this.pos.y); 
+			var y = -this.sin * (v.x - this.pos.x) + this.cos * (v.y - this.pos.y); 
+			v.x = x; v.y = y;
+		}
+	}
+
+	// Vector --------------------------------------------------------
+
+	class Vector {
+		constructor(size) { 
+			this.vals = new Int32Array(size); 
+			this.maxSize = size;
+			this.size = 0;
+		}
+		clear() {
+			this.size = 0;
+		}
+		pushBack(val) {
+			if (this.size >= this.maxSize) {
+				this.maxSize *= 2;
+				var old = this.vals;
+				this.vals = new Int32Array(this.maxSize);
+				this.vals.set(old);
+			}
+			this.vals[this.size++] = val;
+		}
+	}
+
+	// Body --------------------------------------------------------
+	class Body {
+		constructor(pose, dims) {
+			this.pose = pose.clone();
+			this.dim = dims.clone();
+			this.prev = new Transform(new Vec2(), 0.0);
+			this.vel = new Vec2();
+			this.omega = 0.0;
+			this.invMass = 1.0;
+			this.invInertia = 1.0;
+			this.color = { r : 1.0, g : 0.0, b : 0.0};
+			this.static = false;
+		}
+		integrate(dt) {
+			this.prev.assign(this.pos);
+			if (!static) {
+				vel.add(params.gravity, dt);
+				pose.pos.add(vel, dt);
+				pose.rot += omega * dt;
+			}
+		}
+		deriveVelocities(dt) {
+			vel.diff(pose.pos, prevPose.pos);
+			vel.scale(1.0 / dt); 
+			omega = rot - prevRot;
+
+			// CFL condition
+			var v2 = vel.lengthSquared();
+			if (v2 > params.maxVel * params.maxVel) 
+				vel.scale(params.maxVel / Math.sqrt(v2));
+		}
+	}
+
+	// global params
+
+	var canvas = document.getElementById("myCanvas");
+	var c = canvas.getContext("2d");
+		
+	var drawOrig = new Vec2(canvas.width / 2, canvas.height - 20);
+	var drawScale = 0.02;
+
+	var params = {
+		gravity : new Vec2(0.0, -10.0),
+		timeStep: 0.016,
+		numIters : 1,
+		numSubSteps : 10,
+		maxVel : 10.0
+	};
+
+	var bodies = [];
+	var hash = new Hash(bodies.size);
+	var firstNeighbor = new Int32Array(bodies.size + 1);
+	var neighbors = new Vector(10 * bodies.size);
+
+	// ----------------------------------------------------------------
+	function setup(numX, numY)
+	{
+		// boxes
+
+		var minDimX = 0.02;
+		var maxDimX = 0.04;
+		var minDimY = 0.01;
+		var maxDimY = 0.05;
+		var minRot = 0.1;
+		var maxRot = 2.1;
+		var spacing = 0.55;
+
+		var pose = new Transform(new Vec2());
+
+		for (j = 0; j < numY; j++) {
+			for (i = 0; i < numX; i++) {
+
+				var body = new Body(pose, dims);
+
+				body.pose.trans.x = (-numX / 2 + i) * spacing;
+				body.pose.trans.y = j * spacing;
+				body.pose.rot = minRot + Math.random() * (maxRot - minRot);
+
+				body.dims.x = minDimX + Math.random() * (maxDimX - minDimX);
+				body.dims.y = minDimY + Math.random() * (maxDimY - minDimY);
+				body.color.r = j / mumY; body.color.g = 1.0; body.color.b = 0.0;
+
+				bodies.push(body);
+			}
+		}
+
+		// boundaries
+
+		var body = new Body(pose, dims);
+
+		body.pose.trans.x = 0.0;
+		body.pose.trans.y = 0.0;
+		body.pose.rot = 0.0;
+
+		body.dims.x = 10.0;
+		body.dims.y = 1.0;
+		body.color.r = 0.5; body.color.g = 0.5; body.color.b = 0.5;
+		body.static = true;
+
+		bodies.push(body);
+
+		// hash
+
+		boxes.size = nr;
+		hash.invSpacing = 1.0 / spacing;
+		
+		for (i = 0; i < hashSize; i++) {
+			hash.first[i] = -1;
+			hash.marks[i] = 0;
+		}
+	}	
+
+	// -----------------------------------------------------------------------------------
+
+	class Hash {
+		constructor(numBodies) {
+			this.hashSize = 370111; 
+			this.first = new Int32Array(this.hashSize);
+			this.marks = new Int32Array(this.hashSize);
+			this.currentMark = 0;
+			this.next = new Int32Array(numBodies),
+			this.orig = new Vec2(-100.0, -1.0);
+			this.invSpacing = 1.0;
+		}
+		hashFunc(x, y) {
+			return (Math.abs((pos.x * 92837111) ^ (pos.y * 689287499))) % hash.size;
+		}
+		setup(bodies) {
+			this.currentMark++;
+
+			for (i = 0; i < bodies.size; i++) {			
+				var body = bodies[i];
+				var hx = Math.floor((body.pose.pos.x - this.orig.x) * this.invSpacing);
+				var hy = Math.floor((body.pose.pos.y - this.orig.y) * this.invSpacing);
+				var h = hashFunc(hx, hy);
+						
+				if (this.marks[h] != this.currentMark) {				
+					this.marks[h] = this.currentMark;
+					this.first[h] = -1;
+				}
+				this.next[i] = this.first[h];
+				this.first[h] = i;
+			}
+		}
+		findNeighbors(bodies, firstNeighbor, neighbors) {
+			neighbors.clear();
+
+			var h2 = this.invSpacing * this.invSpacing;
+			var d = new Vec2();
+
+			for (i = 0; i < bodies.size; i++) {
+				var body = bodies[i];
+				firstNeighbor[i] = neighbors.size;
+	
+				var hx = Math.floor((body.pose.pos.x - this.orig.x) * this.invSpacing);
+				var hy = Math.floor((body.pose.pos.y - this.orig.y) * this.invSpacing);
+	
+				var x, y;
+				
+				for (x = hx - 1; x <= hx + 1; x++) {
+					for (y = hy - 1; y <= hy + 1; y++) {
+							
+						var h = hashFunc(x, y);
+							
+						if (hash.marks[h] != hash.currentMark) 
+							continue;
+					
+						var id = hash.first[h];
+						while (id >= 0) 
+						{
+							d.diff(body.pose.pos, bodies[id].pose.pos);
+							if (d.lengthSquared() < h2) 
+								neighbors.pushBack(id);
+							id = hash.next[id];						
+						}
+					}
+				}
+			}
+			firstNeighbor[boxes.size] = neighbors.size;
+		}
+	}
+	
+	// ---- SAT --------------------------------------------------------------------
+
+	class SAT {
+		constructor() {
+			this.corners = [ new Vec2(-0.5, -0.5), Vec2(0.5, -0.5), 
+				Vec2(0.5, 0.5), Vec2(-0.5, 0.5)];
+			this.normals = [ new Vec2(1.0, 0.0), new Vec2(-1.0, 0.0), 
+				new Vec2(0.0, 1.0), new Vec2(0.0, -1.0)];
+			this.maxD = [0, 0, 0, 0];
+			this.maxNr = [0, 0, 0, 0];
+			this.verts = [new Vec2(), new Vec2(), new Vec2(), new Vec2()];
+			this.eb = new Vec2();
+			this.ef = new Vec2();
+			this.t = new Vec2();
+		}
+	
+		boxBoxContact(body0, body1, contact0, contact1, minRot, maxRot) {
+
+			var minD = Number.MAX_VALUE;
+			minRot = -2.0 * Math.PI;
+			maxRot = 2.0 * Math.PI;
+
+			for (var side = 0; side < 2; side++) {
+
+				var t0 = side == 0 ? body0.pose : body1.pose;
+				var d0 = side == 0 ? body0.dims : body1.dims;
+
+				var t1 = side == 0 ? body1.pose : body0.pose;
+				var d1 = side == 0 ? body1.dims : body0.dims;
+
+				var c0 = side == 0 ? contact0 : contact1;
+				var c1 = side == 0 ? contact1 : contact0;
+
+				var d = 0.0;
+
+				for (var i = 0; i < 4; i++) {
+					this.maxD[i] = -Number.MAX_VALUE;
+					this.maxNr[i] = 0;
+					var v = this.verts[i];
+					v.x = this.corners[i][0] * d0.x;
+					v.y = this.corners[i][1] * d0.y;
+					t0.trans(v);
+					t1.invTrans(v);
+				}
+
+				for (var i = 0; i < 4; i++) {
+					var v = this.verts[i];
+					d = 0.5 * d1.x - v.x;
+					if (d > this.maxD[0]) { this.maxD[0] = d; this.maxNr[0] = i; }
+					d = 0.5 * d1.x + v.x;
+					if (d > this.maxD[1]) { this.maxD[1] = d; this.maxNr[1] = i; }
+					d = 0.5 * d1.y - v.y;
+					if (d > this.maxD[2]) { this.maxD[2] = d; this.maxNr[2] = i; }
+					d = 0.5 * d1.y + v.y;
+					if (d > this.maxD[3]) { this.maxD[3] = d; this.maxNr[3] = i; }
+				}
+
+				if (this.maxD[0] < 0.0 || this.maxD[1] < 0.0 || 
+					this.maxD[2] < 0.0 || this.maxD[3] < 0.0)
+					return false;		// separating axis found
+
+				for (var i = 0; i < 4; i++) {
+					var n = this.normals[i];
+
+					if (this.maxD[i] < this.minD) {
+						minD = this.maxD[i];
+						
+						var nr = this.maxNr[i];
+
+						c0 = this.verts[nr];
+						t1.trans(c0);
+						c1.add(this.verts[nr], n, this.maxD[i]);
+						t1.trans(c1);
+
+						this.t.x = n.y;
+						this.t.y = -n.x;
+
+						this.ef.diff(this.verts[(nr + 1) % 4], this.verts[nr]); 
+						this.ef.normalize();
+						this.eb.diff(this.verts[(nr - 1 + 4) % 4], this.verts[nr]); 
+						this.eb.normalize();
+						minRot = -Math.acosf(this.t.dot(this.ef));
+						maxRot = Math.acosf(-this.t.dot(this.eb));
+
+						if (side == 1) {
+							var rot = minRot; minRot = -maxRot; maxRot = -rot;
+						}
+					}
+				}
+			}
+			return minD > 0.0;
+		}
+	}
+
+	sat = new SAT();
+
+	var r0 = new Vec2();
+	var r1 = new Vec2();
+	var n = new Vec2();
+
+	// -----------------------------------------------------------------------------------
+	function applyPosCorrection(body0, pos0, body1, pos1, corr, minRot, maxRot, force)
+	{
+		force = 0.0;
+
+		if (corr.x == 0.0 && corr.y == 0.0)
+			return;
+
+		if (body0 == null)
+			r0.assign(pos0);
+		else
+			r0.diff(pos0, body0.pose.pos);
+
+		if (body1 == null)
+			r1.assign(pos1);
+		else
+			r1.diff(pos1, body1.pose.pos);
+
+		n.assign(corr);
+		var C = n.normalize();
+
+		var w0 = 0.0;
+		var w1 = 0.0;
+
+		if (body0 != null) { 
+			var rn = r0.cross(n);
+			w0 = body0.invMass + body0.invInertia * rn * rn;
+		}
+		if (body1 != null) {
+			var rn = r1.cross(n);
+			w1 = body0.invMass + body1.invInertia * rn * rn;
+		}
+
+		var w = w0 + w1;
+		if (w == 0.0)
+			return;
+
+		var lambda = -C / w;
+		force = lambda / mParams.dt / mParams.dt;
+
+		n.scale(lambda);
+
+		var drot0 = 0.0;
+		var drot1 = 0.0;
+
+		if (body0 != null) {
+			body0.pose.pos += body0.invMass * n;
+			drot0 = body0.invInertia * r0.cross(n);
+		}
+
+		if (body1 != null) {
+			body1.pos -= body1.invMass * n;
+			drot1 = -body1.invInertia * r1.cross(n);
+		}
+
+		var rel = drot0 - drot1;
+		var corr = 0.0;
+
+		if (rel < minRot) {
+			corr = minRot - rel;
+		}
+		else if (rel > maxRot) {
+			corr = maxRot - rel;
+		}
+
+		drot0 += w0 / w * corr;
+		drot1 -= w1 / w * corr;
+
+		if (body0 != null)
+			body0.rot += drot0;
+		if (body1 != null)
+			body1.rot += drot1;
+	}
+
+	// -----------------------------------------------------------------------------------
+	function applyPosCorrectionWithFriction(body0, pos0, body1, pos1, corr, minRot, maxRot)
+	{
+		if (corr.x == 0.0 && corr.y == 0.0)
+			return;
+
+		// normal component
+
+		PxVec3 localPos0 = p0 ? p0->getTransform().transformInv(pos0) : pos0;
+		PxVec3 localPos1 = p1 ? p1->getTransform().transformInv(pos1) : pos1;
+
+		float normalForce;
+
+		applyPosCorrection(p0, pos0, p1, pos1, pos0 - pos1, minRot, maxRot, &normalForce);
+
+		PxVec3 newPos0 = p0 ? p0->getTransform().transform(localPos0) : pos0;
+		PxVec3 newPos1 = p1 ? p1->getTransform().transform(localPos1) : pos1;
+
+		PxVec3 n = corr;
+		float depth = n.normalize();
+
+		// friction
+
+		if (mParams.friction > 0.0f) {
+
+			PxVec3 prevPos0 = p0 ? p0->getPrevTransform().transform(localPos0) : pos0;
+			PxVec3 prevPos1 = p1 ? p1->getPrevTransform().transform(localPos1) : pos1;
+
+			PxVec3 vrel = (newPos0 - prevPos0) - (newPos1 - prevPos1);
+			vrel -= n * n.dot(vrel);
+
+			if (mParams.limitFriction) {
+				PxVec3 vn = vrel;
+				float v = vn.normalize();
+
+				if (v > depth) {
+					vrel = vn * depth;
+				}
+			}
+
+			float frictionForce;
+
+			//prevPos0 = p0 ? p0->pos : PxVec3(PxZero);
+			//prevPos1 = p1 ? p1->pos : PxVec3(PxZero);
+			//float prevRot0 = p0 ? p0->rot : 0.0f;
+			//float prevRot1 = p1 ? p1->rot : 0.0f;
+
+			applyPosCorrection(p0, newPos0, p1, newPos1, vrel, minRot, maxRot, &frictionForce);
+
+			//if (frictionForce > normalForce) {		// Coulomb
+			//	if (p0) {
+			//		p0->pos = prevPos0;
+			//		p0->rot = prevRot0;
+			//	}
+			//	if (p1) {
+			//		p1->pos = prevPos1;
+			//		p1->rot = prevRot1;
+			//	}
+			//}
+		}
+	}
+
+	// -----------------------------------------------------------------------------------
+	function solveBodies() {
+		for (var i = 0; i < bodies.size; i++) {
+			var body0 = bodies[i];
+
+			var first = firstNeighbor[i];
+			var num = firstNeighbor[i + 1] - first;
+
+			for (var j = 0; j < num; j++) {
+				var id = mNeighbors[first + j];
+				if (id == i)
+					continue;
+
+				var body1 = bodies[id];
+
+				// if ((p0.pos - p1.pos).magnitudeSquared() > r2)
+				// 	continue;
+
+				PxVec3 contact0, contact1;
+				float minRot, maxRot;
+
+				if (boxBoxContact(
+					p0.getTransform(), p0.dims,
+					p1.getTransform(), p1.dims, contact0, contact1, minRot, maxRot))
+				{
+					applyPosCorrectionWithFriction(&p0, contact0, &p1, contact1, contact0 - contact1, minRot, maxRot);
+				}
+			}
+		}
+	}
+
+	// -----------------------------------------------------------------------------------
+			
+	function simulate()
+	{
+		hash.setup(bodies);
+		hash.findNeighbors(bodies, firstNeighbor, neighbors);
+		
+		var dt = params.timeStep / params.numSubSteps;
+		var step, subStep;
+		params.maxVel = 0.4 / hash.invSpacing / dt;
+		
+		for (step = 0; step < numSubSteps; step ++) {
+						
+			for (var body of bodies) 
+				body.integrate(dt);
+
+			for (subStep = 0; subStep < params.numSubSteps; subStep++) {
+			
+				solveBodies();
+			}
+						
+			for (var body of bodies)
+				body.deriveVelocities(dt);
+		}
+	}
+	
+	// -----------------------------------------------------------------------------------
+	
+	function draw() 
+	{
+		c.clearRect(0, 0, canvas.width, canvas.height);
+	
+		// boxes
+		
+		for (var body of bodies) {
+
+			if ((Math.floor(i / 10) % 2) == 0)
+				c.fillStyle = "#0000FF";
+			else
+				c.fillStyle = "#FF0000";
+		
+			var px = drawOrig.x + boxes.pos.x[i] * drawScale;
+			var py = drawOrig.y - boxes.pos.y[i] * drawScale;
+
+			c.save();
+			c.translate(px, py);
+			c.rotate(boxes.rot[i]);
+			c.fillRect(-0.5 * body.dims.x, -0.5 * body.dims.y, body.dims.x, body.dims.y);
+			c.restore();
+		}
+	}	
+		
+	// -----------------------------------------------------------------------------------
+		
+	var timeFrames = 0;
+	var timeSum = 0;
+	
+	function step() 
+	{
+		var startTime = performance.now();
+		
+		simulate();		
+		
+		var endTime = performance.now();
+
+		timeSum += endTime - startTime; 
+		timeFrames++;
+		
+		if (timeFrames > 10) {
+			timeSum /= timeFrames;
+			document.getElementById("ms").innerHTML = timeSum.toFixed(3);		
+			timeFrames = 0;
+			timeSum = 0;
+		}		
+		
+		draw();
+		window.requestAnimationFrame(step);
+	}
+	
+//	document.getElementById("viscositySlider").oninput = function() {
+//		viscosity = this.value / 15;	
+//		document.getElementById("viscosity").innerHTML = viscosity.toString();
+//	}
+			
+	// main
+	
+	setup(10, 1000);
+	step();
+	
+
+</script> 
+</body>
+</html>

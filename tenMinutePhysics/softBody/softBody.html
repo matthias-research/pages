@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Soft Bodies</title>
+		<style>
+		.button {
+			background-color: #606060;
+			border: none;
+			color: white;
+			padding: 15px 32px;
+			font-size: 16px;
+			margin: 4px 2px;
+			cursor: pointer;			
+		}
+		body {
+ 			padding: 10px 50px;
+			font-family: verdana; 
+			line-height: 1.5;
+			font-size: 15px;
+		}
+		</style>
+	</head>
+	
+	<body>
+
+        <h1>Soft Body Simulation</h1> 
+        <div id="container"></div>
+        
+		<script src="https://threejs.org/build/three.js"></script>
+		<script type="module">
+
+			var scene;
+			var camera;
+			var renderer;
+			var container = document.getElementById( 'container' );
+
+			// physics scene
+
+			var physicsParams = {
+				gravity : new THREE.Vector3(0.0, -10.0, 0.0),
+				timeStep : 1.0 / 60.0,
+				worldSize : 2.0
+			};
+
+			var physicsScene = {
+				bodies : [],
+				worldBounds : new THREE.Box3(
+					new THREE.Vector3(-1.0, 0.0, -1.0).multiplyScalar(physicsParams.worldSize), 
+					new THREE.Vector3(1.0, 1.0, 1.0).multiplyScalar(physicsParams.worldSize))
+			};
+
+			// ------------------------------------------------------------------
+			function boxBounce(box, pos, vel, radius, restitution) 
+			{
+				normal = pos.clone();
+				THREE.MathUtils.clamp(pos.x, box.min.x + r, box.max.x - r);
+				THREE.MathUtils.clamp(pos.y, box.min.y + r, box.max.y - r);
+				THREE.MathUtils.clamp(pos.z, box.min.z + r, box.max.z - r);
+				if (normal.equals(this.pos))
+					return;
+				normal.sub(pos);
+				normal.normalize();
+				v = normal.dot(vel);
+				if (v < 0.0)
+					vel.addScaledVector(n, -(1.0 + restitution) * v);
+			}
+
+			// ------------------------------------------------------------------
+			class Sphere {
+				constructor(scene, radius, pos, vel, restitution, material) 
+				{ 
+					this.mesh = new THREE.Mesh(new 
+						THREE.SphereBufferGeometry(radius, 12, 12), material);
+					this.mesh.castShadow = true;
+					this.mesh.receiveShadow = true;
+					scene.add(mesh);
+					this.radius = radius;
+					this.pos = pos.clone();
+					this.vel = vel.clone();
+					this.restitution = restitution;
+				}
+				simulate(gravity, dt) 
+				{
+					// this.vel.addScaledVector(gravity, dt);
+					// this.pos.addScaledVector(this.vel, dt);
+					// boxBounce(physicsScene.worldBounds, this.pos, this.vel, this.radius, this.restitution);
+				}
+			};
+			
+			// ------------------------------------------------------------------
+			function initPhysics() 
+			{
+				radius = 0.1;
+				pos = new THREE.Vector3(0.0, 1.0, 0.0);
+				vel = new THREE.Vector3(1.0, 0.5, 0.0);
+				restitution = 1.0;
+				material = new THREE.MeshPhongMaterial({color: 0xf78a1d});
+
+				bodies.append(new Sphere(scene, radius, pos, vel, restitution, material));
+			}
+
+			// ------------------------------------------------------------------
+			function simulate() 
+			{
+				for (i = 0; i < physicsScene.bodies.length(); i++) {
+					physicsScene.bodies[i].simulate();
+				}
+
+			}
+			// ------------------------------------------
+					
+			function initThreeScene() 
+			{
+				scene = new THREE.Scene();
+				
+				// Lights
+				
+				scene.add( new THREE.AmbientLight( 0x505050 ) );	
+				scene.fog = new THREE.Fog( 0x000000, 0, 15 );				
+
+				var spotLight = new THREE.SpotLight( 0xffffff );
+				spotLight.angle = Math.PI / 5;
+				spotLight.penumbra = 0.2;
+				spotLight.position.set( 2, 3, 3 );
+				spotLight.castShadow = true;
+				spotLight.shadow.camera.near = 3;
+				spotLight.shadow.camera.far = 10;
+				spotLight.shadow.mapSize.width = 1024;
+				spotLight.shadow.mapSize.height = 1024;
+				scene.add( spotLight );
+
+				var dirLight = new THREE.DirectionalLight( 0x55505a, 1 );
+				dirLight.position.set( 0, 3, 0 );
+				dirLight.castShadow = true;
+				dirLight.shadow.camera.near = 1;
+				dirLight.shadow.camera.far = 10;
+
+				dirLight.shadow.camera.right = 1;
+				dirLight.shadow.camera.left = - 1;
+				dirLight.shadow.camera.top	= 1;
+				dirLight.shadow.camera.bottom = - 1;
+
+				dirLight.shadow.mapSize.width = 1024;
+				dirLight.shadow.mapSize.height = 1024;
+				scene.add( dirLight );
+				
+				// Geometry
+
+				var material = new THREE.MeshPhongMaterial( {
+					color: 0x80ee10,
+					shininess: 100,
+					side: THREE.DoubleSide
+				} );
+
+				var ground = new THREE.Mesh(
+					new THREE.PlaneBufferGeometry( 20, 20, 1, 1 ),
+					new THREE.MeshPhongMaterial( { color: 0xa0adaf, shininess: 150 } )
+				);
+
+				ground.rotation.x = - Math.PI / 2; // rotates X/Y to X/Z
+				ground.receiveShadow = true;
+				scene.add( ground );
+				
+				var helper = new THREE.GridHelper( 20, 20 );
+				helper.material.opacity = 0.5;
+				helper.material.transparent = true;
+				helper.position.set(0, 0.001, 0);
+				scene.add( helper );				
+				
+				// Renderer
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.shadowMap.enabled = true;
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( 0.8 * window.innerWidth, 0.5 * window.innerHeight );
+				window.addEventListener( 'resize', onWindowResize, false );
+				container.appendChild( renderer.domElement );
+				
+				// Camera
+
+				camPosition = new THREE.Vector3(0.0, 1.0, -5.0);
+
+						
+				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 100);
+				scene.add( camera );
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+			function render() {
+				renderer.render( scene, camera );
+				PBD.simulate(bodies, joints, timeStep, numSubsteps, gravity);
+			}			
+
+			// -----------------------------------------------
+
+			class CameraController {
+				constructor(camera) 
+				{
+					this.lookAt = new THREE.Vector3(0.0, 3.0, 0.0);
+					this.pos = new THREE.Vector3(0.0, 3.0, 4.0);
+					this.dirX = new THREE.Vector3(0.0, 0.0, 0.0);
+					this.dirY = new THREE.Vector3(0.0, 0.0, 0.0);
+					this.dirZ = new THREE.Vector3(0.0, 0.0, 0.0);
+					camera.position.copy(this.pos);
+					camera.lookAt(this.lookAt);
+					camera.updateMatrixWorld();	
+					this.camera = camera;
+				};
+				handleMotion(dx, dy) {
+					let scale = 0.01;
+					let prev = camera.position.distanceTo(this.lookAt);
+					dirZ.subVectors(this.lookAt, camera.position);
+					this.dirX.set(thios.dirZ.z, 0.0, -this.dirZ.x, 0.0);
+					this.dirX.normalize();
+					this.dirY.crossVectorst(this.dirZ, this.dirX);
+					this.dirY.normalize();
+					camera.position.addScaledVector(this.dirX, scale * dx);
+					camera.position.addScaledVector(this.dirY, scale * dy);
+					this.dirZ.subVectors(this.lookAt, camera.position);
+					this.dirZ.normalize();
+					let delta = camera.position.distanceTo(this.lookAt) - prev;
+					camera.position.addScaledVector(this.dirZ, -delta);
+					camera.lookAt(this.lookAt);
+				}
+				handleCameraZoom(d) {
+					let scale = 1.0 - 0.003 * d;
+					let dist = camera.position.distanceTo(this.lookAt);
+					if (d > 0.0 && dist < 0.2 || d < 0.0 && dist > 5.0)
+						return;
+
+					camera.position.set(
+						this.lookAt.x + (camera.position.x - this.lookAt.x) * scale,
+						this.lookAt.y + (camera.position.y - this.ookAt.y) * scale,
+						this.lookAt.z + (camera.position.z - this.ookAt.z) * scale);
+					camera.updateMatrixWorld();
+				}
+			}
+
+			var cameraController = new CameraController(camera);
+
+			// ---------------------------------------------------------------------
+
+			class Grabber {
+				constructor(scene, renderer)
+				{
+					this.scene = scene;
+					this.renderer = renderer;
+					this.mousePos = new THREE.Vector2();
+					this.raycaster = new THREE.Raycaster();
+					this.raycaster.layers.set(1);
+					this.raycaster.params.Mesh.threshold = 3;
+					this.grabDistance = 0.0;
+					this.active = false;
+					this.physicsBody = null;
+				}
+				updateRaycaster(x, y) {
+					var rect = this.renderer.domElement.getBoundingClientRect();	
+					this.mousePos.x = ((x - rect.left) / rect.width ) * 2 - 1;
+					this.mousePos.y = -((y - rect.top) / rect.height ) * 2 + 1;
+					this.raycaster.setFromCamera( mousePos, scene.getCamera() );
+				}
+				start(x, y) {
+					updateRaycaster(x, y);
+					var intersects = raycaster.intersectObjects( scene.children );
+					if (intersects.length > 0) {
+						this.grabDistance = intersects[0].distance;
+						let hit = raycaster.ray.origin.clone();
+						hit.addScaledVector(raycaster.ray.direction, grabDistance);
+						data = intersects[0].object.userData;
+						if (data.physicsBody) {
+							this.physicsBody = data.physicsBody;	
+							physicsBody.startGrab(hit);
+							active = true;
+						}
+					}
+				}
+				move(x, y) {
+					if (active) {
+						updateRaycaster(x, y);
+						let hit = raycaster.ray.origin.clone();
+						hit.addScaledVector(raycaster.ray.direction, grabDistance);
+						this.physicsBody.moveGrabbed(hit);
+					}
+				}
+				end() {
+					if (active) { 
+						this.physicsBody.endGrab();
+						this.physicsBody = null;
+						active = false;
+					}
+				}
+			}
+
+			var grabber = new Grabber(scene, renderer);
+
+			// ------------------------- callbacks ---------------------------------------------
+
+			container.addEventListener( 'mousedown', onMouse, false );
+			container.addEventListener( 'mousemove', onMouse, false );
+			container.addEventListener( 'mouseup', onMouse, false );
+			container.addEventListener( 'wheel', onWheel, false );
+			container.addEventListener( 'touchstart', onTouch, false );
+			container.addEventListener( 'touchend', onTouch, false );
+			container.addEventListener( 'touchmove', onTouch, false );			
+
+			function onMouse( evt ) 
+			{
+				event.preventDefault();
+				if (evt.type == "mousedown") {
+					grabber.start(evt.clientX, evt.clientY);
+				}
+				else if (evt.type == "mousemove" && mouseDown) {
+					if (grabber.active)
+						grabber.move(evt.clientX, evt.clientY);
+					else
+						cameraController.handleMotion(evt.movementX, evt.movementY);
+				}
+				else if (evt.type == "mouseup" || evt.type == "mouseout") {
+					grabber.end();
+				}
+			}
+
+			function onWheel( evt ) 
+			{
+				cameraController.handleCameraZoom(-evt.deltaY * 0.1 );
+			}
+
+			var touchCoords = [ { x : 0.0, y : 0.0}, { x : 0.0, y : 0.0}];
+
+			function onTouch( evt ) {
+				event.preventDefault();
+
+				if (evt.type == "touchdown") {
+					if (evt.touches.length == 1)
+						grabber.start(evt.touches[0].clientX, evt.touches[0].clientY);
+				}
+
+				if (evt.type == "touchmove") {
+					if (grabber.active) {
+						grabber.move(evt.touches[0].clientX, evt.touches[0].clientY);
+					}
+					else {
+						if (evt.touches.length == 1) {
+							cameraController.handleMotion(
+								evt.touches[0].clientX - touchCoords[0].x,
+								evt.touches[0].clientY - touchCoords[0].y);
+						}
+						else if (evt.touches.length == 2) {
+							let px = (touchCoords[1].x - touchCoords[0].x);
+							let py = (touchCoords[1].y - touchCoords[0].y);
+							let p = Math.sqrt(px * px + py * py);
+							let dx = (evt.touches[1].clientX - evt.touches[0].clientX);
+							let dy = (evt.touches[1].clientY - evt.touches[0].clientY);
+							let d = Math.sqrt(dx * dx + dy * dy);
+							cameraController.handleCameraZoom(d - p);
+						}
+					}
+				}
+				else if (evt.type == "touchup") {
+					if (evt.touches.length == 0)
+						endGrab();
+				}
+				if (evt.touches.length <= 2) {
+					for (let i = 0; i < evt.touches.length; i++) {
+						touchCoords[i].x = evt.touches[i].clientX;
+						touchCoords[i].y = evt.touches[i].clientY;
+					}
+				}				
+			}
+
+			function animate() {
+				simulate();
+				renderer.render( scene, camera );
+				requestAnimationFrame( animate );
+			}
+
+			initThreeScene();
+			initPhysics();
+			animate();											
+
+		</script>
+
+	</body>
+</html>
