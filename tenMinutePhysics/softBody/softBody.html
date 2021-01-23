@@ -33,6 +33,8 @@
 			var camera;
 			var renderer;
 			var container = document.getElementById( 'container' );
+			var cameraController;
+			var grabber;
 
 			// physics scene
 
@@ -52,15 +54,15 @@
 			// ------------------------------------------------------------------
 			function boxBounce(box, pos, vel, radius, restitution) 
 			{
-				normal = pos.clone();
-				THREE.MathUtils.clamp(pos.x, box.min.x + r, box.max.x - r);
-				THREE.MathUtils.clamp(pos.y, box.min.y + r, box.max.y - r);
-				THREE.MathUtils.clamp(pos.z, box.min.z + r, box.max.z - r);
-				if (normal.equals(this.pos))
+				var normal = pos.clone();
+				THREE.MathUtils.clamp(pos.x, box.min.x + radius, box.max.x - radius);
+				THREE.MathUtils.clamp(pos.y, box.min.y + radius, box.max.y - radius);
+				THREE.MathUtils.clamp(pos.z, box.min.z + radius, box.max.z - radius);
+				if (normal.equals(pos))
 					return;
 				normal.sub(pos);
 				normal.normalize();
-				v = normal.dot(vel);
+				var v = normal.dot(vel);
 				if (v < 0.0)
 					vel.addScaledVector(n, -(1.0 + restitution) * v);
 			}
@@ -73,7 +75,7 @@
 						THREE.SphereBufferGeometry(radius, 12, 12), material);
 					this.mesh.castShadow = true;
 					this.mesh.receiveShadow = true;
-					scene.add(mesh);
+					scene.add(this.mesh);
 					this.radius = radius;
 					this.pos = pos.clone();
 					this.vel = vel.clone();
@@ -81,28 +83,28 @@
 				}
 				simulate(gravity, dt) 
 				{
-					// this.vel.addScaledVector(gravity, dt);
-					// this.pos.addScaledVector(this.vel, dt);
-					// boxBounce(physicsScene.worldBounds, this.pos, this.vel, this.radius, this.restitution);
+					this.vel.addScaledVector(physicsParams.gravity, dt);
+					this.pos.addScaledVector(this.vel, dt);
+					boxBounce(physicsScene.worldBounds, this.pos, this.vel, this.radius, this.restitution);
 				}
 			};
 			
 			// ------------------------------------------------------------------
 			function initPhysics() 
 			{
-				radius = 0.1;
-				pos = new THREE.Vector3(0.0, 1.0, 0.0);
-				vel = new THREE.Vector3(1.0, 0.5, 0.0);
-				restitution = 1.0;
-				material = new THREE.MeshPhongMaterial({color: 0xf78a1d});
+				var radius = 0.1;
+				var pos = new THREE.Vector3(0.0, 1.0, 0.0);
+				var vel = new THREE.Vector3(1.0, 0.5, 0.0);
+				var restitution = 1.0;
+				var material = new THREE.MeshPhongMaterial({color: 0xf78a1d});
 
-				bodies.append(new Sphere(scene, radius, pos, vel, restitution, material));
+				physicsScene.bodies.push(new Sphere(scene, radius, pos, vel, restitution, material));
 			}
 
 			// ------------------------------------------------------------------
 			function simulate() 
 			{
-				for (i = 0; i < physicsScene.bodies.length(); i++) {
+				for (var i = 0; i < physicsScene.bodies.length; i++) {
 					physicsScene.bodies[i].simulate();
 				}
 
@@ -175,14 +177,16 @@
 				renderer.setSize( 0.8 * window.innerWidth, 0.5 * window.innerHeight );
 				window.addEventListener( 'resize', onWindowResize, false );
 				container.appendChild( renderer.domElement );
+				grabber = new Grabber(scene, renderer);
 				
 				// Camera
 
-				camPosition = new THREE.Vector3(0.0, 1.0, -5.0);
+				//camPosition = new THREE.Vector3(0.0, 1.0, -5.0);
 
 						
 				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 100);
 				scene.add( camera );
+				cameraController = new CameraController(camera);
 			}
 
 			function onWindowResize() {
@@ -215,10 +219,10 @@
 				handleMotion(dx, dy) {
 					let scale = 0.01;
 					let prev = camera.position.distanceTo(this.lookAt);
-					dirZ.subVectors(this.lookAt, camera.position);
-					this.dirX.set(thios.dirZ.z, 0.0, -this.dirZ.x, 0.0);
+					this.dirZ.subVectors(this.lookAt, camera.position);
+					this.dirX.set(this.dirZ.z, 0.0, -this.dirZ.x, 0.0);
 					this.dirX.normalize();
-					this.dirY.crossVectorst(this.dirZ, this.dirX);
+					this.dirY.crossVectors(this.dirZ, this.dirX);
 					this.dirY.normalize();
 					camera.position.addScaledVector(this.dirX, scale * dx);
 					camera.position.addScaledVector(this.dirY, scale * dy);
@@ -236,13 +240,11 @@
 
 					camera.position.set(
 						this.lookAt.x + (camera.position.x - this.lookAt.x) * scale,
-						this.lookAt.y + (camera.position.y - this.ookAt.y) * scale,
-						this.lookAt.z + (camera.position.z - this.ookAt.z) * scale);
+						this.lookAt.y + (camera.position.y - this.lookAt.y) * scale,
+						this.lookAt.z + (camera.position.z - this.lookAt.z) * scale);
 					camera.updateMatrixWorld();
 				}
 			}
-
-			var cameraController = new CameraController(camera);
 
 			// ---------------------------------------------------------------------
 
@@ -263,11 +265,11 @@
 					var rect = this.renderer.domElement.getBoundingClientRect();	
 					this.mousePos.x = ((x - rect.left) / rect.width ) * 2 - 1;
 					this.mousePos.y = -((y - rect.top) / rect.height ) * 2 + 1;
-					this.raycaster.setFromCamera( mousePos, scene.getCamera() );
+					this.raycaster.setFromCamera( this.mousePos, camera );
 				}
 				start(x, y) {
-					updateRaycaster(x, y);
-					var intersects = raycaster.intersectObjects( scene.children );
+					this.updateRaycaster(x, y);
+					var intersects = this.raycaster.intersectObjects( scene.children );
 					if (intersects.length > 0) {
 						this.grabDistance = intersects[0].distance;
 						let hit = raycaster.ray.origin.clone();
@@ -276,12 +278,12 @@
 						if (data.physicsBody) {
 							this.physicsBody = data.physicsBody;	
 							physicsBody.startGrab(hit);
-							active = true;
+							this.active = true;
 						}
 					}
 				}
 				move(x, y) {
-					if (active) {
+					if (this.active) {
 						updateRaycaster(x, y);
 						let hit = raycaster.ray.origin.clone();
 						hit.addScaledVector(raycaster.ray.direction, grabDistance);
@@ -289,15 +291,13 @@
 					}
 				}
 				end() {
-					if (active) { 
+					if (this.active) { 
 						this.physicsBody.endGrab();
 						this.physicsBody = null;
-						active = false;
+						this.active = false;
 					}
 				}
 			}
-
-			var grabber = new Grabber(scene, renderer);
 
 			// ------------------------- callbacks ---------------------------------------------
 
@@ -308,12 +308,14 @@
 			container.addEventListener( 'touchstart', onTouch, false );
 			container.addEventListener( 'touchend', onTouch, false );
 			container.addEventListener( 'touchmove', onTouch, false );			
+			var mouseDown = false;
 
 			function onMouse( evt ) 
 			{
 				event.preventDefault();
 				if (evt.type == "mousedown") {
 					grabber.start(evt.clientX, evt.clientY);
+					mouseDown = true;
 				}
 				else if (evt.type == "mousemove" && mouseDown) {
 					if (grabber.active)
@@ -323,6 +325,7 @@
 				}
 				else if (evt.type == "mouseup" || evt.type == "mouseout") {
 					grabber.end();
+					mouseDown = false;
 				}
 			}
 
