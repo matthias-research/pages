@@ -1,0 +1,110 @@
+<!-- Matthias Müller, nvidia -->
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=500, initial-scale=1.0">
+<!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
+<link rel="stylesheet" type="text/css" href="../commonStyle.css">
+<style>
+
+
+table#pubTable {
+	text-align: left;
+	width: 100%;
+	font-size: 18px;
+	vertical-align: bottom;
+}
+td {
+  vertical-align: top;
+//  white-space: nowrap;
+  padding : 15px 0px;
+}
+/*
+#pubTable tr:nth-child(odd){
+	background-color: #f2f2f2;
+}
+*/
+
+.tutorialTitle {
+	font-weight: bold;
+	color : #C93226;
+}
+.description {
+/*	font-style: italic; */
+}
+.paperAuthors {
+/*	color : red; */
+}
+
+thead tr th:first-child,
+tbody tr td:first-child {
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
+}
+
+.paperButton:hover {
+  background-color: #777777; 
+  color: white;
+}
+.paperButton {
+  background-color: #555555;
+  border: none;
+  color: white;
+  padding: 5px 5px;
+  margin: 2px 0px 2px 0px;  
+  border-radius: 5px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 14px;
+}
+
+.paperImage {
+	width: 170px;
+}
+
+</style>
+
+
+
+</head>
+
+<title>Ten Minute Physics</title>
+
+<body>
+
+<div class = "title" >Ten Minute Physics</div><br>
+<table id = "pubTable">
+
+<tr>
+  <td>
+  <img class = "paperImage" src = "01.jpg" >
+  </td>
+  <td>
+  <div class = "tutorialTitle">1: Introduction to web browser physics</div>
+  <div class = "description">I give a brief intoduction to this channel and to physics. Aftet that we write a 2d cannonball simulation.</div>
+  <a href = "PBDBodies.pdf" target="_blank" class="paperButton">Video</a> 
+  <a href = "https://github.com/matthias-research/pages/blob/master/tenMinutePhysics/01-cannonball2d.html" target="_blank" class="paperButton">Code</a>
+  <a href = "https://github.com/matthias-research/pages/blob/master/tenMinutePhysics/01-cannonball2d.html" target="_blank" class="paperButton">Demo</a>
+  </td>
+  </tr>
+    
+<tr>
+<td>
+<img class = "paperImage" src = "02.jpg" >
+</td>
+<td>
+	<div class = "tutorialTitle">2: Introduction to 3d web browser physics</div>
+	<div class = "description">We make are cannonball 3d using the graphics engine THREE.js.</div>
+	<a href = "https://youtu.be/CPq87E1vD8k" target="_blank" class="paperButton">Video</a> 
+	<a href = "https://github.com/matthias-research/pages/blob/master/tenMinutePhysics/02-cannonball3d.html" target="_blank" class="paperButton">Code</a>
+	<a href = "https://github.com/matthias-research/pages/blob/master/tenMinutePhysics/01-cannonball2d.html" target="_blank" class="paperButton">Demo</a>
+</td>
+</tr>
+
+</table>
+
+</body>
+</html>
