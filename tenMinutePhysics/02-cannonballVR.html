@@ -309,13 +309,7 @@
 
 				ground.rotation.x = - Math.PI / 2; // rotates X/Y to X/Z
 				ground.receiveShadow = true;
-				threeScene.add( ground );
-				
-				var helper = new THREE.GridHelper( 20, 20 );
-				helper.material.opacity = 1.0;
-				helper.material.transparent = true;
-				helper.position.set(0, 0.02, 0);
-				threeScene.add( helper );				
+				threeScene.add( ground );				
 				
 				// Renderer
 
