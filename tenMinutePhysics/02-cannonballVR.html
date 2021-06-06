@@ -13,8 +13,6 @@
 	<body>
 
         <h1>Cannonball VR</h1> 
-		<button id = "buttonRun" onclick="run()" class="button">Run</button>
-		<button onclick="restart()" class="button">Restart</button>
 
 		<br><br>		
         <div id="container"></div>
@@ -31,7 +29,6 @@
 				gravity : new THREE.Vector3(0.0, -10.0, 0.0),
 				dt : 1.0 / 60.0,
 				worldSize : { x: 1.5, z : 2.5 },
-				paused: true,
 				objects: [],				
 			};
 			
@@ -96,8 +93,6 @@
 			// ------------------------------------------------------------------
 			function simulate() 
 			{
-				if (physicsScene.paused)
-					return;
 				for (var i = 0; i < physicsScene.objects.length; i++)
 					physicsScene.objects[i].simulate();
 			}
@@ -350,19 +345,6 @@
 				camera.aspect = window.innerWidth / window.innerHeight;
 				camera.updateProjectionMatrix();
 				renderer.setSize( window.innerWidth, window.innerHeight );
-			}
-
-			function run() {
-				var button = document.getElementById('buttonRun');
-				if (physicsScene.paused)
-					button.innerHTML = "Stop";
-				else
-					button.innerHTML = "Run";
-				physicsScene.paused = !physicsScene.paused;
-			}
-
-			function restart() {
-				location.reload();
 			}
 			
 			// make browser to call us repeatedly -----------------------------------
