@@ -1,3 +1,13 @@
+<!--
+Copyright 2021 Matthias Müller - Ten Minute Physics
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-->
+
 <!DOCTYPE html>
 <html lang="en">
 	<head>
@@ -28,7 +38,7 @@
 			{
 				gravity : new THREE.Vector3(0.0, -10.0, 0.0),
 				dt : 1.0 / 60.0,
-				worldSize : { x: 3.0, z : 6.0 },
+				worldSize : { x: 1.5, z : 2.5 },
 				objects: [],				
 			};
 			
@@ -97,7 +107,96 @@
 					physicsScene.objects[i].simulate();
 			}
 
+			// ------------------------------------------------------------------
+			function initThreeScene() 
+			{
+				threeScene = new THREE.Scene();
+				
+				// Lights
+				
+				threeScene.add( new THREE.AmbientLight( 0x505050 ) );	
+				threeScene.fog = new THREE.Fog( 0x000000, 0, 15 );				
+
+				var spotLight = new THREE.SpotLight( 0xffffff );
+				spotLight.angle = Math.PI / 5;
+				spotLight.penumbra = 0.2;
+				spotLight.position.set( 2, 3, 3 );
+				spotLight.castShadow = true;
+				spotLight.shadow.camera.near = 3;
+				spotLight.shadow.camera.far = 10;
+				spotLight.shadow.mapSize.width = 1024;
+				spotLight.shadow.mapSize.height = 1024;
+				threeScene.add( spotLight );
+
+				var dirLight = new THREE.DirectionalLight( 0x55505a, 1 );
+				dirLight.position.set( 0, 3, 0 );
+				dirLight.castShadow = true;
+				dirLight.shadow.camera.near = 1;
+				dirLight.shadow.camera.far = 10;
+
+				dirLight.shadow.camera.right = 1;
+				dirLight.shadow.camera.left = - 1;
+				dirLight.shadow.camera.top	= 1;
+				dirLight.shadow.camera.bottom = - 1;
+
+				dirLight.shadow.mapSize.width = 1024;
+				dirLight.shadow.mapSize.height = 1024;
+				threeScene.add( dirLight );
+				
+				// Geometry
+
+				var ground = new THREE.Mesh(
+					new THREE.PlaneBufferGeometry( 20, 20, 1, 1 ),
+					new THREE.MeshPhongMaterial( { color: 0xa0adaf, shininess: 150 } )
+				);				
+
+				ground.rotation.x = - Math.PI / 2; // rotates X/Y to X/Z
+				ground.receiveShadow = true;
+				threeScene.add( ground );
+				
+				var helper = new THREE.GridHelper( 20, 20 );
+				helper.material.opacity = 1.0;
+				helper.material.transparent = true;
+				helper.position.set(0, 0.002, 0);
+				threeScene.add( helper );				
+				
+				// Renderer
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.shadowMap.enabled = true;
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( 0.8 * window.innerWidth, 0.8 * window.innerHeight );
+				window.addEventListener( 'resize', onWindowResize, false );
+				container.appendChild( renderer.domElement );
+				
+				// Camera
+						
+				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 100);
+			    camera.position.set(0, 1, 4);
+				camera.updateMatrixWorld();	
+
+				threeScene.add( camera );
+
+				// VR 
+				document.body.appendChild(VRButton.createButton(renderer));
+				renderer.xr.enabled = true;
+				renderer.setAnimationLoop(update);
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+			function update() {
+				simulate();
+				renderer.render(threeScene, camera);
+			}
+
 			// ------------------------------------------
+			// start copied code from THREE.js
 					
 			class VRButton {
 
@@ -265,92 +364,11 @@
 				}
 			};
 
-			function initThreeScene() 
-			{
-				threeScene = new THREE.Scene();
-				
-				// Lights
-				
-				threeScene.add( new THREE.AmbientLight( 0x505050 ) );	
-				threeScene.fog = new THREE.Fog( 0x000000, 0, 15 );				
+			// end copied code from THREE.js
+			// ------------------------------------------
 
-				var spotLight = new THREE.SpotLight( 0xffffff );
-				spotLight.angle = Math.PI / 5;
-				spotLight.penumbra = 0.2;
-				spotLight.position.set( 2, 3, 3 );
-				spotLight.castShadow = true;
-				spotLight.shadow.camera.near = 3;
-				spotLight.shadow.camera.far = 10;
-				spotLight.shadow.mapSize.width = 1024;
-				spotLight.shadow.mapSize.height = 1024;
-				threeScene.add( spotLight );
-
-				var dirLight = new THREE.DirectionalLight( 0x55505a, 1 );
-				dirLight.position.set( 0, 3, 0 );
-				dirLight.castShadow = true;
-				dirLight.shadow.camera.near = 1;
-				dirLight.shadow.camera.far = 10;
-
-				dirLight.shadow.camera.right = 1;
-				dirLight.shadow.camera.left = - 1;
-				dirLight.shadow.camera.top	= 1;
-				dirLight.shadow.camera.bottom = - 1;
-
-				dirLight.shadow.mapSize.width = 1024;
-				dirLight.shadow.mapSize.height = 1024;
-				threeScene.add( dirLight );
-				
-				// Geometry
-
-				var ground = new THREE.Mesh(
-					new THREE.PlaneBufferGeometry( 20, 20, 1, 1 ),
-					new THREE.MeshPhongMaterial( { color: 0xa0adaf, shininess: 150 } )
-				);				
-
-				ground.rotation.x = - Math.PI / 2; // rotates X/Y to X/Z
-				ground.receiveShadow = true;
-				threeScene.add( ground );				
-				
-				// Renderer
-
-				renderer = new THREE.WebGLRenderer();
-				renderer.shadowMap.enabled = true;
-				renderer.setPixelRatio( window.devicePixelRatio );
-				renderer.setSize( 0.8 * window.innerWidth, 0.8 * window.innerHeight );
-				window.addEventListener( 'resize', onWindowResize, false );
-				container.appendChild( renderer.domElement );
-				
-				// Camera
-						
-				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 100);
-			    camera.position.set(0, 1, 4);
-				camera.updateMatrixWorld();	
-
-				threeScene.add( camera );
-
-				// VR 
-				document.body.appendChild(VRButton.createButton(renderer));
-				renderer.xr.enabled = true;
-				renderer.setAnimationLoop(update);
-			}
-
-			function onWindowResize() {
-
-				camera.aspect = window.innerWidth / window.innerHeight;
-				camera.updateProjectionMatrix();
-				renderer.setSize( window.innerWidth, window.innerHeight );
-			}
-			
-			// make browser to call us repeatedly -----------------------------------
-
-			function update() {
-				simulate();
-				renderer.render(threeScene, camera);
-			}
-			
 			initThreeScene();
 			initPhysics();
-//			update();
 			
 		</script>
 	</body>
