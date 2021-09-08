@@ -22,6 +22,7 @@
 	<button class="button" onclick="setupScene()">Restart</button>
 	<button class="button" onclick="run()">Run</button>
 	<button class="button" onclick="step()">Step</button>
+    <p>Number of sub-steps: <input type = "range" min = "0" max = "5" value = "5" id = "stepsSlider" class = "slider"> <span id = "steps">10000</span></p>
 
 	<canvas id = "myCanvas"></canvas>
 <script>
@@ -282,8 +283,10 @@
         c.fillRect(0, 0, canvas.width, canvas.height);
         if (scene.pendulumPBD)
             scene.pendulumPBD.draw();
-        if (scene.pendulumAnalytic)
-            scene.pendulumAnalytic.draw();
+        if (scene.numSubSteps >= 100) {
+            if (scene.pendulumAnalytic)
+                scene.pendulumAnalytic.draw();
+        }
     }
 
     function simulate() {
@@ -305,6 +308,19 @@
             }
         }
     }
+    
+	document.getElementById("stepsSlider").oninput = function() {
+		var steps = [1, 5, 10, 100, 1000, 10000];
+		scene.numSubSteps = steps[Number(this.value)];
+		document.getElementById("steps").innerHTML = scene.numSubSteps.toString();
+	}
+
+    document.addEventListener("keydown", event => {
+        if (event.isComposing || event.keyCode === 229) 
+            return;
+        if (event.key == 's')
+            step();
+        });    
 
 	function run() {
 		scene.paused = false;
