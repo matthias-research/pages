@@ -195,6 +195,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         }
         draw() {
             c.strokeStyle = this.color;
+            c.lineWidth = 2.0;
             if (this.trailLast != this.trailFirst) {
                 var i = this.trailFirst;
                 c.beginPath();
@@ -280,7 +281,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
         scene.pendulumAnalytic = null;
 
-        scene.pendulumPBD = new Pendulum(true, "#FF0000", masses, lengths, angles);
+        scene.pendulumPBD = new Pendulum(true, "#FF3030", masses, lengths, angles);
         if (masses.length <= 3)
             scene.pendulumAnalytic = new Pendulum(false, "#00FF00", masses, lengths, angles);
         scene.paused = true;
