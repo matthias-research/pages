@@ -1,0 +1,367 @@
+<!--
+Copyright 2021 Matthias Müller - Ten Minute Physics, https://www.youtube.com/channel/UCTG_vrRdKYfrpqCv_WV4eyA
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Interaction</title>
+		<style>
+			body {
+				font-family: verdana; 
+				font-size: 15px;
+			}			
+			.button {
+			background-color: #606060;
+			border: none;
+			color: white;
+			padding: 15px 32px;
+			font-size: 16px;
+			margin: 4px 2px;
+			cursor: pointer;
+		}
+		</style>	
+	</head>
+	
+	<body>
+
+        <h1>User Interaction Demo</h1> 
+		<button id = "buttonRun" onclick="run()" class="button">Run</button>
+		<button onclick="restart()" class="button">Restart</button>
+
+		<br><br>		
+        <div id="container"></div>
+        
+		<script src="https://threejs.org/build/three.js"></script>
+		<script src='https://threejs.org/examples/js/controls/OrbitControls.js'></script>		
+		<script>
+			
+			var gThreeScene;
+			var gRenderer;
+			var gCamera;
+			var gCameraControl;
+			var gGrabber;
+			var gMouseDown = false;
+
+			var gPhysicsScene = 
+			{
+				gravity : new THREE.Vector3(0.0, -10.0, 0.0),
+				dt : 1.0 / 60.0,
+				worldSize : { x: 1.5, z : 2.5 },
+				paused: true,
+				objects: [],				
+			};
+
+			// ------------------------------------------------------------------
+			class Ball {
+				constructor(pos, radius, vel)
+				{
+					// physics data 
+
+                    this.pos = pos;
+                    this.radius = radius;
+                    this.vel = vel;
+					this.grabbed = false;
+
+					// visual mesh
+
+                    var geometry = new THREE.SphereGeometry( radius, 32, 32 );
+                    var material = new THREE.MeshPhongMaterial({color: 0xff0000});
+                    this.visMesh = new THREE.Mesh( geometry, material );
+					this.visMesh.position.copy(pos);
+					this.visMesh.userData = this;		// for raycasting
+					this.visMesh.layers.enable(1);
+					gThreeScene.add(this.visMesh);
+				}
+			
+				simulate()
+				{
+					if (this.grabbed)
+						return;
+
+					this.vel.addScaledVector(gPhysicsScene.gravity, gPhysicsScene.dt);
+					this.pos.addScaledVector(this.vel, gPhysicsScene.dt);
+
+					var size = gPhysicsScene.worldSize;
+
+					if (this.pos.x < -size.x) {
+						this.pos.x = -size.x; this.vel.x = -this.vel.x;
+					}
+					if (this.pos.x >  size.x) {
+						this.pos.x =  size.x; this.vel.x = -this.vel.x;
+					}
+					if (this.pos.z < -size.z) {
+						this.pos.z = -size.z; this.vel.z = -this.vel.z;
+					}
+					if (this.pos.z >  size.z) {
+						this.pos.z =  size.z; this.vel.z = -this.vel.z;
+					}
+					if (this.pos.y < this.radius) {
+						this.pos.y = this.radius; this.vel.y = -this.vel.y;
+					}
+
+					this.visMesh.position.copy(this.pos);
+					this.visMesh.geometry.computeBoundingSphere();
+				}
+
+				startGrab(pos) 
+				{
+					this.grabbed = true;
+					this.pos.copy(pos);
+					this.visMesh.position.copy(pos);
+				}
+
+				moveGrabbed(pos, vel) 
+				{
+					this.pos.copy(pos);
+					this.visMesh.position.copy(pos);
+				}
+
+				endGrab(pos, vel) 
+				{
+					this.grabbed = false;
+					this.vel.copy(vel);
+				}				
+			}
+
+			// ------------------------------------------------------------------
+			function initPhysics() 
+			{
+				var radius = 0.2;
+				var pos = new THREE.Vector3(radius, 1.0, radius);
+//				var vel = new THREE.Vector3(2.0, 5.0, 3.0);
+				var vel = new THREE.Vector3();
+				
+				gPhysicsScene.objects.push(new Ball(pos, radius, vel)); 
+			}
+
+			// ------------------------------------------------------------------
+			function simulate() 
+			{
+				if (gPhysicsScene.paused)
+					return;
+				for (var i = 0; i < gPhysicsScene.objects.length; i++)
+					gPhysicsScene.objects[i].simulate();
+
+				gGrabber.increaseTime(gPhysicsScene.dt);
+			}
+
+			// ------------------------------------------
+					
+			function initThreeScene() 
+			{
+				gThreeScene = new THREE.Scene();
+				
+				// Lights
+				
+				gThreeScene.add( new THREE.AmbientLight( 0x505050 ) );	
+				gThreeScene.fog = new THREE.Fog( 0x000000, 0, 15 );				
+
+				var spotLight = new THREE.SpotLight( 0xffffff );
+				spotLight.angle = Math.PI / 5;
+				spotLight.penumbra = 0.2;
+				spotLight.position.set( 2, 3, 3 );
+				spotLight.castShadow = true;
+				spotLight.shadow.camera.near = 3;
+				spotLight.shadow.camera.far = 10;
+				spotLight.shadow.mapSize.width = 1024;
+				spotLight.shadow.mapSize.height = 1024;
+				gThreeScene.add( spotLight );
+
+				var dirLight = new THREE.DirectionalLight( 0x55505a, 1 );
+				dirLight.position.set( 0, 3, 0 );
+				dirLight.castShadow = true;
+				dirLight.shadow.camera.near = 1;
+				dirLight.shadow.camera.far = 10;
+
+				dirLight.shadow.camera.right = 1;
+				dirLight.shadow.camera.left = - 1;
+				dirLight.shadow.camera.top	= 1;
+				dirLight.shadow.camera.bottom = - 1;
+
+				dirLight.shadow.mapSize.width = 1024;
+				dirLight.shadow.mapSize.height = 1024;
+				gThreeScene.add( dirLight );
+				
+				// Geometry
+
+				var ground = new THREE.Mesh(
+					new THREE.PlaneBufferGeometry( 20, 20, 1, 1 ),
+					new THREE.MeshPhongMaterial( { color: 0xa0adaf, shininess: 150 } )
+				);				
+
+				ground.rotation.x = - Math.PI / 2; // rotates X/Y to X/Z
+				ground.receiveShadow = true;
+				gThreeScene.add( ground );
+				
+				var helper = new THREE.GridHelper( 20, 20 );
+				helper.material.opacity = 1.0;
+				helper.material.transparent = true;
+				helper.position.set(0, 0.002, 0);
+				gThreeScene.add( helper );				
+				
+				// Renderer
+
+				gRenderer = new THREE.WebGLRenderer();
+				gRenderer.shadowMap.enabled = true;
+				gRenderer.setPixelRatio( window.devicePixelRatio );
+				gRenderer.setSize( 0.8 * window.innerWidth, 0.8 * window.innerHeight );
+				window.addEventListener( 'resize', onWindowResize, false );
+				container.appendChild( gRenderer.domElement );
+				
+				// Camera
+						
+				gCamera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 100);
+			    gCamera.position.set(0, 1, 4);
+				gCamera.updateMatrixWorld();	
+
+				gThreeScene.add(gCamera);
+
+				gCameraControl = new THREE.OrbitControls(gCamera, gRenderer.domElement);
+				gCameraControl.zoomSpeed = 2.0;
+    			gCameraControl.panSpeed = 0.4;
+
+				// grabber
+
+				gGrabber = new Grabber();
+				container.addEventListener( 'pointerdown', onPointer, false );
+				container.addEventListener( 'pointermove', onPointer, false );
+				container.addEventListener( 'pointerup', onPointer, false );
+			}
+
+			// ------- grabber -----------------------------------------------------------
+
+			class Grabber {
+				constructor() {
+					this.raycaster = new THREE.Raycaster();
+					this.raycaster.layers.set(1);
+					this.raycaster.params.Line.threshold = 0.1;
+					this.physicsObject = null;
+					this.distance = 0.0;
+					this.prevPos = new THREE.Vector3();
+					this.vel = new THREE.Vector3();
+					this.time = 0.0;
+				}
+				increaseTime(dt) {
+					this.time += dt;
+				}
+				updateRaycaster(x, y) {
+					var rect = gRenderer.domElement.getBoundingClientRect();
+					this.mousePos = new THREE.Vector2();
+					this.mousePos.x = ((x - rect.left) / rect.width ) * 2 - 1;
+					this.mousePos.y = -((y - rect.top) / rect.height ) * 2 + 1;
+					this.raycaster.setFromCamera( this.mousePos, gCamera );
+				}
+				start(x, y) {
+					this.physicsObject = null;
+					this.updateRaycaster(x, y);
+					var intersects = this.raycaster.intersectObjects( gThreeScene.children );
+					if (intersects.length > 0) {
+						var obj = intersects[0].object.userData;
+						if (obj) {
+							this.physicsObject = obj;
+							this.distance = intersects[0].distance;
+							var pos = this.raycaster.ray.origin.clone();
+							pos.addScaledVector(this.raycaster.ray.direction, this.distance);
+							this.physicsObject.startGrab(pos);
+							this.prevPos.copy(pos);
+							this.vel.set(0.0, 0.0, 0.0);
+							this.time = 0.0;
+							if (gPhysicsScene.paused)
+								run();
+						}
+					}
+				}
+				move(x, y) {
+					if (this.physicsObject) {
+						this.updateRaycaster(x, y);
+						var pos = this.raycaster.ray.origin.clone();
+						pos.addScaledVector(this.raycaster.ray.direction, this.distance);
+
+						this.vel.copy(pos);
+						this.vel.sub(this.prevPos);
+						if (this.time > 0.0)
+							this.vel.divideScalar(this.time);
+						else
+							vel.set(0.0, 0.0, 0.0);
+						this.prevPos.copy(pos);
+						this.time = 0.0;
+
+						this.physicsObject.moveGrabbed(pos, this.vel);
+					}
+				}
+				end(x, y) {
+					if (this.physicsObject) { 
+						this.physicsObject.endGrab(this.prevPos, this.vel);
+						this.physicsObject = null;
+					}
+				}
+			}			
+
+			function onPointer( evt ) 
+			{
+				event.preventDefault();
+				if (evt.type == "pointerdown") {
+					gGrabber.start(evt.clientX, evt.clientY);
+					gMouseDown = true;
+					if (gGrabber.physicsObject) {
+						gCameraControl.saveState();
+						gCameraControl.enabled = false;
+					}
+				}
+				else if (evt.type == "pointermove" && gMouseDown) {
+					gGrabber.move(evt.clientX, evt.clientY);
+				}
+				else if (evt.type == "pointerup") {
+					if (gGrabber.physicsObject) {
+						gGrabber.end();
+						gCameraControl.reset();
+					}
+					gMouseDown = false;
+					gCameraControl.enabled = true;
+				}
+			}	
+			
+			// ------------------------------------------------------
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+			function run() {
+				var button = document.getElementById('buttonRun');
+				if (gPhysicsScene.paused)
+					button.innerHTML = "Stop";
+				else
+					button.innerHTML = "Run";
+				gPhysicsScene.paused = !gPhysicsScene.paused;
+			}
+
+			function restart() {
+				location.reload();
+			}
+			
+			// make browser to call us repeatedly -----------------------------------
+
+			function update() {
+				simulate();
+				gRenderer.render(gThreeScene, gCamera);
+				requestAnimationFrame(update);
+			}
+			
+			initThreeScene();
+			initPhysics();
+			update();
+			
+		</script>
+	</body>
+</html>
