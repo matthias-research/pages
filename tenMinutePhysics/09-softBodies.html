@@ -34,6 +34,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         <h1>Soft Body Simulation</h1> 
 		<button id = "buttonRun" onclick="run()" class="button">Run</button>
 		<button onclick="restart()" class="button">Restart</button>
+		<button onclick="squash()" class="button">Squash</button>
+		<button onclick="newBody()" class="button">Body++</button>&nbsp;&nbsp;
+		<br><br>
+		<span id = "numTets">0</span> tets&nbsp;&nbsp;
+		Compliance:
+		<input type = "range" min = "0" max = "10" value = "0" id = "complianceSlider" class = "slider"> 
+
 
 		<br><br>		
         <div id="container"></div>
@@ -168,6 +175,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 //					console.log(JSON.stringify(tetMesh.verts));
 				}
 
+				updateMeshes() 
+				{
+					this.surfaceMesh.geometry.computeVertexNormals();
+					this.surfaceMesh.geometry.attributes.position.needsUpdate = true;
+					this.surfaceMesh.geometry.computeBoundingSphere();									
+				}
+
 				getTetVolume(nr) 
 				{
 					var id0 = this.tetIds[4 * nr];
@@ -231,10 +245,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 							continue;
 						vecSetDiff(this.vel,i, this.pos,i, this.prevPos,i, 1.0 / dt);
 					}
-
-					this.surfaceMesh.geometry.computeVertexNormals();
-					this.surfaceMesh.geometry.attributes.position.needsUpdate = true;
-					this.surfaceMesh.geometry.computeBoundingSphere();
+					this.updateMeshes();
 				}
 
 				solveEdges(compliance, dt) {
@@ -295,6 +306,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 					}
 				}
 
+				squash() {
+					for (var i = 0; i < this.numParticles; i++) {
+						this.pos[3 * i + 1] = 0.5;
+					}
+					this.updateMeshes();
+				}
+
 				startGrab(pos) 
 				{
 					var p = [pos.x, pos.y, pos.z];
@@ -337,7 +355,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 			// ------------------------------------------------------------------
 			function initPhysics() 
 			{
-				gPhysicsScene.objects.push(new SoftBody(bunnyMesh, gThreeScene)); 
+				var body = new SoftBody(bunnyMesh, gThreeScene);
+				gPhysicsScene.objects.push(body); 
+				document.getElementById("numTets").innerHTML = body.numTets;
 			}
 
 			// ------------------------------------------------------------------
@@ -539,6 +559,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 					gCameraControl.enabled = true;
 				}
 			}	
+
+			document.getElementById("complianceSlider").oninput = function() {
+				for (var i = 0; i < gPhysicsScene.objects.length; i++) 
+					gPhysicsScene.objects[i].edgeCompliance = this.value * 50.0;
+			}
 			
 			// ------------------------------------------------------
 
@@ -560,6 +585,22 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 			function restart() {
 				location.reload();
+			}
+
+			function squash() {
+				for (var i = 0; i < gPhysicsScene.objects.length; i++)
+					gPhysicsScene.objects[i].squash();
+				if (!gPhysicsScene.paused)
+					run();
+			}
+
+			function newBody() {
+				gPhysicsScene.objects.push(new SoftBody(bunnyMesh, gThreeScene)); 
+
+				var numTets = 0;
+				for (var i = 0; i < gPhysicsScene.objects.length; i++)
+					numTets += gPhysicsScene.objects[i].numTets;
+				document.getElementById("numTets").innerHTML = numTets;
 			}
 			
 			// make browser to call us repeatedly -----------------------------------
