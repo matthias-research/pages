@@ -44,7 +44,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 			text-decoration: none;
 		}
 		body {
- 			padding: 10px 10px;
+ 			padding: 10px 0px 0px 0px;
 			font-family: verdana; 
 			line-height: 1.5;
 			font-size: 15px;
@@ -342,6 +342,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 					for (let i = 0; i < this.pos.length; i++) 
 						vecSetDiff(this.vel,i, this.pos,i, this.prevPos,i, 1.0 / dt);
+
+					if (!grabber.physicsObject) 
+						controls.enabled = true;
 				}
 
 				// ----------------- end solver -----------------------------------------------------				
