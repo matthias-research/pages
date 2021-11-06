@@ -31,6 +31,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 			margin: 2px 2px;
 			cursor: pointer;			
 		}
+		.buttonRed {
+			background-color: #800000;
+			border: none;
+			color: white;
+			padding: 10px 10px;
+			font-size: 16px;
+			margin: 2px 2px;
+			cursor: pointer;
+			text-decoration: none;
+		}
 		body {
  			padding: 10px 50px;
 			font-family: verdana; 
@@ -42,7 +52,19 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 	
 	<body>
 
-        <h1>Soft Body Simulation</h1> 
+		<table>
+			<tr>
+				<th>
+					<b><div style = "font-size: 28px;">Soft Body Simulation &nbsp;&nbsp;</div></b>				  
+				</th>
+				<th>
+					<a href = "https://matthias-research.github.io/pages/publications/neohookean.pdf" class="buttonRed">Paper</a>
+				</th>
+			 	<th>
+					<a href = "https://matthias-research.github.io/pages/tenMinutePhysics/index.html" class="buttonRed">Simulation Tutorials</a>
+				</th>
+			</tr>
+		</table>		
 		<button id = "buttonRun" onclick="run()" class="button">Run</button>
 		<button onclick="restart()" class="button">Restart</button>
 		<button onclick="squash()" class="button">Squash</button>&nbsp;&nbsp;
