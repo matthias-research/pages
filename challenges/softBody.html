@@ -516,7 +516,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 				renderer = new THREE.WebGLRenderer();
 				renderer.shadowMap.enabled = true;
 				renderer.setPixelRatio( window.devicePixelRatio );
-				renderer.setSize( 0.8 * window.innerWidth, 0.8 * window.innerHeight );
+				renderer.setSize( 0.95 * window.innerWidth, 0.95 * window.innerHeight );
 				window.addEventListener( 'resize', onWindowResize, false );
 				container.appendChild( renderer.domElement );
 				
@@ -629,6 +629,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 					if (grabber.physicsObject) {
 						grabber.end();
 						controls.reset();
+						controls = new THREE.OrbitControls(camera, renderer.domElement);
+		    			controls.zoomSpeed = 2.0;
+    					controls.panSpeed = 0.4;
 					}
 					mouseDown = false;
 				}
