@@ -577,8 +577,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 							hit.addScaledVector(this.raycaster.ray.direction, this.grabDistance);
 							this.physicsObject.startGrab(hit);
 							this.active = true;
-							controls.enabled = false;
 						}
+						if (paused)
+							run();						
 					}
 				}
 				move(x, y) {
@@ -597,7 +598,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 							this.physicsObject = null;
 						}
 						this.active = false;
-//						controls.enabled = true;
 					}
 				}
 			}
@@ -608,10 +608,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 			{
 				event.preventDefault();
 				if (evt.type == "pointerdown") {
-					if (!grabber.physicsObject)
-						controls.enabled = true;
-
 					grabber.start(evt.clientX, evt.clientY);
+					if (grabber.physicsObject) {
+						controls.saveState();
+						controls.enabled = false;
+					}
 					mouseDown = true;
 				}
 				else if (evt.type == "pointermove" && mouseDown) {
@@ -619,9 +620,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 						grabber.move(evt.clientX, evt.clientY);
 				}
 				else if (evt.type == "pointerup"/* || evt.type == "pointerout"*/) {
-					grabber.end();
+					if (grabber.physicsObject) {
+						grabber.end();
+						controls.reset();
+					}
 					mouseDown = false;
 				}
+				if (!grabber.physicsObject)
+					controls.enabled = true;
 			}
 
 			var timeFrames = 0;
