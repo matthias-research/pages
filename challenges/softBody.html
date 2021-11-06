@@ -18,7 +18,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 -->
 
 <!DOCTYPE html>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <html lang="en">
+
 	<head>
 		<title>Soft Bodies</title>
 		<style>
@@ -599,6 +601,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 						}
 						this.active = false;
 					}
+					this.physicsObject = null;
 				}
 			}
 
@@ -626,8 +629,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 					}
 					mouseDown = false;
 				}
-				if (!grabber.physicsObject)
+				if (!grabber.physicsObject) {
 					controls.enabled = true;
+				}
 			}
 
 			var timeFrames = 0;
