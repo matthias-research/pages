@@ -44,7 +44,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 			text-decoration: none;
 		}
 		body {
- 			padding: 10px 50px;
+ 			padding: 10px 10px;
 			font-family: verdana; 
 			line-height: 1.5;
 			font-size: 15px;
@@ -63,7 +63,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 					<a href = "https://matthias-research.github.io/pages/publications/neohookean.pdf" class="buttonRed">Paper</a>
 				</th>
 			 	<th>
-					<a href = "https://matthias-research.github.io/pages/tenMinutePhysics/index.html" class="buttonRed">Simulation Tutorials</a>
+					<a href = "https://matthias-research.github.io/pages/tenMinutePhysics/index.html" class="buttonRed">Tutorials</a>
 				</th>
 			</tr>
 		</table>		
@@ -609,7 +609,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 			function onPointer( evt ) 
 			{
-				event.preventDefault();
+//				event.preventDefault();
 				if (evt.type == "pointerdown") {
 					grabber.start(evt.clientX, evt.clientY);
 					if (grabber.physicsObject) {
