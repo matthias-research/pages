@@ -35,7 +35,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 		<button id = "buttonRun" onclick="run()" class="button">Run</button>
 		<button onclick="restart()" class="button">Restart</button>
 		<button onclick="squash()" class="button">Squash</button>
-		<button onclick="newBody()" class="button">Body++</button>&nbsp;&nbsp;
+		<button onclick="newBody()" class="button">Bodies++</button>&nbsp;&nbsp;
 		<br><br>
 		<span id = "numTets">0</span> tets&nbsp;&nbsp;
 		Compliance:
@@ -173,6 +173,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 					this.volIdOrder = [[1,3,2], [0,2,3], [0,3,1], [0,1,2]];
 								
 //					console.log(JSON.stringify(tetMesh.verts));
+				}
+
+				translate(x, y, z)
+				{
+					for (var i = 0; i < this.numParticles; i++) {
+						vecAdd(this.pos,i, [x,y,z],0);
+						vecAdd(this.prevPos,i, [x,y,z],0);
+					}
 				}
 
 				updateMeshes() 
@@ -450,7 +458,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 				// Camera
 						
 				gCamera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 100);
-			    gCamera.position.set(0, 1, 4);
+			    gCamera.position.set(0, 1, 2);
 				gCamera.updateMatrixWorld();	
 
 				gThreeScene.add(gCamera);
@@ -543,7 +551,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 					gGrabber.start(evt.clientX, evt.clientY);
 					gMouseDown = true;
 					if (gGrabber.physicsObject) {
-						gCameraControl.saveState();
 						gCameraControl.enabled = false;
 					}
 				}
@@ -553,10 +560,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 				else if (evt.type == "pointerup") {
 					if (gGrabber.physicsObject) {
 						gGrabber.end();
-						gCameraControl.reset();
+						gCameraControl = new THREE.OrbitControls(gCamera, gRenderer.domElement);
+						gCameraControl.zoomSpeed = 2.0;
+    					gCameraControl.panSpeed = 0.4;
 					}
 					gMouseDown = false;
-					gCameraControl.enabled = true;
 				}
 			}	
 
@@ -595,8 +603,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 			}
 
 			function newBody() {
-				gPhysicsScene.objects.push(new SoftBody(bunnyMesh, gThreeScene)); 
-
+				body = new SoftBody(bunnyMesh, gThreeScene);
+				body.translate(-1.0 + 2.0 * Math.random(), 0.0, -1.0 + 2.0 * Math.random());
+				gPhysicsScene.objects.push(body); 
+				
 				var numTets = 0;
 				for (var i = 0; i < gPhysicsScene.objects.length; i++)
 					numTets += gPhysicsScene.objects[i].numTets;
