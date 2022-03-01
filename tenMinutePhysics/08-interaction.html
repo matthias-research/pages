@@ -9,6 +9,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 -->
 
 <!DOCTYPE html>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <html lang="en">
 	<head>
 		<title>Interaction</title>
@@ -332,9 +333,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 			function onWindowResize() {
 
-				camera.aspect = window.innerWidth / window.innerHeight;
-				camera.updateProjectionMatrix();
-				renderer.setSize( window.innerWidth, window.innerHeight );
+				gCamera.aspect = window.innerWidth / window.innerHeight;
+				gCamera.updateProjectionMatrix();
+				gRenderer.setSize( window.innerWidth, window.innerHeight );
 			}
 
 			function run() {
@@ -359,6 +360,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 			}
 			
 			initThreeScene();
+			onWindowResize();
 			initPhysics();
 			update();
 			
