@@ -40,6 +40,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 		<br><br>
 		<span id = "numTets">0</span> tets&nbsp;&nbsp;
 		<span id = "numTris">0</span> tris&nbsp;&nbsp;
+		<span id = "numVerts">0</span> verts&nbsp;&nbsp;
 		Compliance:
 		<input type = "range" min = "0" max = "10" value = "0" id = "complianceSlider" class = "slider"> 
 
@@ -338,6 +339,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 					var minDist = new Float32Array(this.numVisVerts);
 					minDist.fill(Number.MAX_VALUE);
+					var border = 0.05;
 
 					// each tet searches for containing vertices
 
@@ -358,6 +360,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 							var r2 = vecDistSquared(tetCenter, 0, this.pos, this.tetIds[4 * i + j]);
 							rMax = Math.max(rMax, Math.sqrt(r2));
 						}
+
+						rMax += border;
 
 						hash.query(tetCenter, 0, rMax);
 						if (hash.queryIds.length == 0)
@@ -628,6 +632,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 				gPhysicsScene.objects.push(body); 
 				document.getElementById("numTets").innerHTML = body.numTets;
 				document.getElementById("numTris").innerHTML = dragonVisMesh.triIds.length / 3;
+				document.getElementById("numVerts").innerHTML = dragonVisMesh.verts.length / 3;
 			}
 
 			// ------------------------------------------------------------------
