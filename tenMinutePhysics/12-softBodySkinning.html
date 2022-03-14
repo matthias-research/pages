@@ -1,5 +1,5 @@
 <!--
-Copyright 2021 Matthias Müller - Ten Minute Physics, https://www.youtube.com/channel/UCTG_vrRdKYfrpqCv_WV4eyA
+Copyright 2022 Matthias Müller - Ten Minute Physics, https://www.youtube.com/channel/UCTG_vrRdKYfrpqCv_WV4eyA
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -37,7 +37,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 		<button onclick="restart()" class="button">Restart</button>
 		<button onclick="squash()" class="button">Squash</button>
 		<input type = "checkbox" onclick = "onShowTets()"> Show tets</p>
-		<br><br>
+	
 		<span id = "numTets">0</span> tets&nbsp;&nbsp;
 		<span id = "numTris">0</span> tris&nbsp;&nbsp;
 		<span id = "numVerts">0</span> verts&nbsp;&nbsp;
@@ -299,9 +299,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 					// visual tet mesh
 
 					var geometry = new THREE.BufferGeometry();
-					geometry.addAttribute('position', new THREE.BufferAttribute(this.pos, 3));
+					geometry.setAttribute('position', new THREE.BufferAttribute(this.pos, 3));
 					geometry.setIndex(tetMesh.edgeIds);
-					this.tetMesh = new THREE.LineSegments(geometry);
+					var lineMaterial = new THREE.LineBasicMaterial({color: 0xffffff, linewidth: 2});
+					this.tetMesh = new THREE.LineSegments(geometry, lineMaterial);
 					this.tetMesh.visible = true;
 					scene.add(this.tetMesh);
 					this.tetMesh.visible = false;
@@ -313,7 +314,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 					this.computeSkinningInfo(visMesh.verts);
 
 					geometry = new THREE.BufferGeometry();
-					geometry.addAttribute('position', new THREE.BufferAttribute(
+					geometry.setAttribute('position', new THREE.BufferAttribute(
 						new Float32Array(3 * this.numVisVerts), 3));
 					geometry.setIndex(visMesh.triIds);
 					var visMaterial = new THREE.MeshPhongMaterial({color: 0xf78a1d});
@@ -377,8 +378,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 						vecSetDiff(mat, 2, this.pos, id2, this.pos, id3);
 
 						matSetInverse(mat);
-
-						hash.query(tetCenter, 0, rMax);
 
 						for (var j = 0; j < hash.queryIds.length; j++) {
 							var id = hash.queryIds[j];
