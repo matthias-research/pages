@@ -86,6 +86,18 @@ tbody tr td:first-child {
 
   <tr>
     <td>
+    <img class = "paperImage" src = "rigidBodies.jpg" >
+    </td>
+    <td>
+    <div class = "tutorialTitle">Holger Klein, Germany</div>
+    <div class = "description">This is a rigid body simulation using XPBD as discussed in the paper "detailed rigid body simulation with XPBD". It is written in C++ and runs in the browser using webassembly. Collisions between the cubes are handled using GJK together with the expanding polytope algorithm (EPA) to get the contact points and normal. The axis aligned bounding boxes (AABBs) of each cube are stored in a spatial hash grid which is rebuild once per substep. This way, boxes are checked for collisions only if their AABBs overlap. The walls are checked separately, by computing if any of the vertices of the rigid body is behind any of them.</div>
+    <a href = "https://holgerhugoklein.gitlab.io/wasm-xpbd/" target="_blank" class="paperButton">Demo</a>
+    </td>
+    </tr>  
+
+
+  <tr>
+    <td>
     <img class = "paperImage" src = "PBFBoundary.jpg" >
     </td>
     <td>
