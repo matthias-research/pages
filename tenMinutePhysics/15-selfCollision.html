@@ -562,8 +562,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 							vecSetDiff(this.vecs,1, this.vecs,2, this.vecs,1);
 							
 							// add corrections
-							vecAdd(this.pos,id0, this.vecs,0, 0.1);
-							vecAdd(this.pos,id1, this.vecs,1, 0.1);
+							var friction = 0.0;
+							vecAdd(this.pos,id0, this.vecs,0, friction);
+							vecAdd(this.pos,id1, this.vecs,1, friction);
 						}
 					}
 				}
