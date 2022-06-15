@@ -18,6 +18,7 @@
 # IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+from turtle import right
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
@@ -25,6 +26,8 @@ import numpy as np
 import warp as wp
 import math
 import time
+
+wp.init()
 
 # ---------------------------------------------
 
@@ -42,7 +45,10 @@ jacobiScale = 0.2
 
 clothNumX = 500
 clothNumY = 500
+clothY = 2.2
 clothSpacing = 0.01
+sphereCenter = wp.vec3(0.0, 1.5, 0.0)
+sphereRadius = 0.5
 
 # ---------------------------------------------
 
@@ -59,13 +65,16 @@ class Cloth:
         restLengths[cNr] = wp.length(p1 - p0)
 
     # -----------------------------------------------------
-    def __init__(self, yOffset, numX, numY, spacing):
+    def __init__(self, yOffset, numX, numY, spacing, sphereCenter, sphereRadius):
         device = "cpu"
 
         self.dragParticleNr = -1
         self.dragDepth = 0.0
         self.dragInvMass = 0.0
         self.renderParticles = []
+        
+        self.sphereCenter = sphereCenter
+        self.sphereRadius = sphereRadius
 
         if numX % 2 == 1:
             numX = numX + 1
@@ -82,13 +91,12 @@ class Cloth:
             for yi in range(numY + 1):
                 id = xi * (numY + 1) + yi
                 pos[3 * id] = (-numX * 0.5 + xi) * spacing
-                pos[3 * id + 1] = yOffset + yi * spacing
-                pos[3 * id + 2] = yi * 0.0001
-                if yi == numY and (xi == 0 or xi == numX):
-                    invMass[id] = 0.0
-                    self.renderParticles.append(id)
-                else:
-                    invMass[id] = 1.0
+                pos[3 * id + 1] = yOffset
+                pos[3 * id + 2] = (-numY * 0.5 + yi) * spacing
+                invMass[id] = 1.0
+                # if yi == numY and (xi == 0 or xi == numX):
+                #     invMass[id] = 0.0
+                #     self.renderParticles.append(id)
 
         self.pos = wp.array(pos, dtype = wp.vec3, device = "cuda")
         self.prevPos = wp.array(pos, dtype = wp.vec3, device = "cuda")
@@ -241,19 +249,34 @@ class Cloth:
             invMass: wp.array(dtype = float),
             prevPos: wp.array(dtype = wp.vec3),
             pos: wp.array(dtype = wp.vec3),
-            vel: wp.array(dtype = wp.vec3)):
+            vel: wp.array(dtype = wp.vec3),
+            sphereCenter: wp.vec3,
+            sphereRadius: float):
 
-        tid = wp.tid()
+        pNr = wp.tid()
 
-        prevPos[tid] = pos[tid]
-        if invMass[tid] == 0.0:
+        prevPos[pNr] = pos[pNr]
+        if invMass[pNr] == 0.0:
             return
-        vel[tid] = vel[tid] + gravity * dt
-        pos[tid] = pos[tid] + vel[tid] * dt
+        vel[pNr] = vel[pNr] + gravity * dt
+        pos[pNr] = pos[pNr] + vel[pNr] * dt
+        
+        # collisions
+        
+        thickness = 0.001
+        friction = 0.01
 
-        pi = pos[tid]
-        if pi[1] < 0.001:
-            pos[tid] = wp.vec3(pi[0], 0.001, pi[2])
+        d = wp.length(pos[pNr] - sphereCenter)
+        if d < (sphereRadius + thickness):
+            p = pos[pNr] * (1.0 - friction) + prevPos[pNr] * friction
+            r = p - sphereCenter
+            d = wp.length(r)            
+            pos[pNr] = sphereCenter + r * ((sphereRadius + thickness) / d)
+            
+        p = pos[pNr]
+        if p[1] < thickness:
+            p = pos[pNr] * (1.0 - friction) + prevPos[pNr] * friction
+            pos[pNr] = wp.vec3(p[0], thickness, p[2])
 
     # ----------------------------------
     @wp.kernel
@@ -304,8 +327,8 @@ class Cloth:
             prevPos: wp.array(dtype = wp.vec3),
             pos: wp.array(dtype = wp.vec3),
             vel: wp.array(dtype = wp.vec3)):
-        tid = wp.tid()
-        vel[tid] = (pos[tid] - prevPos[tid]) / dt
+        pNr = wp.tid()
+        vel[pNr] = (pos[pNr] - prevPos[pNr]) / dt
 
     # ----------------------------------
     def simulate(self):
@@ -316,7 +339,8 @@ class Cloth:
 
         for step in range(numSubsteps):  
             wp.launch(kernel = self.integrate, 
-                inputs = [dt, gravity, self.invMass, self.prevPos, self.pos, self.vel], dim = self.numParticles,  device = "cuda")
+                inputs = [dt, gravity, self.invMass, self.prevPos, self.pos, self.vel, self.sphereCenter, self.sphereRadius], 
+                dim = self.numParticles, device = "cuda")
 
             if solveType == 0:
                 firstConstraint = 0
@@ -366,6 +390,7 @@ class Cloth:
             triIds: wp.array(dtype = wp.int32),
             dist: wp.array(dtype = float)):
         triNr = wp.tid()
+        noHit = 1.0e6
 
         id0 = triIds[3 * triNr]
         id1 = triIds[3 * triNr + 1]
@@ -378,20 +403,20 @@ class Cloth:
         det = wp.dot(edge1, pvec)
 
         if (det == 0.0):
-            dist[triNr] = -1.0
+            dist[triNr] = noHit
             return
 
         inv_det = 1.0 / det
         tvec = orig - pos[id0]
         u = wp.dot(tvec, pvec) * inv_det
         if u < 0.0 or u > 1.0:
-            dist[triNr] = -1.0
+            dist[triNr] = noHit
             return 
 
         qvec = wp.cross(tvec, edge1)
         v = wp.dot(dir, qvec) * inv_det
         if v < 0.0 or u + v > 1.0:
-            dist[triNr] = -1.0
+            dist[triNr] = noHit
             return
 
         dist[triNr] = wp.dot(edge2, qvec) * inv_det
@@ -405,19 +430,13 @@ class Cloth:
         wp.copy(self.hostTriDist, self.triDist)
 
         pos = self.hostPos.numpy()
-        minTriNr = -1
         self.dragDepth = 0.0
 
         dists = self.hostTriDist.numpy()
-
-        for i in range(self.numTris):
-            dist = dists[i]
-            if dist > 0.0 and (self.dragParticleNr < 0 or dist < self.dragDepth):
-                minTriNr = i
-                self.dragDepth = dist
-
-        if minTriNr >= 0:
+        minTriNr = np.argmin(dists)
+        if dists[minTriNr] < 1.0e6:
             self.dragParticleNr = self.hostTriIds[3 * minTriNr]
+            self.dragDepth = dists[minTriNr]
             invMass = self.hostInvMass.numpy()
             self.dragInvMass = invMass[self.dragParticleNr]
             invMass[self.dragParticleNr] = 0.0
@@ -464,6 +483,8 @@ class Cloth:
         glVertexPointer(3, GL_FLOAT, 0, self.hostPos.numpy())
         glNormalPointer(GL_FLOAT, 0, self.hostNormals.numpy())
 
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+  
         if twoColors:
             glCullFace(GL_FRONT)
             glColor3f(1.0, 1.0, 0.0)
@@ -476,6 +497,8 @@ class Cloth:
             glColor3f(1.0, 0.0, 0.0)
             glDrawElementsui(GL_TRIANGLES, self.hostTriIds)
             glEnable(GL_CULL_FACE)
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
         glDisableClientState(GL_VERTEX_ARRAY)
         glDisableClientState(GL_NORMAL_ARRAY)
@@ -499,6 +522,14 @@ class Cloth:
 
         if self.dragParticleNr >= 0:
             self.renderParticles.pop()
+            
+        # sphere
+        glColor3f(0.8, 0.8, 0.8)
+
+        glPushMatrix()
+        glTranslatef(self.sphereCenter[0], self.sphereCenter[1], self.sphereCenter[2])
+        gluSphere(q, self.sphereRadius, 40, 40)
+        glPopMatrix()
 
         gluDeleteQuadric(q)
 
@@ -516,7 +547,8 @@ cloth = []
 # -------------------------------------------------------
 def initScene():
     global cloth
-    cloth = Cloth(0.5, clothNumX, clothNumY, clothSpacing)
+  
+    cloth = Cloth(clothY, clothNumX, clothNumY, clothSpacing, sphereCenter, sphereRadius)
 
 # --------------------------------
 def showScreen():
@@ -546,59 +578,22 @@ def showScreen():
     glutSwapBuffers()
 
 # ---------------------------------
-def vecAdd(x, y, scale = 1.0):
-    return [x[0] + y[0] * scale, x[1] + y[1] * scale, x[2] + y[2] * scale]
-
-def vecSub(x, y, scale = 1.0):
-    return [x[0] - y[0] * scale, x[1] - y[1] * scale, x[2] - y[2] * scale]
-
-def vecDot(x, y):
-    return x[0] * y[0] + x[1] * y[1] + x[2] * y[2]
-
-def vecCross(x, y):
-    return [x[1] * y[2] - x[2] * y[1], x[2] * y[0] - x[0] * y[2], x[0] * y[1] - x[1] * y[0]]
-
-def vecScale(x, s):
-    return [x[0] * s, x[1] * s, x[2] * s]
-
-def vecLenSquared(x):
-    return x[0] * x[0] + x[1] * x[1] + x[2] * x[2]
-
-def vecLen(x):
-    return math.sqrt(vecLenSquared(x))
-
-def vecNormalize(x):
-    s = vecLen(x)
-    if s > 0.0:
-        return vecScale(x, 1.0 / s)
-    else:
-        return [1.0, 0.0, 0.0]
-
-def vecRot(unitAxis, angle, v):
-    s = math.sin(0.5 * angle)
-    x = unitAxis[0] * s
-    y = unitAxis[1] * s
-    z = unitAxis[2] * s
-    w = math.cos(0.5 * angle)
-    vx = 2.0 * v[0]
-    vy = 2.0 * v[1]
-    vz = 2.0 * v[2]
-    w2 = w * w - 0.5
-    dot2 = (x * vx + y * vy + z * vz)
-    return [
-        (vx * w2 + (y * vz - z * vy) * w + x * dot2), 
-        (vy * w2 + (z * vx - x * vz) * w + y * dot2),
-        (vz * w2 + (x * vy - y * vx) * w + z * dot2)]
+def wpScale(v, s):
+    return wp.vec3(v[0] * s, v[1] * s, v[2] * s)
 
 # -----------------------------------
 class Camera:
     def __init__(self):
-        self.pos = [0.0, 1.0, 5.0]
-        self.forward = [0.0, 0.0, -1.0]
-        self.up = [0.0, 1.0, 0.0]
-        self.right = vecCross(self.forward, self.up)
+        self.pos = wp.vec3(0.0, 1.0, 5.0)
+        self.forward = wp.vec3(0.0, 0.0, -1.0)
+        self.up = wp.vec3(0.0, 1.0, 0.0)
+        self.right = wp.cross(self.forward, self.up)
         self.speed = 0.1
         self.keyDown = [False] * 256
+
+    def rot(self, unitAxis, angle, v):
+       q = wp.quat_from_axis_angle(unitAxis, angle)
+       return wp.quat_rotate(q, v)
 
     def setView(self):
         viewport = glGetIntegerv(GL_VIEWPORT)
@@ -619,32 +614,33 @@ class Camera:
 
     def lookAt(self, pos, at):
         self.pos = pos
-        self.forward = vecSub(at, pos)
-        self.forward = vecNormalize(self.forward)
-        self.up = [0.0, 1.0, 0.0]
-        self.right = vecCross(self.forward, self.up)
-        self.right = vecNormalize(self.right)
-        self.up = vecCross(self.right, self.forward)
+        self.forward = wp.sub(at, pos)
+        self.forward = wp.normalize(self.forward)
+        self.up = wp.vec3(0.0, 1.0, 0.0)
+        self.right = wp.cross(self.forward, self.up)
+        self.right = wp.normalize(self.right)
+        self.up = wp.cross(self.right, self.forward)
 
     def handleMouseTranslate(self, dx, dy):
-        scale = vecLen(self.pos) * 0.001
-        self.pos = vecSub(self.pos, self.right, scale * float(dx))
-        self.pos = vecAdd(self.pos, self.up, scale * float(dy))
+        
+        scale = wp.length(self.pos) * 0.001
+        self.pos = wp.sub(self.pos, wpScale(self.right, scale * float(dx)))
+        self.pos = wp.add(self.pos, wpScale(self.up, scale * float(dy)))
 
     def handleWheel(self, direction):
-        self.pos = vecAdd(self.pos, self.forward, direction * self.speed)
+        self.pos = wp.add(self.pos, wpScale(self.forward, direction * self.speed))
 
     def handleMouseView(self, dx, dy):
         scale = 0.005
-        self.forward = vecRot(self.up, -dx * scale, self.forward)
-        self.forward = vecRot(self.right, -dy * scale, self.forward)
-        self.forward = vecNormalize(self.forward)
-        self.right = vecCross(self.forward, self.up)
-        self.right[1] = 0.0
-        self.right = vecNormalize(self.right)
-        self.up = vecCross(self.right, self.forward)
-        self.up = vecNormalize(self.up)
-        self.forward = vecCross(self.up, self.right)
+        self.forward = self.rot(self.up, -dx * scale, self.forward)
+        self.forward = self.rot(self.right, -dy * scale, self.forward)
+        self.forward = wp.normalize(self.forward)
+        self.right = wp.cross(self.forward, self.up)
+        self.right = wp.vec3(self.right[0], 0.0, self.right[2])
+        self.right = wp.normalize(self.right)
+        self.up = wp.cross(self.right, self.forward)
+        self.up = wp.normalize(self.up)
+        self.forward = wp.cross(self.up, self.right)
     
     def handleKeyDown(self, key):
         self.keyDown[ord(key)] = True
@@ -658,41 +654,41 @@ class Camera:
         if self.keyDown[ord('-')]:
             self.speed = self.speed * 0.8
         if self.keyDown[ord('w')]:
-            self.pos = vecAdd(self.pos, self.forward, self.speed)
+            self.pos = wp.add(self.pos, wpScale(self.forward, self.speed))
         if self.keyDown[ord('s')]:
-            self.pos = vecSub(self.pos, self.forward, self.speed)
+            self.pos = wp.sub(self.pos, wpScale(self.forward, self.speed))
         if self.keyDown[ord('a')]:
-            self.pos = vecSub(self.pos, self.right, self.speed)
+            self.pos = wp.sub(self.pos, wpScale(self.right, self.speed))
         if self.keyDown[ord('d')]:
-            self.pos = vecAdd(self.pos, self.right, self.speed)
+            self.pos = wp.add(self.pos, wpScale(self.right, self.speed))
         if self.keyDown[ord('e')]:
-            self.pos = vecSub(self.pos, self.up, self.speed)
+            self.pos = wp.sub(self.pos, wpScale(self.up, self.speed))
         if self.keyDown[ord('q')]:
-            self.pos = vecAdd(self.pos, self.up, self.speed)
+            self.pos = wp.add(self.pos, wpScale(self.up, self.speed))
 
     def handleMouseOrbit(self, dx, dy, center):
 
-        offset = vecSub(self.pos, center)
+        offset = wp.sub(self.pos, center)
         offset = [
-            vecDot(self.right, offset),
-            vecDot(self.forward, offset),
-            vecDot(self.up, offset)]
+            wp.dot(self.right, offset),
+            wp.dot(self.forward, offset),
+            wp.dot(self.up, offset)]
 
         scale = 0.01
-        self.forward = vecRot(self.up, -dx * scale, self.forward)
-        self.forward = vecRot(self.right, -dy * scale, self.forward)
-        self.up = vecRot(self.up, -dx * scale, self.up)
-        self.up = vecRot(self.right, -dy * scale, self.up)
+        self.forward = self.rot(self.up, -dx * scale, self.forward)
+        self.forward = self.rot(self.right, -dy * scale, self.forward)
+        self.up = self.rot(self.up, -dx * scale, self.up)
+        self.up = self.rot(self.right, -dy * scale, self.up)
 
-        self.right = vecCross(self.forward, self.up)
-        self.right[1] = 0.0
-        self.right = vecNormalize(self.right)
-        self.up = vecCross(self.right, self.forward)
-        self.up = vecNormalize(self.up)
-        self.forward = vecCross(self.up, self.right)
-        self.pos = vecAdd(center, self.right, offset[0])
-        self.pos = vecAdd(self.pos, self.forward, offset[1])
-        self.pos = vecAdd(self.pos, self.up, offset[2])
+        self.right = wp.cross(self.forward, self.up)
+        self.right = wp.vec3(self.right[0], 0.0, self.right[2])
+        self.right = wp.normalize(self.right)
+        self.up = wp.cross(self.right, self.forward)
+        self.up = wp.normalize(self.up)
+        self.forward = wp.cross(self.up, self.right)
+        self.pos = wp.add(center, wpScale(self.right, offset[0]))
+        self.pos = wp.add(self.pos, wpScale(self.forward, offset[1]))
+        self.pos = wp.add(self.pos, wpScale(self.up, offset[2]))
 
 camera = Camera()
 
@@ -709,9 +705,11 @@ def getMouseRay(x, y):
     projMatrix = glGetDoublev(GL_PROJECTION_MATRIX)
 
     y = viewport[3] - y - 1
-    orig = gluUnProject(x, y, 0.0, modelMatrix, projMatrix, viewport)
-    dir = gluUnProject(x, y, 1.0, modelMatrix, projMatrix, viewport)
-    dir = vecNormalize(vecSub(dir, orig))
+    p0 = gluUnProject(x, y, 0.0, modelMatrix, projMatrix, viewport)
+    p1 = gluUnProject(x, y, 1.0, modelMatrix, projMatrix, viewport)
+    orig = wp.vec3(p0[0], p0[1], p0[2])
+    dir = wp.sub(wp.vec3(p1[0], p1[1], p1[2]), orig)
+    dir = wp.normalize(dir)
     return [orig, dir]
 
 def mouseButtonCallback(button, state, x, y):
@@ -719,6 +717,7 @@ def mouseButtonCallback(button, state, x, y):
     global mouseY
     global mouseButton
     global shiftDown
+    global paused
     mouseX = x
     mouseY = y
     if state == GLUT_DOWN:
@@ -730,6 +729,7 @@ def mouseButtonCallback(button, state, x, y):
         ray = getMouseRay(x, y)
         if state == GLUT_DOWN:
             cloth.startDrag(ray[0], ray[1])
+            paused = False
     if state == GLUT_UP:
         cloth.endDrag()
 
@@ -867,9 +867,13 @@ def setupOpenGL():
 
 # ------------------------------
 
-wp.init()
 glutInit()
 initScene()
+
+x = wp.vec3(0.0, 1.0, 2.0)
+y = wp.vec3(1.0, -3.0, 0.0)
+z = wp.sub(x, y)
+print(str(z[0]) + "," + str(z[1]) + "," + str(z[2]))
 
 glutInitDisplayMode(GLUT_RGBA)
 glutInitWindowSize(800, 500)
