@@ -18,6 +18,19 @@
 # IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+# control:
+
+# 'p': toggle paused
+# 'h': toggle hidden
+# 'c': solve type coloring hybrid
+# 'j': solve type Jacobi
+# 'r': reset state
+# 'w' 's' 'a' 'd' 'e' 'q' : camera control
+# left mouse view
+# middle mouse pan
+# right mouse orbit
+# shift mouse interact
+
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
@@ -35,6 +48,7 @@ numSubsteps = 30
 timeStep = 1.0 / 60.0
 gravity = wp.vec3(0.0, -10.0, 0.0)
 paused = False
+hidden = False
 frameNr = 0
 
 # 0 Coloring
@@ -572,13 +586,10 @@ def showScreen():
 
     # objects
 
-    cloth.render()
+    if not hidden:
+        cloth.render()
 
     glutSwapBuffers()
-
-# ---------------------------------
-def wpScale(v, s):
-    return wp.vec3(v[0] * s, v[1] * s, v[2] * s)
 
 # -----------------------------------
 class Camera:
@@ -623,11 +634,11 @@ class Camera:
     def handleMouseTranslate(self, dx, dy):
         
         scale = wp.length(self.pos) * 0.001
-        self.pos = wp.sub(self.pos, wpScale(self.right, scale * float(dx)))
-        self.pos = wp.add(self.pos, wpScale(self.up, scale * float(dy)))
+        self.pos = wp.sub(self.pos, wp.mul(self.right, scale * float(dx)))
+        self.pos = wp.add(self.pos, wp.mul(self.up, scale * float(dy)))
 
     def handleWheel(self, direction):
-        self.pos = wp.add(self.pos, wpScale(self.forward, direction * self.speed))
+        self.pos = wp.add(self.pos, wp.mul(self.forward, direction * self.speed))
 
     def handleMouseView(self, dx, dy):
         scale = 0.005
@@ -653,17 +664,17 @@ class Camera:
         if self.keyDown[ord('-')]:
             self.speed = self.speed * 0.8
         if self.keyDown[ord('w')]:
-            self.pos = wp.add(self.pos, wpScale(self.forward, self.speed))
+            self.pos = wp.add(self.pos, wp.mul(self.forward, self.speed))
         if self.keyDown[ord('s')]:
-            self.pos = wp.sub(self.pos, wpScale(self.forward, self.speed))
+            self.pos = wp.sub(self.pos, wp.mul(self.forward, self.speed))
         if self.keyDown[ord('a')]:
-            self.pos = wp.sub(self.pos, wpScale(self.right, self.speed))
+            self.pos = wp.sub(self.pos, wp.mul(self.right, self.speed))
         if self.keyDown[ord('d')]:
-            self.pos = wp.add(self.pos, wpScale(self.right, self.speed))
+            self.pos = wp.add(self.pos, wp.mul(self.right, self.speed))
         if self.keyDown[ord('e')]:
-            self.pos = wp.sub(self.pos, wpScale(self.up, self.speed))
+            self.pos = wp.sub(self.pos, wp.mul(self.up, self.speed))
         if self.keyDown[ord('q')]:
-            self.pos = wp.add(self.pos, wpScale(self.up, self.speed))
+            self.pos = wp.add(self.pos, wp.mul(self.up, self.speed))
 
     def handleMouseOrbit(self, dx, dy, center):
 
@@ -685,9 +696,9 @@ class Camera:
         self.up = wp.cross(self.right, self.forward)
         self.up = wp.normalize(self.up)
         self.forward = wp.cross(self.up, self.right)
-        self.pos = wp.add(center, wpScale(self.right, offset[0]))
-        self.pos = wp.add(self.pos, wpScale(self.forward, offset[1]))
-        self.pos = wp.add(self.pos, wpScale(self.up, offset[2]))
+        self.pos = wp.add(center, wp.mul(self.right, offset[0]))
+        self.pos = wp.add(self.pos, wp.mul(self.forward, offset[1]))
+        self.pos = wp.add(self.pos, wp.mul(self.up, offset[2]))
 
 camera = Camera()
 
@@ -760,8 +771,11 @@ def handleKeyDown(key, x, y):
     camera.handleKeyDown(key)
     global paused
     global solveType
+    global hidden
     if key == b'p':
         paused = not paused
+    elif key == b'h':
+        hidden = not hidden
     elif key == b'c':
         solveType = 0
     elif key == b'j':
