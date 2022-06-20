@@ -796,9 +796,9 @@ def timerCallback(val):
     global frameNr
     frameNr = frameNr + 1
     numFpsFrames = 30
+    currentTime = time.perf_counter()
 
     if frameNr % numFpsFrames == 0:
-        currentTime = time.time()
         passedTime = currentTime - prevTime
         prevTime = currentTime
         fps = math.floor(numFpsFrames / passedTime)
@@ -812,7 +812,8 @@ def timerCallback(val):
     camera.setView()
     camera.handleKeys()
 
-    glutTimerFunc(math.floor(1000.0 / targetFps), timerCallback, 0)
+    elapsed_ms = (time.perf_counter() - currentTime) * 1000
+    glutTimerFunc(max(0, math.floor((1000.0 / targetFps) - elapsed_ms)), timerCallback, 0)
 
 # -----------------------------------------------------------
 
