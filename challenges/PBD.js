@@ -314,14 +314,14 @@ class Joint {
         // orientation
 
         if (this.type == JointType.FIXED) {
-            let q = globalPose0.q;
+            let q = this.globalPose0.q;
             q.conjugate();
-            q.multiplyQuaternions(globalPose1.q, q);
+            q.multiplyQuaternions(this.globalPose1.q, q);
             let omega = new THREE.Vector3();
             omega.set(2.0 * q.x, 2.0 * q.y, 2.0 * q.z);
             if (omega.w < 0.0)
                 omega.multiplyScalar(-1.0);
-            applyBodyPairCorrection(body0, body1, omega, this.compliance, dt);						
+            applyBodyPairCorrection(this.body0, this.body1, omega, this.compliance, dt);						
         }
 
         if (this.type == JointType.HINGE) {
