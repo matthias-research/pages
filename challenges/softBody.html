@@ -142,7 +142,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 					// visual edge mesh
 
 					var geometry = new THREE.BufferGeometry();
-					geometry.addAttribute('position', new THREE.BufferAttribute(vertices, 3));
+					geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
 					geometry.setIndex(tetEdgeIds);
 					this.edgeMesh = new THREE.LineSegments(geometry);
 					this.edgeMesh.userData = this;	// for raycasting
@@ -154,7 +154,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 					this.visVerts = visVerts;
 					this.numVisVerts = visVerts.length / 4;
 					geometry = new THREE.BufferGeometry();
-					geometry.addAttribute('position', new THREE.BufferAttribute(
+					geometry.setAttribute('position', new THREE.BufferAttribute(
 						new Float32Array(3 * this.numVisVerts), 3));
 					geometry.setIndex(visTriIds);
 					this.visMesh = new THREE.Mesh(geometry, visMaterial);
