@@ -33,10 +33,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 	<body>
 
         <h1>Soft Body Simulation</h1> 
-		<button id = "buttonRun" onclick="run()" class="button">Run</button>
-		<button onclick="restart()" class="button">Restart</button>
-		<button onclick="squash()" class="button">Squash</button>
-		<button onclick="newBody()" class="button">Bodies++</button>&nbsp;&nbsp;
+		<button id = "buttonRun" class="button">Run</button>
+		<button id = "buttonRestart" class="button">Restart</button>
+		<button id = "buttonSquash" class="button">Squash</button>
+		<button id = "buttonNewBody" class="button">Bodies++</button>&nbsp;&nbsp;
 		<br><br>
 		<span id = "numTets">0</span> tets&nbsp;&nbsp;
 		Compliance:
@@ -46,9 +46,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 		<br><br>		
         <div id="container"></div>
         
-		<script src="https://unpkg.com/browse/three/build/three.js"></script>
-		<script src="https://unpkg.com/browse/three/examples/jsm/controls/OrbitControls.js"></script>		
-		<script>
+        <script type="importmap">
+          {
+            "imports": {
+              "three": "https://unpkg.com/three/build/three.module.js",
+              "three/addons/": "https://unpkg.com/three/examples/jsm/"
+            }
+          }
+        </script>
+        <script type="module">
+
+          import * as THREE from 'three';
+
+          import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 			// ----- math on vector arrays -------------------------------------------------------------
 
@@ -464,7 +474,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 				gThreeScene.add(gCamera);
 
-				gCameraControl = new THREE.OrbitControls(gCamera, gRenderer.domElement);
+				gCameraControl = new OrbitControls(gCamera, gRenderer.domElement);
 				gCameraControl.zoomSpeed = 2.0;
     			gCameraControl.panSpeed = 0.4;
 
@@ -561,7 +571,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 				else if (evt.type == "pointerup") {
 					if (gGrabber.physicsObject) {
 						gGrabber.end();
-						gCameraControl = new THREE.OrbitControls(gCamera, gRenderer.domElement);
+						gCameraControl = new OrbitControls(gCamera, gRenderer.domElement);
 						gCameraControl.zoomSpeed = 2.0;
     					gCameraControl.panSpeed = 0.4;
 					}
@@ -604,7 +614,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 			}
 
 			function newBody() {
-				body = new SoftBody(bunnyMesh, gThreeScene);
+				var body = new SoftBody(bunnyMesh, gThreeScene);
 				body.translate(-1.0 + 2.0 * Math.random(), 0.0, -1.0 + 2.0 * Math.random());
 				gPhysicsScene.objects.push(body); 
 				
@@ -1210,6 +1220,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 			initPhysics();
 			update();
 			
+            
+            document.querySelector('#buttonRun').addEventListener('click', () => {run()});
+            document.querySelector('#buttonRestart').addEventListener('click', () => {restart()});
+            document.querySelector('#buttonSquash').addEventListener('click', () => {squash()});
+            document.querySelector('#buttonNewBody').addEventListener('click', () => {newBody()});
 		</script>
 	</body>
 </html>
