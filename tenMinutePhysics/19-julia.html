@@ -1,0 +1,404 @@
+<!--
+Copyright 2023 Matthias Müller - Ten Minute Physics, 
+www.youtube.com/c/TenMinutePhysics
+www.matthiasMueller.info/tenMinutePhysics
+
+MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-->
+
+<!DOCTYPE html>
+<html>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<head>
+		<title>Fractals</title>
+		<style>
+			body {
+				font-family: verdana; 
+				font-size: 15px;
+			}			
+			.button {
+				background-color: #606060;
+				border: none;
+				color: white;
+				padding: 10px 10px;
+				font-size: 16px;
+				margin: 4px 2px;
+				cursor: pointer;
+			}
+			.slider {
+				-webkit-appearance: none;
+				width: 80px;
+				height: 6px;
+				border-radius: 5px;
+				background: #d3d3d3;
+				outline: none;
+				opacity: 0.7;
+				-webkit-transition: .2s;
+				transition: opacity .2s;
+			}
+		</style>
+	</head>
+
+	<button class="button" id="toggleModeButton" onclick="toggleMode()">Julia</button>
+	<button class="button" id="toggleViewButton" onclick="toggleView()">Mono</button>
+ 	Iterations <input type = "range" min = "1" max = "500" value = "50" id = "numItersSlider" class = "slider">
+     <span id = "numIters">50</span>    
+	 &nbsp;&nbsp; [shift] - drag to change c
+
+    <canvas id="myCanvas" style="border:2px solid"></canvas>
+	
+<body>
+	
+<script>
+
+	var canvas = document.getElementById("myCanvas");
+	var c = canvas.getContext("2d");	
+	canvas.width = window.innerWidth - 20;
+	canvas.height = window.innerHeight - 100;
+
+	canvas.focus();
+
+	var examples = [
+		{ 
+			centerX: 0.0,
+			centerY: 0.0,
+			scale: 0.0035,
+			juliaX: 0.0,
+			juliaY: 0.0,
+			maxIters: 100,
+			mandelbrot: false
+		}
+	];
+
+
+
+	// var juliaX = 0.0;
+    // var juliaY = 0.0;
+
+	// var juliaX = -0.553000000000000;
+	// var juliaY = 0.504000000000000;
+
+	var juliaX = -0.62580000000000;
+	var juliaY = 0.40250000000000;
+
+	// juliaX *= 0.99;
+	// juliaY *= 0.99;
+
+	// mandelbrot
+	// centerX = -0.9033519195433093
+	// centerY> = -0.25002747496554767
+	// scale = 0.0000022849254986921118
+	// maxIters = 147
+
+	centerX = -0.8115766681578079
+	centerY = -0.20141225898974988
+	scale = 0.0000014034116967598337
+	maxIters = 500
+
+	centerX = -0.8115734686602871
+	centerY = -0.20143013094290876
+	scale = 2.8456343445241582e-8
+	maxIters = 500
+
+
+	var maxIters = 100;
+    var drawMandelbrot = false;
+    var centerX = 0.0;
+    var centerY = 0.0;
+    var scale = 0.0035;
+
+
+	// function setExample(nr) {
+	// 	if (nr < examples.length) {
+	// 		maxIters = examples[nr].maxIters;
+	// 		drawMandelbrot
+	// 		centerX: 0.0,
+	// 		centerY: 0.0,
+	// 		scale: 0.0035,
+	// 		juliaX: 0.0,
+	// 		juliaY: 0.0,
+	// 		maxIters: 100,
+	// 		julia: true
+	// 	}
+
+	// }
+
+	
+
+
+
+
+
+
+	var modifyJulia = false;
+
+    // var juliaX = -0.785 * 0.95;
+    // var juliaY = 0.13083333969116212 * 0.95;
+
+	var drawMono = true;
+
+    var redraw = true;
+    var id = 0;
+
+	function getNumIters(x1, x2, c1, c2, maxIters) 
+	{
+		for (iters = 0; iters < maxIters; iters++)
+		{
+			if (x1 * x1 + x2 * x2 > 4.0)
+				return iters;
+
+			var x = x1;
+			x1 = x1 * x1 - x2 * x2;
+			x2 = 2.0 * x * x2;
+
+			x1 += c1;
+			x2 += c2;
+		}
+		return maxIters;
+	}	
+
+// var gradientColors = 
+// 	[[1, 1, 65],
+// 	[0, 40, 129],
+// 	[147, 205, 242],
+// 	[243, 228, 189],
+// 	[111, 59, 37],
+// 	[0, 40, 129]];
+
+var gradientColors = 
+	[[15, 2, 66],
+	[191, 41, 12],
+	[222, 99, 11],
+	[229, 208, 14],
+	[255, 255, 255],
+	[102, 173, 183],
+	[14, 29, 104]];
+
+	function getGradientColor(nr, steps) 
+	{
+		var numCols = gradientColors.length;
+		var col0 = Math.floor(nr / steps) % numCols;
+		var col1 = (col0 + 1) % numCols;
+		var step = nr % steps;
+
+		var color = [0,0,0];
+
+		for (var i = 0; i < 3; i++) {
+			var c0 = gradientColors[col0][i];
+			var c1 = gradientColors[col1][i];
+			color[i] = Math.floor(c0 + (c1 - c0) / steps * step);
+		}
+		return color;
+	}
+
+
+	function draw() {
+		c.clearRect(0, 0, canvas.width, canvas.height);
+
+		c.fillStyle = "#FF0000";
+
+        if (redraw) {
+            redraw = false;
+
+    		id = c.getImageData(0,0, canvas.width, canvas.height);
+
+            var p = 0;
+            var y = centerY - canvas.height / 2.0 * scale;
+
+    		for (var j = canvas.height - 1; j >= 0; j--) {
+
+                var x = centerX - canvas.width / 2.0 * scale;
+
+                for (var i = 0; i < canvas.width; i++) {
+
+                    // compute Julia color
+
+					var numIters = getNumIters(x, y, drawMandelbrot ? x : juliaX, drawMandelbrot ? y : juliaY, maxIters);
+
+					if (numIters < maxIters) {
+						if (drawMono) {
+							id.data[p++] = 0;
+	                        id.data[p++] = 0;
+    	                    id.data[p++] = 0;
+						}
+						else {
+							colNr = numIters;
+							color = getGradientColor(colNr, 20);
+							id.data[p++] = color[0];
+							id.data[p++] = color[1];
+							id.data[p++] = color[2];
+
+							// id.data[p++] = 255;
+							// id.data[p++] = (10 * numIters) % 256;
+							// // id.data[p++] = Math.floor(numIters / maxIters * 255);
+							// id.data[p++] = 0;
+						}
+					}
+					else {
+						if (drawMono) {
+							id.data[p++] = 255;
+	                        id.data[p++] = 192;
+    	                    id.data[p++] = 0;
+						}
+						else {
+							id.data[p++] = 0;
+							id.data[p++] = 0;
+							id.data[p++] = 0;
+						}
+                    }
+                    id.data[p++] = 255;
+                    x = x + scale;
+				}
+                y = y + scale;
+			}
+		}
+
+		c.putImageData(id, 0, 0);
+
+        var drawCircle = false;
+
+		if (drawCircle && mouseDown && modifyJulia) {
+
+            var cx = juliaX / scale + 0.5 * canvas.width;
+            var cy = canvas.height * 0.5 - juliaY / scale;
+
+			c.fillStyle = "#FFFFFF";
+			c.beginPath();	
+			c.arc(cx, cy, 5, 0.0, 2.0 * Math.PI); 
+			c.closePath();
+			c.fill();
+        }
+
+	}
+
+	// interaction -------------------------------------------------------
+
+    function toggleMode() {
+        drawMandelbrot = !drawMandelbrot;
+        redraw = true;
+		var button = document.getElementById('toggleModeButton');
+		if (drawMandelbrot)
+			button.innerHTML = "Mandelbrot";
+		else
+			button.innerHTML = "Julia";
+    }
+
+	function toggleView() {
+        drawMono = !drawMono;
+        redraw = true;
+		var button = document.getElementById('toggleViewButton');
+		if (drawMono)
+			button.innerHTML = "Mono";
+		else
+			button.innerHTML = "Gradient";
+    }
+
+	document.getElementById("numItersSlider").oninput = function() {
+		maxIters = this.value;
+        document.getElementById("numIters").innerHTML = maxIters.toString();
+	        
+        redraw = true;
+	}
+
+	var mouseDown = false;
+	var mouseX = 0;
+	var mouseY = 0;
+
+    function setJuliaOffset(x, y) {
+        let bounds = canvas.getBoundingClientRect();
+        let mx = x - bounds.left - canvas.clientLeft;
+        let my = y - bounds.top - canvas.clientTop;
+        juliaX = (mx - 0.5 * canvas.width) * scale;
+        juliaY = (canvas.height * 0.5 - my) * scale;
+        redraw = true;
+    }
+
+	function startDrag(x, y) {
+		// if (modifyJulia)
+        // 	setJuliaOffset(x, y);
+		mouseX = x;
+		mouseY = y;
+		mouseDown = true;
+	}
+
+	function drag(x, y) {
+        if (mouseDown) {
+			dx = x - mouseX;
+			dy = y - mouseY;
+
+			if (modifyJulia) {
+				juliaX += 0.1 * dx * scale;
+				juliaY += 0.1 * dy * scale; 
+            	// setJuliaOffset(x, y);	
+				redraw = true;
+			}
+			else {
+				centerX -= dx * scale;
+				centerY -= dy * scale; 
+				redraw = true;
+			}
+		}
+		mouseX = x;
+		mouseY = y;
+	}
+
+	function endDrag() {
+		mouseDown = false;
+	}
+
+	canvas.addEventListener('mousedown', event => {
+		modifyJulia = event.shiftKey;
+		startDrag(event.x, event.y);
+	});
+
+	canvas.addEventListener('mouseup', event => {
+		endDrag();
+	});
+
+	canvas.addEventListener('mousemove', event => {
+		drag(event.x, event.y);
+	});
+
+	canvas.addEventListener('touchstart', event => {
+		startDrag(event.touches[0].clientX, event.touches[0].clientY)
+	});
+
+	canvas.addEventListener('touchend', event => {
+		endDrag()
+	});
+
+	canvas.addEventListener('touchmove', event => {
+		event.preventDefault();
+		event.stopImmediatePropagation();
+		drag(event.touches[0].clientX, event.touches[0].clientY)
+	}, { passive: false});
+
+	document.addEventListener('wheel', event => {
+		console.log(event.deltaX)
+		console.log(event.deltaY)
+		if (event.deltaY > 0)
+			scale *= 1.05;
+		else if (event.deltaY < 0)
+			scale *= 0.95;
+		redraw = true;
+	});
+
+	// main -------------------------------------------------------
+
+	function update() {
+		draw();
+		requestAnimationFrame(update);
+	}
+	
+	update();
+	
+</script> 
+</body>
+</html>
