@@ -117,7 +117,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 		}
 
 		solveIncompressibility(numIters, dt) {
-
 			var n = this.numY;
 			var cp = this.density * this.h / dt;
 
@@ -222,7 +221,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 		}
 
 		advectVel(dt) {
-
 			this.newU.set(this.u);
 			this.newV.set(this.v);
 
@@ -263,7 +261,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 		}
 
 		advectSmoke(dt) {
-
 			this.newM.set(this.m);
 
 			var n = this.numY;
