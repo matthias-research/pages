@@ -491,9 +491,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 		for (var i = 0; i < f.numX; i++) {
 			for (var j = 0; j < f.numY; j++) {
 
+				const index = i*n + j;
 				if (scene.showPressure) {
-					var p = f.p[i*n + j];
-					var s = f.m[i*n + j];
+					var p = f.p[index];
+					var s = f.m[index];
 					color = getSciColor(p, minP, maxP);
 					if (scene.showSmoke) {
 						color[0] = Math.max(0.0, color[0] - 255*s);
@@ -502,14 +503,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 					}
 				}
 				else if (scene.showSmoke) {
-					var s = f.m[i*n + j];
+					var s = f.m[index];
 					color[0] = 255*s;
 					color[1] = 255*s;
 					color[2] = 255*s;
 					if (scene.sceneNr == 2)
 						color = getSciColor(s, 0.0, 1.0);
 				}
-				else if (f.s[i*n + j] == 0.0) {
+				else if (f.s[index] == 0.0) {
 					color[0] = 0;
 					color[1] = 0;
 					color[2] = 0;
