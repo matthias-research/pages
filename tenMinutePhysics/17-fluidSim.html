@@ -77,8 +77,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 	var V_FIELD = 1;
 	var S_FIELD = 2;
 
-	var cnt = 0;
-
 	function cX(x) {
 		return x * cScale;
 	}
@@ -234,8 +232,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 			for (var i = 1; i < this.numX; i++) {
 				for (var j = 1; j < this.numY; j++) {
-
-					cnt++;
 
 					// u component
 					if (this.s[i*n + j] != 0.0 && this.s[(i-1)*n + j] != 0.0 && j < this.numY - 1) {
