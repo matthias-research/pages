@@ -208,16 +208,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 		avgU(i, j) {
 			var n = this.numY;
-			var u = (this.u[i*n + j-1] + this.u[i*n + j] +
-				this.u[(i+1)*n + j-1] + this.u[(i+1)*n + j]) * 0.25;
+			const index = i*n + j;
+			var u = (this.u[index-1] + this.u[index] +
+				this.u[index+n-1] + this.u[index+n]) * 0.25;
 			return u;
 				
 		}
 
 		avgV(i, j) {
 			var n = this.numY;
-			var v = (this.v[(i-1)*n + j] + this.v[i*n + j] +
-				this.v[(i-1)*n + j+1] + this.v[i*n + j+1]) * 0.25;
+			const index = i*n + j;
+			var v = (this.v[index-n] + this.v[index] +
+				this.v[index-n+1] + this.v[index+1]) * 0.25;
 			return v;
 		}
 
