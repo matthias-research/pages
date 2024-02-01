@@ -757,9 +757,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 	function simulate() 
 	{
-		if (!scene.paused)
+		if (!scene.paused) {
 			scene.fluid.simulate(scene.dt, scene.gravity, scene.numIters)
 			scene.frameNr++;
+		}
 	}
 
 	function update() {
