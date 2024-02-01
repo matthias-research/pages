@@ -546,9 +546,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 			for (var i = 0; i < f.numX; i++) {
 				for (var j = 0; j < f.numY; j++) {
-
-					var u = f.u[i*n + j];
-					var v = f.v[i*n + j];
+					const index = i*n + j;
+					var u = f.u[index];
+					var v = f.v[index];
 
 					c.beginPath();
 
