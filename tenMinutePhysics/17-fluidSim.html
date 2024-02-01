@@ -232,28 +232,28 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 			for (var i = 1; i < this.numX; i++) {
 				for (var j = 1; j < this.numY; j++) {
-
+					const index = i*n + j;
 					// u component
-					if (this.s[i*n + j] != 0.0 && this.s[(i-1)*n + j] != 0.0 && j < this.numY - 1) {
+					if (this.s[index] != 0.0 && this.s[index-n] != 0.0 && j < this.numY - 1) {
 						var x = i*h;
 						var y = j*h + h2;
-						var u = this.u[i*n + j];
+						var u = this.u[index];
 						var v = this.avgV(i, j);
 						x = x - dt*u;
 						y = y - dt*v;
 						u = this.sampleField(x,y, U_FIELD);
-						this.newU[i*n + j] = u;
+						this.newU[index] = u;
 					}
 					// v component
-					if (this.s[i*n + j] != 0.0 && this.s[i*n + j-1] != 0.0 && i < this.numX - 1) {
+					if (this.s[index] != 0.0 && this.s[index-1] != 0.0 && i < this.numX - 1) {
 						var x = i*h + h2;
 						var y = j*h;
 						var u = this.avgU(i, j);
-						var v = this.v[i*n + j];
+						var v = this.v[index];
 						x = x - dt*u;
 						y = y - dt*v;
 						v = this.sampleField(x,y, V_FIELD);
-						this.newV[i*n + j] = v;
+						this.newV[index] = v;
 					}
 				}	 
 			}
