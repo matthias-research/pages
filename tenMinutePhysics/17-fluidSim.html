@@ -590,8 +590,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 						var u = f.sampleField(x, y, U_FIELD);
 						var v = f.sampleField(x, y, V_FIELD);
 						l = Math.sqrt(u*u + v*v);
-						// x += u/l * segLen;
-						// y += v/l * segLen;
 						x += u * 0.01;
 						y += v * 0.01;
 						if (x > f.numX * f.h)
