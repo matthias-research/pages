@@ -125,30 +125,30 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 				for (var i = 1; i < this.numX-1; i++) {
 					for (var j = 1; j < this.numY-1; j++) {
-
-						if (this.s[i*n + j] == 0.0)
+						const index = i*n + j;
+						if (this.s[index] == 0.0)
 							continue;
 
-						var s = this.s[i*n + j];
-						var sx0 = this.s[(i-1)*n + j];
-						var sx1 = this.s[(i+1)*n + j];
-						var sy0 = this.s[i*n + j-1];
-						var sy1 = this.s[i*n + j+1];
+						var s = this.s[index];
+						var sx0 = this.s[index-n];
+						var sx1 = this.s[index+n];
+						var sy0 = this.s[index-1];
+						var sy1 = this.s[index+1];
 						var s = sx0 + sx1 + sy0 + sy1;
 						if (s == 0.0)
 							continue;
 
-						var div = this.u[(i+1)*n + j] - this.u[i*n + j] + 
-							this.v[i*n + j+1] - this.v[i*n + j];
+						var div = this.u[index+n] - this.u[index] + 
+							this.v[index+1] - this.v[index];
 
 						var p = -div / s;
 						p *= scene.overRelaxation;
-						this.p[i*n + j] += cp * p;
+						this.p[index] += cp * p;
 
-						this.u[i*n + j] -= sx0 * p;
-						this.u[(i+1)*n + j] += sx1 * p;
-						this.v[i*n + j] -= sy0 * p;
-						this.v[i*n + j+1] += sy1 * p;
+						this.u[index] -= sx0 * p;
+						this.u[index+n] += sx1 * p;
+						this.v[index] -= sy0 * p;
+						this.v[index+1] += sy1 * p;
 					}
 				}
 			}
