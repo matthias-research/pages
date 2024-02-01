@@ -272,14 +272,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 			for (var i = 1; i < this.numX-1; i++) {
 				for (var j = 1; j < this.numY-1; j++) {
-
-					if (this.s[i*n + j] != 0.0) {
-						var u = (this.u[i*n + j] + this.u[(i+1)*n + j]) * 0.5;
-						var v = (this.v[i*n + j] + this.v[i*n + j+1]) * 0.5;
+					const index = i*n + j;
+					if (this.s[index] != 0.0) {
+						var u = (this.u[index] + this.u[index+n]) * 0.5;
+						var v = (this.v[index] + this.v[index+1]) * 0.5;
 						var x = i*h + h2 - dt*u;
 						var y = j*h + h2 - dt*v;
 
-						this.newM[i*n + j] = this.sampleField(x,y, S_FIELD);
+						this.newM[index] = this.sampleField(x,y, S_FIELD);
  					}
 				}	 
 			}
