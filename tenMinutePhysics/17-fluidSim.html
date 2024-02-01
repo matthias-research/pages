@@ -243,7 +243,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 						var y = j*h + h2;
 						var u = this.u[i*n + j];
 						var v = this.avgV(i, j);
-//						var v = this.sampleField(x,y, V_FIELD);
 						x = x - dt*u;
 						y = y - dt*v;
 						u = this.sampleField(x,y, U_FIELD);
@@ -254,7 +253,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 						var x = i*h + h2;
 						var y = j*h;
 						var u = this.avgU(i, j);
-//						var u = this.sampleField(x,y, U_FIELD);
 						var v = this.v[i*n + j];
 						x = x - dt*u;
 						y = y - dt*v;
