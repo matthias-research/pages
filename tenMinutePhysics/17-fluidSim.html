@@ -505,10 +505,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 					}
 				}
 				else if (scene.showSmoke) {
-					var s = f.m[index];
-					color[0] = 255*s;
-					color[1] = 255*s;
-					color[2] = 255*s;
+					var v = f.m[index] * 255;
+					color[0] = v;
+					color[1] = v;
+					color[2] = v;
 					if (scene.sceneNr == 2)
 						color = getSciColor(s, 0.0, 1.0);
 				}
