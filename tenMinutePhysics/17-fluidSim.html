@@ -434,17 +434,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 	// draw -------------------------------------------------------
 
-	function setColor(r,g,b) {
-		c.fillStyle = `rgb(
-			${Math.floor(255*r)},
-			${Math.floor(255*g)},
-			${Math.floor(255*b)})`
-		c.strokeStyle = `rgb(
-			${Math.floor(255*r)},
-			${Math.floor(255*g)},
-			${Math.floor(255*b)})`
-	}
-
 	function getSciColor(val, minVal, maxVal) {
 		val = Math.min(Math.max(val, minVal), maxVal- 0.0001);
 		var d = maxVal - minVal;
