@@ -266,15 +266,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 			var n = this.numY;
 			var h = this.h;
 			var h2 = 0.5 * h;
+			const scaleFactor = dt * 0.5;
 
 			for (var i = 1; i < this.numX-1; i++) {
 				for (var j = 1; j < this.numY-1; j++) {
 					const index = i*n + j;
 					if (this.s[index] != 0.0) {
-						var u = (this.u[index] + this.u[index+n]) * 0.5;
-						var v = (this.v[index] + this.v[index+1]) * 0.5;
-						var x = i*h + h2 - dt*u;
-						var y = j*h + h2 - dt*v;
+						var du = (this.u[index] + this.u[index+n]) * scaleFactor;
+						var dv = (this.v[index] + this.v[index+1]) * scaleFactor;
+						var x = i*h + h2 - du;
+						var y = j*h + h2 - dv;
 
 						this.newM[index] = this.sampleField(x,y, S_FIELD);
 					}
