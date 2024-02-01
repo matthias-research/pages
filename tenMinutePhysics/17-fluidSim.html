@@ -545,6 +545,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 			scale = 0.02;	
 
 			for (var i = 0; i < f.numX; i++) {
+				x0 = cX(i * h);
 				for (var j = 0; j < f.numY; j++) {
 					const index = i*n + j;
 					var u = f.u[index];
@@ -552,7 +553,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 					c.beginPath();
 
-					x0 = cX(i * h);
 					x1 = cX(i * h + u * scale);
 					y = cY((j + 0.5) * h );
 
