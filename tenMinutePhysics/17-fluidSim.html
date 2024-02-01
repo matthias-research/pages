@@ -110,8 +110,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 			var n = this.numY;
 			for (var i = 1; i < this.numX; i++) {
 				for (var j = 1; j < this.numY-1; j++) {
-					if (this.s[i*n + j] != 0.0 && this.s[i*n + j-1] != 0.0)
-						this.v[i*n + j] += gravity * dt;
+					const index = i*n + j;
+					if (this.s[index] != 0.0 && this.s[index-1] != 0.0)
+						this.v[index] += gravity * dt;
 				}	 
 			}
 		}
