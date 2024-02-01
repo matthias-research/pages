@@ -337,11 +337,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 		var res = 100;
 		
-		if (sceneNr == 0)
+		if (sceneNr == 0) {
 			res = 50;
-		else if (sceneNr == 3)
+		} else if (sceneNr == 3) {
 			res = 200;
-
+		}
+		
 		var domainHeight = 1.0;
 		var domainWidth = domainHeight / simHeight * simWidth;
 		var h = domainHeight / res;
@@ -360,8 +361,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 			for (var i = 0; i < f.numX; i++) {
 				for (var j = 0; j < f.numY; j++) {
 					var s = 1.0;	// fluid
-					if (i == 0 || i == f.numX-1 || j == 0)
+					if (i == 0 || i == f.numX-1 || j == 0) {
 						s = 0.0;	// solid
+					}
 					f.s[i*n + j] = s
 				}
 			}
@@ -377,8 +379,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 			for (var i = 0; i < f.numX; i++) {
 				for (var j = 0; j < f.numY; j++) {
 					var s = 1.0;	// fluid
-					if (i == 0 || j == 0 || j == f.numY-1)
+					if (i == 0 || j == 0 || j == f.numY-1) {
 						s = 0.0;	// solid
+					}
 					f.s[i*n + j] = s
 
 					if (i == 1) {
