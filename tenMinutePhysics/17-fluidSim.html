@@ -473,8 +473,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 		n = f.numY;
 
 		var cellScale = 1.1;
-
 		var h = f.h;
+		var cx = Math.floor(cScale * cellScale * h) + 1;
+		var cy = Math.floor(cScale * cellScale * h) + 1;
 
 		minP = f.p[0];
 		maxP = f.p[0];
@@ -489,6 +490,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 		var color = [255, 255, 255, 255]
 
 		for (var i = 0; i < f.numX; i++) {
+			var x = Math.floor(cX(i * h));
 			for (var j = 0; j < f.numY; j++) {
 
 				const index = i*n + j;
@@ -516,10 +518,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 					color[2] = 0;
 				}
 
-				var x = Math.floor(cX(i * h));
 				var y = Math.floor(cY((j+1) * h));
-				var cx = Math.floor(cScale * cellScale * h) + 1;
-				var cy = Math.floor(cScale * cellScale * h) + 1;
 
 				r = color[0];
 				g = color[1];
