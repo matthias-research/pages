@@ -547,15 +547,14 @@ class Cloth:
         gluDeleteQuadric(q)
 
 
-
 # --------------------------------------------------------------------
-# Demo Viewer
+# Demo Viewer using GLFW
 # --------------------------------------------------------------------
 
 groundVerts = []
 groundIds = []
 groundColors = []
-cloth = []
+cloth = None
 
 # -------------------------------------------------------
 def initScene():
@@ -589,7 +588,7 @@ def showScreen():
     if not hidden:
         cloth.render()
 
-    glutSwapBuffers()
+# -----------------------------------
 
 # -----------------------------------
 class Camera:
