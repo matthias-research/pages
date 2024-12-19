@@ -522,7 +522,8 @@ class Cloth:
         q = gluNewQuadric()
 
         if self.dragParticleNr >= 0:
-            self.renderParticles.append(self.dragParticleNr)
+            if self.dragParticleNr not in self.renderParticles:
+                self.renderParticles.append(self.dragParticleNr)
 
         for id in self.renderParticles:
             glPushMatrix()
@@ -532,7 +533,8 @@ class Cloth:
             glPopMatrix()
 
         if self.dragParticleNr >= 0:
-            self.renderParticles.pop()
+            if self.dragParticleNr in self.renderParticles:
+                self.renderParticles.remove(self.dragParticleNr)
             
         # sphere
         glColor3f(0.8, 0.8, 0.8)
