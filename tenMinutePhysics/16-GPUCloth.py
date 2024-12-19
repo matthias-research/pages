@@ -793,7 +793,6 @@ def key_callback(window, key, scancode, action, mods):
         camera.handleKeyUp(key)
 
 # -----------------------------------------------------------
-
 def setupOpenGL():
     glEnable(GL_DEPTH_TEST)
     glEnable(GL_COLOR_MATERIAL)
@@ -846,6 +845,7 @@ def setupOpenGL():
                 px = x + squareVerts[i][0] * groundTileSize
                 pz = z + squareVerts[i][1] * groundTileSize
                 groundVerts[3 * q] = px
+                groundVerts[3 * q + 1] = 0.0 
                 groundVerts[3 * q + 2] = pz
                 col = 0.4
                 if (xi + zi) % 2 == 1:
@@ -858,28 +858,64 @@ def setupOpenGL():
 
 # ------------------------------
 
-glutInit()
-initScene()
+def main():
+    global window
 
-x = wp.vec3(0.0, 1.0, 2.0)
-y = wp.vec3(1.0, -3.0, 0.0)
-z = wp.sub(x, y)
-print(str(z[0]) + "," + str(z[1]) + "," + str(z[2]))
+    if not glfw.init():
+        print("Failed to initialize GLFW")
+        return
 
-glutInitDisplayMode(GLUT_RGBA)
-glutInitWindowSize(800, 500)
-glutInitWindowPosition(10, 10)
-wind = glutCreateWindow("Parallel cloth simulation")
+    glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 2)
+    glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 1)
+    window = glfw.create_window(800, 500, "Parallel cloth simulation", None, None)
+    if not window:
+        glfw.terminate()
+        print("Failed to create GLFW window")
+        return
 
-setupOpenGL()
+    glfw.make_context_current(window)
 
-glutDisplayFunc(displayCallback)
-glutMouseFunc(mouseButtonCallback)
-glutMotionFunc(mouseMotionCallback)
-glutMouseWheelFunc(mouseWheelCallback)
-glutKeyboardFunc(handleKeyDown)
-glutKeyboardUpFunc(handleKeyUp)
-glutTimerFunc(math.floor(1000.0 / targetFps), timerCallback, 0)
+    glfw.set_mouse_button_callback(window, mouse_button_callback)
+    glfw.set_cursor_pos_callback(window, cursor_position_callback)
+    glfw.set_scroll_callback(window, scroll_callback)
+    glfw.set_key_callback(window, key_callback)
 
+    initScene()
 
-glutMainLoop()
+    setupOpenGL()
+
+    prevTime = time.perf_counter()
+
+    while not glfw.window_should_close(window):
+        currentTime = time.perf_counter()
+        elapsed = currentTime - prevTime
+        if elapsed >= 1.0 / targetFps:
+            prevTime = currentTime
+
+            camera.handleKeys()
+            
+            if not paused:
+                cloth.simulate()
+
+            cloth.updateMesh()
+
+            camera.setView()
+
+            showScreen()
+
+            glfw.swap_buffers(window)
+
+            glfw.poll_events()
+
+            global frameNr
+            frameNr += 1
+            numFpsFrames = 30
+            if frameNr % numFpsFrames == 0:
+                fps = targetFps
+                glfw.set_window_title(window, f"Parallel cloth simulation {fps} fps")
+
+    glfw.terminate()
+
+# Run the application
+if __name__ == "__main__":
+    main()
