@@ -28,6 +28,8 @@
 # Alt + Left mouse pan
 # Ctrl + Middel mouse orbit
 # left mouse interact
+# scrool mouse zoom
+# 'w' 's' 'a' 'd' 'e' 'q' : camera control // may need changes
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
