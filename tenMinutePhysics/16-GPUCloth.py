@@ -589,7 +589,6 @@ def showScreen():
         cloth.render()
 
 # -----------------------------------
-
 # -----------------------------------
 class Camera:
     def __init__(self):
@@ -605,13 +604,12 @@ class Camera:
        return wp.quat_rotate(q, v)
 
     def setView(self):
-        viewport = glGetIntegerv(GL_VIEWPORT)
-        width = viewport[2] - viewport[0]
-        height = viewport[3] - viewport[1]
+        width, height = glfw.get_framebuffer_size(window)
+        aspect_ratio = width / height if height > 0 else 1.0
 
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        gluPerspective(40.0, float(width) / float(height), 0.01, 1000.0)
+        gluPerspective(40.0, aspect_ratio, 0.01, 1000.0)
 
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
@@ -652,10 +650,12 @@ class Camera:
         self.forward = wp.cross(self.up, self.right)
     
     def handleKeyDown(self, key):
-        self.keyDown[ord(key)] = True
+        if 0 <= key < 256:
+            self.keyDown[key] = True
 
     def handleKeyUp(self, key):
-        self.keyDown[ord(key)] = False
+        if 0 <= key < 256:
+            self.keyDown[key] = False
 
     def handleKeys(self):
         if self.keyDown[ord('+')]:
@@ -682,7 +682,7 @@ class Camera:
             wp.dot(self.right, offset),
             wp.dot(self.forward, offset),
             wp.dot(self.up, offset)]
-
+    
         scale = 0.01
         self.forward = self.rot(self.up, -dx * scale, self.forward)
         self.forward = self.rot(self.right, -dy * scale, self.forward)
