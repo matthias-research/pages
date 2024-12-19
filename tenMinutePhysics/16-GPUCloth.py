@@ -546,7 +546,6 @@ class Cloth:
 
         gluDeleteQuadric(q)
 
-
 # --------------------------------------------------------------------
 # Demo Viewer using GLFW
 # --------------------------------------------------------------------
@@ -588,7 +587,6 @@ def showScreen():
     if not hidden:
         cloth.render()
 
-# -----------------------------------
 # -----------------------------------
 class Camera:
     def __init__(self):
@@ -701,7 +699,6 @@ class Camera:
 
 camera = Camera()
 
-
 # ---- Callbacks and Input Handling ----------------------------------------------------
 
 interactionMode = "camera"  # Possible values: "camera", "cloth"
@@ -723,7 +720,6 @@ def getMouseRay(x, y):
     dir = wp.sub(wp.vec3(p1[0], p1[1], p1[2]), orig)
     dir = wp.normalize(dir)
     return [orig, dir]
-
 
 def mouse_button_callback(window, button, action, mods):
     global mouseX, mouseY, mouseButton, interactionMode, modifier, paused
@@ -845,7 +841,7 @@ def setupOpenGL():
                 px = x + squareVerts[i][0] * groundTileSize
                 pz = z + squareVerts[i][1] * groundTileSize
                 groundVerts[3 * q] = px
-                groundVerts[3 * q + 1] = 0.0 
+                groundVerts[3 * q + 1] = 0.0  # Assuming ground plane is at y=0
                 groundVerts[3 * q + 2] = pz
                 col = 0.4
                 if (xi + zi) % 2 == 1:
