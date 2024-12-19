@@ -775,54 +775,22 @@ def cursor_position_callback(window, xpos, ypos):
 def scroll_callback(window, xoffset, yoffset):
     camera.handleWheel(yoffset)
 
-
-def handleKeyDown(key, x, y):
-    camera.handleKeyDown(key)
-    global paused
-    global solveType
-    global hidden
-    if key == b'p':
-        paused = not paused
-    elif key == b'h':
-        hidden = not hidden
-    elif key == b'c':
-        solveType = 0
-    elif key == b'j':
-        solveType = 1
-    elif key == b'r':
-        cloth.reset()
-
-def handleKeyUp(key, x, y):
-    camera.handleKeyUp(key)
-    
-def displayCallback():
-    i = 0
-
-prevTime = time.time()
-
-def timerCallback(val):
-    global prevTime
-    global frameNr
-    frameNr = frameNr + 1
-    numFpsFrames = 30
-    currentTime = time.perf_counter()
-
-    if frameNr % numFpsFrames == 0:
-        passedTime = currentTime - prevTime
-        prevTime = currentTime
-        fps = math.floor(numFpsFrames / passedTime)
-        glutSetWindowTitle("Parallel cloth simulation " + str(fps) + " fps")
-
-    if not paused:
-        cloth.simulate()
-
-    cloth.updateMesh()
-    showScreen()
-    camera.setView()
-    camera.handleKeys()
-
-    elapsed_ms = (time.perf_counter() - currentTime) * 1000
-    glutTimerFunc(max(0, math.floor((1000.0 / targetFps) - elapsed_ms)), timerCallback, 0)
+def key_callback(window, key, scancode, action, mods):
+    global paused, solveType, hidden
+    if action == glfw.PRESS:
+        camera.handleKeyDown(key)
+        if key == glfw.KEY_P:
+            paused = not paused
+        elif key == glfw.KEY_H:
+            hidden = not hidden
+        elif key == glfw.KEY_C:
+            solveType = 0
+        elif key == glfw.KEY_J:
+            solveType = 1
+        elif key == glfw.KEY_R:
+            cloth.reset()
+    elif action == glfw.RELEASE:
+        camera.handleKeyUp(key)
 
 # -----------------------------------------------------------
 
