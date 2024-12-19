@@ -701,21 +701,24 @@ class Camera:
 
 camera = Camera()
 
-# ---- callbacks ----------------------------------------------------
 
-mouseButton = 0
+# ---- Callbacks and Input Handling ----------------------------------------------------
+
+interactionMode = "camera"  # Possible values: "camera", "cloth"
+mouseButton = None
 mouseX = 0
 mouseY = 0
-shiftDown = False
+modifier = None  # Possible values: "ctrl", "alt", None
 
 def getMouseRay(x, y):
+    width, height = glfw.get_framebuffer_size(window)
     viewport = glGetIntegerv(GL_VIEWPORT)
     modelMatrix = glGetDoublev(GL_MODELVIEW_MATRIX)
     projMatrix = glGetDoublev(GL_PROJECTION_MATRIX)
 
-    y = viewport[3] - y - 1
-    p0 = gluUnProject(x, y, 0.0, modelMatrix, projMatrix, viewport)
-    p1 = gluUnProject(x, y, 1.0, modelMatrix, projMatrix, viewport)
+    y_gl = viewport[3] - y - 1
+    p0 = gluUnProject(x, y_gl, 0.0, modelMatrix, projMatrix, viewport)
+    p1 = gluUnProject(x, y_gl, 1.0, modelMatrix, projMatrix, viewport)
     orig = wp.vec3(p0[0], p0[1], p0[2])
     dir = wp.sub(wp.vec3(p1[0], p1[1], p1[2]), orig)
     dir = wp.normalize(dir)
