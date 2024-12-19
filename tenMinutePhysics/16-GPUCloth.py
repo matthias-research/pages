@@ -25,11 +25,9 @@
 # 'c': solve type coloring hybrid
 # 'j': solve type Jacobi
 # 'r': reset state
-# 'w' 's' 'a' 'd' 'e' 'q' : camera control
-# left mouse view
-# middle mouse pan
-# right mouse orbit
-# shift mouse interact
+# Alt + Left mouse pan
+# Ctrl + Middel mouse orbit
+# left mouse interact
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
