@@ -724,50 +724,57 @@ def getMouseRay(x, y):
     dir = wp.normalize(dir)
     return [orig, dir]
 
-def mouseButtonCallback(button, state, x, y):
-    global mouseX
-    global mouseY
-    global mouseButton
-    global shiftDown
-    global paused
-    mouseX = x
-    mouseY = y
-    if state == GLUT_DOWN:
+
+def mouse_button_callback(window, button, action, mods):
+    global mouseX, mouseY, mouseButton, interactionMode, modifier, paused
+    if action == glfw.PRESS:
         mouseButton = button
-    else:
-        mouseButton = 0
-    shiftDown = glutGetModifiers() & GLUT_ACTIVE_SHIFT
-    if shiftDown:
-        ray = getMouseRay(x, y)
-        if state == GLUT_DOWN:
+        # Determine interaction mode based on modifier keys
+        if mods & glfw.MOD_CONTROL:
+            interactionMode = "camera_orbit"
+            modifier = "ctrl"
+        elif mods & glfw.MOD_ALT:
+            interactionMode = "camera_translate"
+            modifier = "alt"
+        else:
+            interactionMode = "cloth"
+            modifier = None
+
+        xpos, ypos = glfw.get_cursor_pos(window)
+        mouseX = xpos
+        mouseY = ypos
+
+        if interactionMode == "cloth":
+            ray = getMouseRay(xpos, ypos)
             cloth.startDrag(ray[0], ray[1])
             paused = False
-    if state == GLUT_UP:
-        cloth.endDrag()
+    elif action == glfw.RELEASE:
+        if interactionMode == "cloth":
+            cloth.endDrag()
+        mouseButton = None
+        interactionMode = "camera"
+        modifier = None
 
-def mouseMotionCallback(x, y):
-    global mouseX
-    global mouseY
-    global mouseButton
-    
-    dx = x - mouseX
-    dy = y - mouseY
-    if shiftDown:
-        ray = getMouseRay(x, y)
+def cursor_position_callback(window, xpos, ypos):
+    global mouseX, mouseY, mouseButton, interactionMode, modifier
+
+    dx = xpos - mouseX
+    dy = ypos - mouseY
+
+    if interactionMode == "cloth":
+        ray = getMouseRay(xpos, ypos)
         cloth.drag(ray[0], ray[1])
-    else:
-        if mouseButton == GLUT_MIDDLE_BUTTON:
-            camera.handleMouseTranslate(dx, dy)
-        elif mouseButton == GLUT_LEFT_BUTTON:
-            camera.handleMouseView(dx, dy)
-        elif mouseButton == GLUT_RIGHT_BUTTON:
-            camera.handleMouseOrbit(dx, dy, wp.vec3(0.0, 1.0, 0.0))
+    elif interactionMode == "camera_orbit":
+        camera.handleMouseView(dx, dy)
+    elif interactionMode == "camera_translate":
+        camera.handleMouseTranslate(dx, dy)
 
-    mouseX = x
-    mouseY = y        
+    mouseX = xpos
+    mouseY = ypos        
 
-def mouseWheelCallback(wheel, direction, x, y):
-    camera.handleWheel(direction)
+def scroll_callback(window, xoffset, yoffset):
+    camera.handleWheel(yoffset)
+
 
 def handleKeyDown(key, x, y):
     camera.handleKeyDown(key)
