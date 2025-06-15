@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Morton BVH Collision Detection Demo</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; }
+        .info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-family: monospace;
+            padding: 10px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 100;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    <div class="info">
+        <h3>3D Morton BVH Collision Detection</h3>
+        <p>Boxes: <span id="boxCount">0</span></p>
+        <p>Collisions: <span id="collisionCount">0</span></p>
+        <p>BVH Build Time: <span id="buildTime">0</span> ms</p>
+        <p>Collision Check Time: <span id="checkTime">0</span> ms</p>
+        <p>BVH Checks: <span id="bvhChecks">0</span></p>
+        <p>FPS: <span id="fps">0</span></p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // All function declarations first, then usage
+        
+        // ================ Constants ================
+        const BOX_COUNT = 10000; // Reduced for better performance with shadows
+        const WORLD_SIZE = 100;
+        const MIN_BOX_SIZE = 0.5;
+        const MAX_BOX_SIZE = 3;
+        const MAX_SPEED = 0.5;
+        
+        // ================ Utility Functions ================
+        
+        // Morton code bit manipulation
+        function expandBits(v) {
+            v = (v * 0x00010001) & 0xFF0000FF;
+            v = (v * 0x00000101) & 0x0F00F00F;
+            v = (v * 0x00000011) & 0xC30C30C3;
+            v = (v * 0x00000005) & 0x49249249;
+            return v;
+        }
+        
+        // Calculate 3D Morton code
+        function calculateMortonCode(x, y, z) {
+            // Normalize coordinates to [0,1] range based on world size
+            const normalizeCoord = (val) => {
+                return (val + WORLD_SIZE / 2) / WORLD_SIZE;
+            };
+            
+            x = normalizeCoord(x);
+            y = normalizeCoord(y);
+            z = normalizeCoord(z);
+            
+            // Clamp to ensure they're in [0,1]
+            x = Math.min(Math.max(x, 0.0), 1.0);
+            y = Math.min(Math.max(y, 0.0), 1.0);
+            z = Math.min(Math.max(z, 0.0), 1.0);
+            
+            // Scale to range [0, 1023] for 10-bit encoding
+            x = Math.min(Math.floor(x * 1023), 1023);
+            y = Math.min(Math.floor(y * 1023), 1023);
+            z = Math.min(Math.floor(z * 1023), 1023);
+            
+            // Insert zeros between bits (3D Morton code)
+            const xx = expandBits(x);
+            const yy = expandBits(y);
+            const zz = expandBits(z);
+            
+            // Interleave the bits
+            return xx | (yy << 1) | (zz << 2);
+        }
+        
+        // Check if two AABBs intersect
+        function aabbIntersect(aabb1, aabb2) {
+            return (
+                aabb1.min.x <= aabb2.max.x && aabb1.max.x >= aabb2.min.x &&
+                aabb1.min.y <= aabb2.max.y && aabb1.max.y >= aabb2.min.y &&
+                aabb1.min.z <= aabb2.max.z && aabb1.max.z >= aabb2.min.z
+            );
+        }
+        
+        // ================ Box Class ================
+        class Box {
+            constructor(id) {
+                this.id = id;
+                
+                // Random size
+                this.width = MIN_BOX_SIZE + Math.random() * (MAX_BOX_SIZE - MIN_BOX_SIZE);
+                this.height = MIN_BOX_SIZE + Math.random() * (MAX_BOX_SIZE - MIN_BOX_SIZE);
+                this.depth = MIN_BOX_SIZE + Math.random() * (MAX_BOX_SIZE - MIN_BOX_SIZE);
+                
+                // Random position within 3D cube bounds
+                this.position = new THREE.Vector3(
+                    (Math.random() - 0.5) * WORLD_SIZE,
+                    (Math.random() - 0.5) * WORLD_SIZE + WORLD_SIZE/4, // Offset upward a bit
+                    (Math.random() - 0.5) * WORLD_SIZE
+                );
+                
+                // Random velocity in all three dimensions
+                this.velocity = new THREE.Vector3(
+                    (Math.random() - 0.5) * MAX_SPEED,
+                    (Math.random() - 0.5) * MAX_SPEED,
+                    (Math.random() - 0.5) * MAX_SPEED
+                );
+                
+                // Create Three.js mesh with improved materials
+                const geometry = new THREE.BoxGeometry(this.width, this.height, this.depth);
+                const material = new THREE.MeshStandardMaterial({ 
+                    color: 0x00ff00,
+                    roughness: 0.5,
+                    metalness: 0.2,
+                    emissive: 0x002200,
+                    emissiveIntensity: 0.1
+                });
+                this.mesh = new THREE.Mesh(geometry, material);
+                this.mesh.position.copy(this.position);
+                
+                // Enable shadows
+                this.mesh.castShadow = true;
+                this.mesh.receiveShadow = true;
+                
+                // Default state
+                this.isColliding = false;
+            }
+            
+            update() {
+                // Update position based on velocity
+                this.position.add(this.velocity);
+                
+                // Bounce off world boundaries in all three dimensions
+                if (Math.abs(this.position.x) > WORLD_SIZE / 2 - this.width / 2) {
+                    this.velocity.x *= -1;
+                    this.position.x = Math.sign(this.position.x) * (WORLD_SIZE / 2 - this.width / 2);
+                }
+                
+                if (Math.abs(this.position.y) > WORLD_SIZE / 2 - this.height / 2) {
+                    this.velocity.y *= -1;
+                    this.position.y = Math.sign(this.position.y) * (WORLD_SIZE / 2 - this.height / 2);
+                }
+                
+                if (Math.abs(this.position.z) > WORLD_SIZE / 2 - this.depth / 2) {
+                    this.velocity.z *= -1;
+                    this.position.z = Math.sign(this.position.z) * (WORLD_SIZE / 2 - this.depth / 2);
+                }
+                
+                // Update mesh position
+                this.mesh.position.copy(this.position);
+                
+                // Reset collision state
+                if (this.isColliding) {
+                    this.mesh.material.color.set(0x00ff00);
+                    this.mesh.material.emissive.set(0x002200);
+                    this.isColliding = false;
+                }
+            }
+            
+            markCollision() {
+                this.mesh.material.color.set(0xff3300);
+                this.mesh.material.emissive.set(0x330000);
+                this.isColliding = true;
+            }
+            
+            // Get axis-aligned bounding box
+            getAABB() {
+                return {
+                    min: new THREE.Vector3(
+                        this.position.x - this.width / 2,
+                        this.position.y - this.height / 2,
+                        this.position.z - this.depth / 2
+                    ),
+                    max: new THREE.Vector3(
+                        this.position.x + this.width / 2,
+                        this.position.y + this.height / 2,
+                        this.position.z + this.depth / 2
+                    )
+                };
+            }
+            
+            // Check collision with another box
+            checkCollision(other) {
+                const aabb1 = this.getAABB();
+                const aabb2 = other.getAABB();
+                
+                return (
+                    aabb1.min.x <= aabb2.max.x && aabb1.max.x >= aabb2.min.x &&
+                    aabb1.min.y <= aabb2.max.y && aabb1.max.y >= aabb2.min.y &&
+                    aabb1.min.z <= aabb2.max.z && aabb1.max.z >= aabb2.min.z
+                );
+            }
+        }
+        
+        // ================ BVH Node Class ================
+        class BVHNode {
+            constructor() {
+                this.left = null;
+                this.right = null;
+                this.boxId = -1;  // Only leaf nodes have valid boxIds
+                this.aabb = {
+                    min: new THREE.Vector3(Infinity, Infinity, Infinity),
+                    max: new THREE.Vector3(-Infinity, -Infinity, -Infinity)
+                };
+            }
+            
+            isLeaf() {
+                return this.boxId !== -1;
+            }
+        }
+        
+        // ================ BVH Construction Functions ================
+        function getSplitPos(list, begin, end) {
+            // Simple middle split strategy
+            return Math.floor((begin + end) / 2);
+        }
+        
+        function createLeaf(boxId, box) {
+            const node = new BVHNode();
+            node.boxId = boxId;
+            
+            // Set AABB from box
+            const aabb = box.getAABB();
+            node.aabb.min.copy(aabb.min);
+            node.aabb.max.copy(aabb.max);
+            
+            return node;
+        }
+        
+        function createNode() {
+            return new BVHNode();
+        }
+        
+        function createSubTree(list, begin, end, boxes) {
+            if (begin === end) {
+                return createLeaf(list[begin].id, boxes[list[begin].id]);
+            } else {
+                const m = getSplitPos(list, begin, end);
+                const node = createNode();
+                
+                node.left = createSubTree(list, begin, m, boxes);
+                node.right = createSubTree(list, m + 1, end, boxes);
+                
+                // Update node's AABB to encompass children's AABBs
+                node.aabb.min.x = Math.min(node.left.aabb.min.x, node.right.aabb.min.x);
+                node.aabb.min.y = Math.min(node.left.aabb.min.y, node.right.aabb.min.y);
+                node.aabb.min.z = Math.min(node.left.aabb.min.z, node.right.aabb.min.z);
+                
+                node.aabb.max.x = Math.max(node.left.aabb.max.x, node.right.aabb.max.x);
+                node.aabb.max.y = Math.max(node.left.aabb.max.y, node.right.aabb.max.y);
+                node.aabb.max.z = Math.max(node.left.aabb.max.z, node.right.aabb.max.z);
+                
+                return node;
+            }
+        }
+        
+        function createTree(boxes) {
+            // Create list of box IDs with their Morton codes
+            const list = [];
+            for (let i = 0; i < boxes.length; i++) {
+                const box = boxes[i];
+                const center = box.position;
+                const mortonCode = calculateMortonCode(center.x, center.y, center.z);
+                list.push({ id: i, mortonCode: mortonCode });
+            }
+            
+            // Sort by Morton code for spatial locality
+            list.sort((a, b) => a.mortonCode - b.mortonCode);
+            
+            // Create the BVH tree recursively
+            return createSubTree(list, 0, list.length - 1, boxes);
+        }
+        
+        // ================ Collision Detection Functions ================
+        // Find collisions between a box and the BVH tree
+        function findCollisions(boxId, box, node, boxes, collisions, checkCount) {
+            checkCount.value++;
+            
+            // If this box's AABB doesn't intersect with the node's AABB, return
+            if (!aabbIntersect(box.getAABB(), node.aabb)) {
+                return;
+            }
+            
+            // If this is a leaf node
+            if (node.isLeaf()) {
+                // Don't check collisions with self
+                if (node.boxId !== boxId) {
+                    // Check for actual collision between boxes
+                    if (box.checkCollision(boxes[node.boxId])) {
+                        collisions.push({ a: boxId, b: node.boxId });
+                    }
+                }
+                return;
+            }
+            
+            // Recurse through children
+            findCollisions(boxId, box, node.left, boxes, collisions, checkCount);
+            findCollisions(boxId, box, node.right, boxes, collisions, checkCount);
+        }
+        
+        // Check all collisions using BVH
+        function checkCollisionsBVH(boxes, bvhRoot) {
+            const collisions = [];
+            const checkCount = { value: 0 };
+            
+            for (let i = 0; i < boxes.length; i++) {
+                findCollisions(i, boxes[i], bvhRoot, boxes, collisions, checkCount);
+            }
+            
+            return { collisions, checkCount: checkCount.value };
+        }
+        
+        // Naive collision detection (for comparison)
+        function checkCollisionsNaive(boxes) {
+            const collisions = [];
+            let checkCount = 0;
+            
+            for (let i = 0; i < boxes.length; i++) {
+                for (let j = i + 1; j < boxes.length; j++) {
+                    checkCount++;
+                    if (boxes[i].checkCollision(boxes[j])) {
+                        collisions.push({ a: i, b: j });
+                    }
+                }
+            }
+            
+            return { collisions, checkCount };
+        }
+        
+        // Camera rotation variables
+        let cameraAngle = 0;
+        const cameraRadius = 85;
+        const cameraHeight = 40;
+        
+        // Function to update camera position
+        function updateCamera() {
+            cameraAngle += 0.001;
+            camera.position.x = Math.sin(cameraAngle) * cameraRadius;
+            camera.position.z = Math.cos(cameraAngle) * cameraRadius;
+            camera.position.y = cameraHeight;
+            camera.lookAt(0, 0, 0);
+        }
+        
+        // FPS calculation
+        let frameCount = 0;
+        let lastTime = performance.now();
+        
+        function updateFPS() {
+            const now = performance.now();
+            frameCount++;
+            
+            if (now - lastTime >= 1000) {
+                const fps = Math.round((frameCount * 1000) / (now - lastTime));
+                document.getElementById('fps').textContent = fps;
+                frameCount = 0;
+                lastTime = now;
+            }
+        }
+        
+        // ================ Animation Loop ================
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Update box positions
+            for (const box of boxes) {
+                box.update();
+            }
+            
+            // Rebuild BVH (since boxes are moving)
+            const buildStartTime = performance.now();
+            const bvhRoot = createTree(boxes);
+            const buildEndTime = performance.now();
+            
+            // Check collisions using BVH
+            const checkStartTime = performance.now();
+            const bvhResult = checkCollisionsBVH(boxes, bvhRoot);
+            const checkEndTime = performance.now();
+            
+            // For comparison: naive collision checking
+            // const naiveResult = checkCollisionsNaive(boxes);
+            const naiveResult = { checkCount: 0 };
+            
+            // Mark colliding boxes
+            const collisions = bvhResult.collisions;
+            for (const collision of collisions) {
+                boxes[collision.a].markCollision();
+                boxes[collision.b].markCollision();
+            }
+            
+            // Update stats
+            document.getElementById('boxCount').textContent = boxes.length;
+            document.getElementById('collisionCount').textContent = collisions.length;
+            document.getElementById('buildTime').textContent = (buildEndTime - buildStartTime).toFixed(2);
+            document.getElementById('checkTime').textContent = (checkEndTime - checkStartTime).toFixed(2);
+            // document.getElementById('naiveChecks').textContent = naiveResult.checkCount;
+            document.getElementById('bvhChecks').textContent = bvhResult.checkCount;
+            
+            // Update camera position
+            updateCamera();
+            
+            // Update FPS counter
+            updateFPS();
+            
+            // Render the scene
+            renderer.render(scene, camera);
+        }
+        
+        // ================ Scene Setup ================
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x111111);
+        
+        // Add fog for depth perception
+        scene.fog = new THREE.FogExp2(0x111111, 0.0025);
+        
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(70, 40, 70);
+        camera.lookAt(0, 0, 0);
+        
+        // Improved renderer with shadow maps
+        const renderer = new THREE.WebGLRenderer({ 
+            antialias: true,
+            powerPreference: "high-performance"
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        
+        // Enable shadows in the renderer
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Softer shadows
+        
+        document.getElementById('container').appendChild(renderer.domElement);
+        
+        // Enhanced Lighting Setup
+        
+        // Ambient light for base illumination
+        const ambientLight = new THREE.AmbientLight(0x333333);
+        scene.add(ambientLight);
+        
+        // Main directional light (sun-like) with shadows
+        const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        mainLight.position.set(50, 100, 50);
+        mainLight.castShadow = true;
+        
+        // Optimize shadow map settings
+        mainLight.shadow.mapSize.width = 2048;
+        mainLight.shadow.mapSize.height = 2048;
+        mainLight.shadow.camera.near = 0.5;
+        mainLight.shadow.camera.far = 500;
+        
+        // Adjust shadow camera frustum to fit the scene
+        const d = 100;
+        mainLight.shadow.camera.left = -d;
+        mainLight.shadow.camera.right = d;
+        mainLight.shadow.camera.top = d;
+        mainLight.shadow.camera.bottom = -d;
+        
+        // Add bias to reduce shadow acne
+        mainLight.shadow.bias = -0.001;
+        
+        scene.add(mainLight);
+        
+        // Additional accent lights for better dimension
+        const fillLight = new THREE.DirectionalLight(0x9090ff, 0.4);
+        fillLight.position.set(-50, 20, -50);
+        scene.add(fillLight);
+        
+        const rimLight = new THREE.DirectionalLight(0xff9090, 0.3);
+        rimLight.position.set(0, -30, 100);
+        scene.add(rimLight);
+        
+        // Create a floor plane to catch shadows
+        const floorGeometry = new THREE.PlaneGeometry(WORLD_SIZE * 2, WORLD_SIZE * 2);
+        const floorMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x222222,
+            roughness: 0.8,
+            metalness: 0.2,
+            side: THREE.DoubleSide
+        });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = Math.PI / 2;
+        floor.position.y = -WORLD_SIZE / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+        
+        // Create a transparent cube to visualize the 3D bounds
+        const cubeGeometry = new THREE.BoxGeometry(WORLD_SIZE, WORLD_SIZE, WORLD_SIZE);
+        const cubeMaterial = new THREE.MeshBasicMaterial({ 
+            color: 0x444444, 
+            wireframe: true,
+            transparent: true,
+            opacity: 0.2
+        });
+        const boundingCube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+        scene.add(boundingCube);
+        
+        // Grid helper with better visibility
+        const gridHelper = new THREE.GridHelper(WORLD_SIZE * 2, 20, 0x444444, 0x222222);
+        gridHelper.position.y = -WORLD_SIZE / 2 + 0.01; // Slightly above the floor
+        scene.add(gridHelper);
+        
+        // Axes helper
+        const axesHelper = new THREE.AxesHelper(10);
+        scene.add(axesHelper);
+        
+        // ================ Main ================
+        // Create boxes
+        const boxes = [];
+        for (let i = 0; i < BOX_COUNT; i++) {
+            const box = new Box(i);
+            boxes.push(box);
+            scene.add(box.mesh);
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        // Start animation
+        animate();
+    </script>
+</body>
+</html>

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        canvas {
+            border: 1px solid black;
+            background: #101010;
+            display: block;  /* Removes small gap at bottom */
+        }
+        .controls {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            margin: 10px 0;
+            font-family: Arial, sans-serif;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 5px;
+            border-radius: 4px;
+        }
+        .stats {
+            font-family: monospace;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <label>
+            <input type="radio" name="algorithm" value="bruteforce"> Brute Force
+        </label>
+        <label>
+            <input type="radio" name="algorithm" value="sweepprune" checked> Sweep and Prune
+        </label>
+        <span id="stats" class="stats"></span>
+    </div>
+    <canvas id="canvas"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size to window size
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        
+        // Initial resize
+        resizeCanvas();
+        
+        // Handle window resize
+        window.addEventListener('resize', resizeCanvas);
+        
+        const statsEl = document.getElementById('stats');
+        let collisionChecks = 0;
+        let actualCollisions = 0;
+
+        function calculateCollision(m1, m2, x1, y1, x2, y2, vx1, vy1, vx2, vy2, r1, r2, e) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist > r1 + r2) {
+                return { vx1_new: vx1, vy1_new: vy1, vx2_new: vx2, vy2_new: vy2 };
+            }
+
+            const nx = dx / dist;
+            const ny = dy / dist;
+
+            const vrx = vx2 - vx1;  // Changed direction of relative velocity
+            const vry = vy2 - vy1;
+
+            const vn = vrx * nx + vry * ny;
+
+            if (vn > 0) {
+                return { vx1_new: vx1, vy1_new: vy1, vx2_new: vx2, vy2_new: vy2 };
+            }
+
+            const j = -(1 + e) * vn / (1/m1 + 1/m2);
+
+            const vx1_new = vx1 - (j * nx) / m1;  // Changed sign
+            const vy1_new = vy1 - (j * ny) / m1;  // Changed sign
+            const vx2_new = vx2 + (j * nx) / m2;  // Changed sign
+            const vy2_new = vy2 + (j * ny) / m2;  // Changed sign
+
+            return { vx1_new, vy1_new, vx2_new, vy2_new };
+        }
+
+        class Sphere {
+            constructor(x, y, vx, vy, radius) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.radius = radius;
+                this.mass = Math.PI * radius * radius;
+                this.color = `hsl(${Math.random() * 360}, 70%, 50%)`;
+            }
+
+            get left() {
+                return this.x - this.radius;
+            }
+
+            get right() {
+                return this.x + this.radius;
+            }
+
+            update(dt) {
+                const gravity = 980;
+                
+                // this.vy += gravity * dt;
+                this.x += this.vx * dt;
+                this.y += this.vy * dt;
+                
+                if (this.x - this.radius < 0) {
+                    this.x = this.radius;
+                    this.vx *= -1.0;
+                }
+                if (this.x + this.radius > canvas.width) {
+                    this.x = canvas.width - this.radius;
+                    this.vx *= -1.0;
+                }
+                if (this.y + this.radius > canvas.height) {
+                    this.y = canvas.height - this.radius;
+                    this.vy *= -1.0;
+                }
+                if (this.y - this.radius < 0) {
+                    this.y = this.radius;
+                    this.vy *= -1.0;
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.closePath();
+            }
+        }
+
+        function solveCollision(sphere1, sphere2) {
+            collisionChecks++;
+            
+            const dx = sphere2.x - sphere1.x;
+            const dy = sphere2.y - sphere1.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < sphere1.radius + sphere2.radius) {
+                actualCollisions++;
+                
+                // Calculate new velocities using provided function
+                const { vx1_new, vy1_new, vx2_new, vy2_new } = calculateCollision(
+                    sphere1.mass, sphere2.mass,
+                    sphere1.x, sphere1.y, sphere2.x, sphere2.y,
+                    sphere1.vx, sphere1.vy, sphere2.vx, sphere2.vy,
+                    sphere1.radius, sphere2.radius,
+                    1.0  // restitution coefficient
+                );
+                
+                // Update velocities
+                sphere1.vx = vx1_new;
+                sphere1.vy = vy1_new;
+                sphere2.vx = vx2_new;
+                sphere2.vy = vy2_new;
+                
+                // Resolve overlap
+                const overlap = (sphere1.radius + sphere2.radius - distance);
+                const nx = dx / distance;
+                const ny = dy / distance;
+                
+                const cx = overlap * nx / 2;
+                const cy = overlap * ny / 2;
+                
+                sphere1.x -= cx;
+                sphere1.y -= cy;
+                sphere2.x += cx;
+                sphere2.y += cy;
+            }
+        }
+
+        function bruteForceCollisions(spheres) {
+            for (let i = 0; i < spheres.length; i++) {
+                for (let j = i + 1; j < spheres.length; j++) {
+                    solveCollision(spheres[i], spheres[j]);
+                }
+            }
+        }
+
+        function sweepAndPruneCollisions(spheres) {
+            const sortedSpheres = spheres.sort((a, b) => a.left - b.left);
+            
+            for (let i = 0; i < sortedSpheres.length; i++) {
+                const sphere1 = sortedSpheres[i];
+                
+                for (let j = i + 1; j < sortedSpheres.length; j++) {
+                    const sphere2 = sortedSpheres[j];
+                    
+                    if (sphere2.left > sphere1.right) {
+                        break;
+                    }
+                    
+                    if (Math.abs(sphere1.y - sphere2.y) <= sphere1.radius + sphere2.radius) {
+                        solveCollision(sphere1, sphere2);
+                    }
+                }
+            }
+        }
+
+        const spheres = [];
+        for (let i = 0; i < 5000; i++) {
+            let radius = Math.floor(Math.pow(Math.random(), 10.0) * 20 + 2);
+            const x = Math.random() * (canvas.width - radius * 2) + radius;
+            const y = Math.random() * (canvas.height - radius * 2) + radius;
+            const vx = Math.random() * 400 - 200;
+            const vy = Math.random() * 400 - 200;
+            spheres.push(new Sphere(x, y, vx, vy, radius));
+        }
+
+        let lastTime = performance.now();
+        function animate() {
+            const currentTime = performance.now();
+            const dt = Math.min((currentTime - lastTime) / 1000, 0.016);
+            lastTime = currentTime;
+
+            collisionChecks = 0;
+            actualCollisions = 0;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Run multiple physics steps per frame
+            const numSubsteps = 5;
+            const subDt = dt / numSubsteps;
+            
+            const algorithm = document.querySelector('input[name="algorithm"]:checked').value;
+            
+            for (let step = 0; step < numSubsteps; step++) {
+                spheres.forEach(sphere => sphere.update(subDt));
+                
+                if (algorithm === 'bruteforce') {
+                    bruteForceCollisions(spheres);
+                } else {
+                    sweepAndPruneCollisions(spheres);
+                }
+            }
+            
+            // Draw all spheres
+            spheres.forEach(sphere => sphere.draw());
+
+            // Draw sweep bounds when sweep and prune is selected
+            if (algorithm === 'sweepprune') {
+                const sortedSpheres = [...spheres].sort((a, b) => a.left - b.left);
+                ctx.strokeStyle = 'rgba(255,0,0,0.5)';
+                ctx.beginPath();
+                sortedSpheres.forEach(sphere => {
+                    ctx.moveTo(sphere.left, 0);
+                    ctx.lineTo(sphere.left, 10);
+                    ctx.moveTo(sphere.right, 0);
+                    ctx.lineTo(sphere.right, 10);
+                });
+                ctx.stroke();
+            }
+
+            // Update stats
+            statsEl.textContent = `Spheres: ${spheres.length} | Checks/frame: ${collisionChecks} | Collisions/frame: ${actualCollisions}`;
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
