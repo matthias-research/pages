@@ -1291,7 +1291,7 @@ Right-click your HTML file → "Open with Live Server"
                         }
                     }
 
-                    this.simulator.simulationView = true;
+                    this.simulator.simulationView = false;
                     this.simulator.toggleView();
 
                     console.log(`Loaded scene with ${this.rigidBodies.size} rigid bodies`);
@@ -1647,7 +1647,7 @@ Right-click your HTML file → "Open with Live Server"
 
                     // Camera
                     this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 100);
-                    this.camera.position.set(0, 0.4, 1.2);
+                    this.camera.position.set(0, 0.4, 1.6);
                     this.camera.updateMatrixWorld();
                     this.threeScene.add(this.camera);
 
@@ -1811,7 +1811,7 @@ Right-click your HTML file → "Open with Live Server"
             let gravity = new THREE.Vector3(0.0, -9.81, 0.0);
             gSimulator = new RigidBodySimulator(gRenderScene, gravity);
 
-            loadScene(2); // Load the first scene by default
+            loadScene(0); // Load the first scene by default
 
             onWindowResize();
 			update();
