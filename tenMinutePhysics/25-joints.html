@@ -383,7 +383,6 @@ Right-click your HTML file → "Open with Live Server"
                         // stabilize rotation
                         dOmega.multiplyScalar(0.5);
                         
-
                         let dRot = new THREE.Quaternion(
                             dOmega.x,
                             dOmega.y,
@@ -764,26 +763,26 @@ Right-click your HTML file → "Open with Live Server"
 
                     // align
                     
-                    // if (this.type == Joint.TYPES.PRISMATIC || this.type == Joint.TYPES.CYLINDER)
-                    // {   
-                    //     this.targetDistance = Math.max(this.distanceMin, Math.min(this.targetDistance, this.distanceMax));
-                    //     let hardCompliance = 0.0;
-                    //     this.updateGlobalFrames();
-                    //     corr.subVectors(this.globalPos1, this.globalPos0);
+                    if (this.type == Joint.TYPES.PRISMATIC || this.type == Joint.TYPES.CYLINDER)
+                    {   
+                        this.targetDistance = Math.max(this.distanceMin, Math.min(this.targetDistance, this.distanceMax));
+                        let hardCompliance = 0.0;
+                        this.updateGlobalFrames();
+                        corr.subVectors(this.globalPos1, this.globalPos0);
 
-                    //     corr.applyQuaternion(this.globalRot0.clone().conjugate());
-                    //     if (this.type == Joint.TYPES.CYLINDER)
-                    //         corr.x -= this.targetDistance;
-                    //     else if (corr.x > this.distanceMax)
-                    //         corr.x -= this.distanceMax;
-                    //     else if (corr.x < this.distanceMin)
-                    //         corr.x -= this.distanceMin;
-                    //     else
-                    //         corr.x = 0.0; 
+                        corr.applyQuaternion(this.globalRot0.clone().conjugate());
+                        if (this.type == Joint.TYPES.CYLINDER)
+                            corr.x -= this.targetDistance;
+                        else if (corr.x > this.distanceMax)
+                            corr.x -= this.distanceMax;
+                        else if (corr.x < this.distanceMin)
+                            corr.x -= this.distanceMin;
+                        else
+                            corr.x = 0.0; 
 
-                    //     corr.applyQuaternion(this.globalRot0);
-                    //     this.body0.applyCorrection(hardCompliance, corr, this.globalPos0, this.body1, this.globalPos1);                    
-                    // }
+                        corr.applyQuaternion(this.globalRot0);
+                        this.body0.applyCorrection(hardCompliance, corr, this.globalPos0, this.body1, this.globalPos1);                    
+                    }
 
                     // solve distance
 
@@ -928,7 +927,7 @@ Right-click your HTML file → "Open with Live Server"
                         a1.applyQuaternion(this.globalRot1);   
                         n.crossVectors(a0, a1);
                         n.normalize();
-                        // this.limitAngle(n, a0, a1, this.swingMin, this.swingMax, hardCompliance);
+                        this.limitAngle(n, a0, a1, this.swingMin, this.swingMax, hardCompliance);
 
                         // twist limit
 
