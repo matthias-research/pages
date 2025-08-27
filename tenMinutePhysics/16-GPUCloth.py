@@ -25,15 +25,15 @@
 # 'c': solve type coloring hybrid
 # 'j': solve type Jacobi
 # 'r': reset state
-# 'w' 's' 'a' 'd' 'e' 'q' : camera control
-# left mouse view
-# middle mouse pan
-# right mouse orbit
-# shift mouse interact
+# Alt + Left mouse pan
+# Ctrl + Middel mouse orbit
+# left mouse interact
+# scrool mouse zoom
+# 'w' 's' 'a' 'd' 'e' 'q' : camera control // may need changes
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from OpenGL.GLUT import *
+import glfw
 import numpy as np
 import warp as wp
 import math
@@ -524,7 +524,8 @@ class Cloth:
         q = gluNewQuadric()
 
         if self.dragParticleNr >= 0:
-            self.renderParticles.append(self.dragParticleNr)
+            if self.dragParticleNr not in self.renderParticles:
+                self.renderParticles.append(self.dragParticleNr)
 
         for id in self.renderParticles:
             glPushMatrix()
@@ -534,7 +535,8 @@ class Cloth:
             glPopMatrix()
 
         if self.dragParticleNr >= 0:
-            self.renderParticles.pop()
+            if self.dragParticleNr in self.renderParticles:
+                self.renderParticles.remove(self.dragParticleNr)
             
         # sphere
         glColor3f(0.8, 0.8, 0.8)
@@ -546,16 +548,14 @@ class Cloth:
 
         gluDeleteQuadric(q)
 
-
-
 # --------------------------------------------------------------------
-# Demo Viewer
+# Demo Viewer using GLFW
 # --------------------------------------------------------------------
 
 groundVerts = []
 groundIds = []
 groundColors = []
-cloth = []
+cloth = None
 
 # -------------------------------------------------------
 def initScene():
@@ -589,8 +589,6 @@ def showScreen():
     if not hidden:
         cloth.render()
 
-    glutSwapBuffers()
-
 # -----------------------------------
 class Camera:
     def __init__(self):
@@ -606,13 +604,12 @@ class Camera:
        return wp.quat_rotate(q, v)
 
     def setView(self):
-        viewport = glGetIntegerv(GL_VIEWPORT)
-        width = viewport[2] - viewport[0]
-        height = viewport[3] - viewport[1]
+        width, height = glfw.get_framebuffer_size(window)
+        aspect_ratio = width / height if height > 0 else 1.0
 
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        gluPerspective(40.0, float(width) / float(height), 0.01, 1000.0)
+        gluPerspective(40.0, aspect_ratio, 0.01, 1000.0)
 
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
@@ -653,10 +650,12 @@ class Camera:
         self.forward = wp.cross(self.up, self.right)
     
     def handleKeyDown(self, key):
-        self.keyDown[ord(key)] = True
+        if 0 <= key < 256:
+            self.keyDown[key] = True
 
     def handleKeyUp(self, key):
-        self.keyDown[ord(key)] = False
+        if 0 <= key < 256:
+            self.keyDown[key] = False
 
     def handleKeys(self):
         if self.keyDown[ord('+')]:
@@ -683,7 +682,7 @@ class Camera:
             wp.dot(self.right, offset),
             wp.dot(self.forward, offset),
             wp.dot(self.up, offset)]
-
+    
         scale = 0.01
         self.forward = self.rot(self.up, -dx * scale, self.forward)
         self.forward = self.rot(self.right, -dy * scale, self.forward)
@@ -702,121 +701,96 @@ class Camera:
 
 camera = Camera()
 
-# ---- callbacks ----------------------------------------------------
+# ---- Callbacks and Input Handling ----------------------------------------------------
 
-mouseButton = 0
+interactionMode = "camera"  # Possible values: "camera", "cloth"
+mouseButton = None
 mouseX = 0
 mouseY = 0
-shiftDown = False
+modifier = None  # Possible values: "ctrl", "alt", None
 
 def getMouseRay(x, y):
+    width, height = glfw.get_framebuffer_size(window)
     viewport = glGetIntegerv(GL_VIEWPORT)
     modelMatrix = glGetDoublev(GL_MODELVIEW_MATRIX)
     projMatrix = glGetDoublev(GL_PROJECTION_MATRIX)
 
-    y = viewport[3] - y - 1
-    p0 = gluUnProject(x, y, 0.0, modelMatrix, projMatrix, viewport)
-    p1 = gluUnProject(x, y, 1.0, modelMatrix, projMatrix, viewport)
+    y_gl = viewport[3] - y - 1
+    p0 = gluUnProject(x, y_gl, 0.0, modelMatrix, projMatrix, viewport)
+    p1 = gluUnProject(x, y_gl, 1.0, modelMatrix, projMatrix, viewport)
     orig = wp.vec3(p0[0], p0[1], p0[2])
     dir = wp.sub(wp.vec3(p1[0], p1[1], p1[2]), orig)
     dir = wp.normalize(dir)
     return [orig, dir]
 
-def mouseButtonCallback(button, state, x, y):
-    global mouseX
-    global mouseY
-    global mouseButton
-    global shiftDown
-    global paused
-    mouseX = x
-    mouseY = y
-    if state == GLUT_DOWN:
+def mouse_button_callback(window, button, action, mods):
+    global mouseX, mouseY, mouseButton, interactionMode, modifier, paused
+    if action == glfw.PRESS:
         mouseButton = button
-    else:
-        mouseButton = 0
-    shiftDown = glutGetModifiers() & GLUT_ACTIVE_SHIFT
-    if shiftDown:
-        ray = getMouseRay(x, y)
-        if state == GLUT_DOWN:
+        # Determine interaction mode based on modifier keys
+        if mods & glfw.MOD_CONTROL:
+            interactionMode = "camera_orbit"
+            modifier = "ctrl"
+        elif mods & glfw.MOD_ALT:
+            interactionMode = "camera_translate"
+            modifier = "alt"
+        else:
+            interactionMode = "cloth"
+            modifier = None
+
+        xpos, ypos = glfw.get_cursor_pos(window)
+        mouseX = xpos
+        mouseY = ypos
+
+        if interactionMode == "cloth":
+            ray = getMouseRay(xpos, ypos)
             cloth.startDrag(ray[0], ray[1])
             paused = False
-    if state == GLUT_UP:
-        cloth.endDrag()
+    elif action == glfw.RELEASE:
+        if interactionMode == "cloth":
+            cloth.endDrag()
+        mouseButton = None
+        interactionMode = "camera"
+        modifier = None
 
-def mouseMotionCallback(x, y):
-    global mouseX
-    global mouseY
-    global mouseButton
-    
-    dx = x - mouseX
-    dy = y - mouseY
-    if shiftDown:
-        ray = getMouseRay(x, y)
+def cursor_position_callback(window, xpos, ypos):
+    global mouseX, mouseY, mouseButton, interactionMode, modifier
+
+    dx = xpos - mouseX
+    dy = ypos - mouseY
+
+    if interactionMode == "cloth":
+        ray = getMouseRay(xpos, ypos)
         cloth.drag(ray[0], ray[1])
-    else:
-        if mouseButton == GLUT_MIDDLE_BUTTON:
-            camera.handleMouseTranslate(dx, dy)
-        elif mouseButton == GLUT_LEFT_BUTTON:
-            camera.handleMouseView(dx, dy)
-        elif mouseButton == GLUT_RIGHT_BUTTON:
-            camera.handleMouseOrbit(dx, dy, wp.vec3(0.0, 1.0, 0.0))
+    elif interactionMode == "camera_orbit":
+        camera.handleMouseView(dx, dy)
+    elif interactionMode == "camera_translate":
+        camera.handleMouseTranslate(dx, dy)
 
-    mouseX = x
-    mouseY = y        
+    mouseX = xpos
+    mouseY = ypos        
 
-def mouseWheelCallback(wheel, direction, x, y):
-    camera.handleWheel(direction)
+def scroll_callback(window, xoffset, yoffset):
+    camera.handleWheel(yoffset)
 
-def handleKeyDown(key, x, y):
-    camera.handleKeyDown(key)
-    global paused
-    global solveType
-    global hidden
-    if key == b'p':
-        paused = not paused
-    elif key == b'h':
-        hidden = not hidden
-    elif key == b'c':
-        solveType = 0
-    elif key == b'j':
-        solveType = 1
-    elif key == b'r':
-        cloth.reset()
-
-def handleKeyUp(key, x, y):
-    camera.handleKeyUp(key)
-    
-def displayCallback():
-    i = 0
-
-prevTime = time.time()
-
-def timerCallback(val):
-    global prevTime
-    global frameNr
-    frameNr = frameNr + 1
-    numFpsFrames = 30
-    currentTime = time.perf_counter()
-
-    if frameNr % numFpsFrames == 0:
-        passedTime = currentTime - prevTime
-        prevTime = currentTime
-        fps = math.floor(numFpsFrames / passedTime)
-        glutSetWindowTitle("Parallel cloth simulation " + str(fps) + " fps")
-
-    if not paused:
-        cloth.simulate()
-
-    cloth.updateMesh()
-    showScreen()
-    camera.setView()
-    camera.handleKeys()
-
-    elapsed_ms = (time.perf_counter() - currentTime) * 1000
-    glutTimerFunc(max(0, math.floor((1000.0 / targetFps) - elapsed_ms)), timerCallback, 0)
+def key_callback(window, key, scancode, action, mods):
+    global paused, solveType, hidden
+    if action == glfw.PRESS:
+        camera.handleKeyDown(key)
+        if key == glfw.KEY_P:
+            paused = not paused
+        elif key == glfw.KEY_H:
+            hidden = not hidden
+        elif key == glfw.KEY_C:
+            solveType = 0
+        elif key == glfw.KEY_J:
+            solveType = 1
+        elif key == glfw.KEY_R:
+            cloth.reset()
+    elif action == glfw.RELEASE:
+        camera.handleKeyUp(key)
 
 # -----------------------------------------------------------
-
 def setupOpenGL():
     glEnable(GL_DEPTH_TEST)
     glEnable(GL_COLOR_MATERIAL)
@@ -869,6 +843,7 @@ def setupOpenGL():
                 px = x + squareVerts[i][0] * groundTileSize
                 pz = z + squareVerts[i][1] * groundTileSize
                 groundVerts[3 * q] = px
+                groundVerts[3 * q + 1] = 0.0  # Assuming ground plane is at y=0
                 groundVerts[3 * q + 2] = pz
                 col = 0.4
                 if (xi + zi) % 2 == 1:
@@ -881,28 +856,64 @@ def setupOpenGL():
 
 # ------------------------------
 
-glutInit()
-initScene()
+def main():
+    global window
 
-x = wp.vec3(0.0, 1.0, 2.0)
-y = wp.vec3(1.0, -3.0, 0.0)
-z = wp.sub(x, y)
-print(str(z[0]) + "," + str(z[1]) + "," + str(z[2]))
+    if not glfw.init():
+        print("Failed to initialize GLFW")
+        return
 
-glutInitDisplayMode(GLUT_RGBA)
-glutInitWindowSize(800, 500)
-glutInitWindowPosition(10, 10)
-wind = glutCreateWindow("Parallel cloth simulation")
+    glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 2)
+    glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 1)
+    window = glfw.create_window(800, 500, "Parallel cloth simulation", None, None)
+    if not window:
+        glfw.terminate()
+        print("Failed to create GLFW window")
+        return
 
-setupOpenGL()
+    glfw.make_context_current(window)
 
-glutDisplayFunc(displayCallback)
-glutMouseFunc(mouseButtonCallback)
-glutMotionFunc(mouseMotionCallback)
-glutMouseWheelFunc(mouseWheelCallback)
-glutKeyboardFunc(handleKeyDown)
-glutKeyboardUpFunc(handleKeyUp)
-glutTimerFunc(math.floor(1000.0 / targetFps), timerCallback, 0)
+    glfw.set_mouse_button_callback(window, mouse_button_callback)
+    glfw.set_cursor_pos_callback(window, cursor_position_callback)
+    glfw.set_scroll_callback(window, scroll_callback)
+    glfw.set_key_callback(window, key_callback)
 
+    initScene()
 
-glutMainLoop()
+    setupOpenGL()
+
+    prevTime = time.perf_counter()
+
+    while not glfw.window_should_close(window):
+        currentTime = time.perf_counter()
+        elapsed = currentTime - prevTime
+        if elapsed >= 1.0 / targetFps:
+            prevTime = currentTime
+
+            camera.handleKeys()
+            
+            if not paused:
+                cloth.simulate()
+
+            cloth.updateMesh()
+
+            camera.setView()
+
+            showScreen()
+
+            glfw.swap_buffers(window)
+
+            glfw.poll_events()
+
+            global frameNr
+            frameNr += 1
+            numFpsFrames = 30
+            if frameNr % numFpsFrames == 0:
+                fps = targetFps
+                glfw.set_window_title(window, f"Parallel cloth simulation {fps} fps")
+
+    glfw.terminate()
+
+# Run the application
+if __name__ == "__main__":
+    main()
