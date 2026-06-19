@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>White Cross Trainer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #121218;
+      color: #e8e8ef;
+      overflow: hidden;
+      display: flex;
+    }
+    #canvas-container {
+      flex: 1;
+      min-width: 0;
+      position: relative;
+    }
+    #ui {
+      flex: 0 0 min(300px, 36vw);
+      height: 100vh;
+      padding: 2rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 1rem;
+      border-right: 1px solid #2a2a35;
+      background: #121218;
+    }
+    h1 {
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #aaa;
+    }
+    #stats {
+      line-height: 1.5;
+    }
+    #move-count {
+      font-size: 1.1rem;
+    }
+    #step-info {
+      font-size: 1.35rem;
+      font-weight: 600;
+      min-height: 1.6rem;
+      color: #fff;
+    }
+    #scramble-block {
+      margin-top: 0.25rem;
+    }
+    #scramble-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 0.35rem;
+    }
+    #scramble-notation {
+      font-size: 0.95rem;
+      line-height: 1.45;
+      color: #ccc;
+      word-break: break-word;
+    }
+    #hint {
+      font-size: 0.85rem;
+      color: #888;
+    }
+    .buttons {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 0.65rem 1.25rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    #btn-next {
+      background: #3d7cff;
+      color: #fff;
+    }
+    #btn-next:not(:disabled):hover { background: #5a90ff; }
+    #btn-scramble {
+      background: #2a2a35;
+      color: #ddd;
+      border: 1px solid #444;
+    }
+    #btn-scramble:not(:disabled):hover { background: #353545; }
+    #status {
+      font-size: 0.9rem;
+      color: #6ecf6e;
+      min-height: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <h1>White Cross Trainer</h1>
+    <div id="stats">
+      <div id="move-count"></div>
+      <div id="step-info"></div>
+      <div id="scramble-block">
+        <div id="scramble-label">Scramble</div>
+        <div id="scramble-notation"></div>
+      </div>
+      <div id="hint">Drag to rotate the view.</div>
+    </div>
+    <div id="status"></div>
+    <div class="buttons">
+      <button id="btn-next">Next</button>
+      <button id="btn-scramble">Next scramble</button>
+    </div>
+  </div>
+  <div id="canvas-container"></div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // ── Colors (D=white, U=yellow, F=green, R=red, B=blue, L=orange) ──
+    const COL = {
+      W: 0xf5f5f5,
+      Y: 0xffd500,
+      G: 0x009b48,
+      R: 0xb71234,
+      B: 0x0046ad,
+      O: 0xff5800,
+      K: 0x111111,
+    };
+
+    const MOVE_NAMES = [
+      'R', "R'", 'R2',
+      'L', "L'", 'L2',
+      'U', "U'", 'U2',
+      'D', "D'", 'D2',
+      'F', "F'", 'F2',
+      'B', "B'", 'B2',
+    ];
+
+    const WHITE_EDGE_IDS = [4, 5, 6, 7];
+    const EDGE_COLORS = [
+      ['Y', 'G'], ['Y', 'O'], ['Y', 'B'], ['Y', 'R'],
+      ['W', 'G'], ['W', 'O'], ['W', 'B'], ['W', 'R'],
+      ['G', 'O'], ['G', 'R'], ['B', 'O'], ['B', 'R'],
+    ];
+
+    const FACE_TO_DIR = {
+      U: [0, 1, 0], D: [0, -1, 0], F: [0, 0, 1], B: [0, 0, -1], R: [1, 0, 0], L: [-1, 0, 0],
+    };
+
+    const FACE_AXIS = {
+      R: [1, 0, 0], L: [-1, 0, 0],
+      U: [0, 1, 0], D: [0, -1, 0],
+      F: [0, 0, 1], B: [0, 0, -1],
+    };
+
+    // Clockwise quarter turn (viewed from outside) — matches animation and model
+    const CW_QUARTER = -Math.PI / 2;
+
+    const CENTER_COL = { U: 'Y', D: 'W', F: 'G', B: 'B', R: 'O', L: 'R' };
+    const CENTER_POS = {
+      U: [0, 1, 0], D: [0, -1, 0], F: [0, 0, 1], B: [0, 0, -1], R: [1, 0, 0], L: [-1, 0, 0],
+    };
+
+    // Grid positions for edge slots (sum of adjacent center coords)
+    const SLOT_POS = [
+      [0, 1, 1], [1, 1, 0], [0, 1, -1], [-1, 1, 0],
+      [0, -1, 1], [1, -1, 0], [0, -1, -1], [-1, -1, 0],
+      [1, 0, 1], [-1, 0, 1], [1, 0, -1], [-1, 0, -1],
+    ];
+
+    const CORNER_SLOTS = [
+      [1, 1, 1], [-1, 1, 1], [-1, 1, -1], [1, 1, -1],
+      [1, -1, 1], [-1, -1, 1], [-1, -1, -1], [1, -1, -1],
+    ];
+
+    // Edge slot faces: color index 0 on first face, color index 1 on second
+    function facesForSlot(slot) {
+      const [px, py, pz] = SLOT_POS[slot];
+      const faces = [];
+      if (py === 1) faces.push('U');
+      if (py === -1) faces.push('D');
+      if (pz === 1) faces.push('F');
+      if (pz === -1) faces.push('B');
+      if (px === 1) faces.push('R');
+      if (px === -1) faces.push('L');
+      return faces;
+    }
+
+    function dirKey(d) {
+      return `${d[0]},${d[1]},${d[2]}`;
+    }
+
+    function inLayer(pos, face) {
+      const [px, py, pz] = pos;
+      const axis = FACE_AXIS[face];
+      if (axis[0] !== 0) return px === axis[0];
+      if (axis[1] !== 0) return py === axis[1];
+      return pz === axis[2];
+    }
+
+    function rotateVector(vec, face, quarters) {
+      const axis = FACE_AXIS[face];
+      const v = new THREE.Vector3(vec[0], vec[1], vec[2]);
+      v.applyAxisAngle(new THREE.Vector3(axis[0], axis[1], axis[2]).normalize(), CW_QUARTER * quarters);
+      return [Math.round(v.x), Math.round(v.y), Math.round(v.z)];
+    }
+
+    function slotFromPos(pos, slots) {
+      return slots.findIndex((p) => p[0] === pos[0] && p[1] === pos[1] && p[2] === pos[2]);
+    }
+
+    function getEdgeStickerMap(cubieId, slot, ori) {
+      const [c0, c1] = EDGE_COLORS[cubieId];
+      const [f1, f2] = facesForSlot(slot);
+      const map = {};
+      if (ori === 0) {
+        map[dirKey(FACE_TO_DIR[f1])] = c0;
+        map[dirKey(FACE_TO_DIR[f2])] = c1;
+      } else {
+        map[dirKey(FACE_TO_DIR[f1])] = c1;
+        map[dirKey(FACE_TO_DIR[f2])] = c0;
+      }
+      return map;
+    }
+
+    function oriFromEdgeStickerMap(cubieId, slot, map) {
+      const [c0, c1] = EDGE_COLORS[cubieId];
+      const [f1] = facesForSlot(slot);
+      const onF1 = map[dirKey(FACE_TO_DIR[f1])];
+      if (onF1 === c0) return 0;
+      if (onF1 === c1) return 1;
+      throw new Error(`edge ori mismatch: cubie ${cubieId} slot ${slot}`);
+    }
+
+    function rotateStickerMap(map, face) {
+      const out = {};
+      for (const [dk, color] of Object.entries(map)) {
+        const d = dk.split(',').map(Number);
+        out[dirKey(rotateVector(d, face, 1))] = color;
+      }
+      return out;
+    }
+
+    function applyQuarterTurn(state, face) {
+      const newEp = state.ep.slice();
+      const newEo = state.eo.slice();
+      const newCp = state.cp.slice();
+      const newCo = state.co.slice();
+
+      for (let slot = 0; slot < 12; slot++) {
+        if (!inLayer(SLOT_POS[slot], face)) continue;
+        const cubie = state.ep[slot];
+        const rotMap = rotateStickerMap(getEdgeStickerMap(cubie, slot, state.eo[slot]), face);
+        const newSlot = slotFromPos(rotateVector(SLOT_POS[slot], face, 1), SLOT_POS);
+        newEp[newSlot] = cubie;
+        newEo[newSlot] = oriFromEdgeStickerMap(cubie, newSlot, rotMap);
+      }
+
+      for (let slot = 0; slot < 8; slot++) {
+        if (!inLayer(CORNER_SLOTS[slot], face)) continue;
+        const cubie = state.cp[slot];
+        const newSlot = slotFromPos(rotateVector(CORNER_SLOTS[slot], face, 1), CORNER_SLOTS);
+        newCp[newSlot] = cubie;
+        newCo[newSlot] = state.co[slot];
+      }
+
+      state.ep = newEp;
+      state.eo = newEo;
+      state.cp = newCp;
+      state.co = newCo;
+    }
+
+    // HTM: power 3 (e.g. R') is one move = one quarter turn, not three
+    function animationQuarterTurns(power) {
+      if (power === 3) return -1;
+      if (power === 2) return 2;
+      return 1;
+    }
+
+    function edgeStickerColors(edgeId, slot, ori) {
+      if (!WHITE_EDGE_IDS.includes(edgeId)) return null;
+      const map = getEdgeStickerMap(edgeId, slot, ori);
+      const out = {};
+      for (const [f, dir] of Object.entries(FACE_TO_DIR)) {
+        if (map[dirKey(dir)]) out[f] = map[dirKey(dir)];
+      }
+      return out;
+    }
+
+    // ── Cube state (edge/corner permutation + orientation) ──
+    function solvedState() {
+      return {
+        ep: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+        eo: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        cp: [0, 1, 2, 3, 4, 5, 6, 7],
+        co: [0, 0, 0, 0, 0, 0, 0, 0],
+      };
+    }
+
+    function cloneState(s) {
+      return {
+        ep: s.ep.slice(),
+        eo: s.eo.slice(),
+        cp: s.cp.slice(),
+        co: s.co.slice(),
+      };
+    }
+
+    function moveFace(state, face, power) {
+      const turns = ((power % 4) + 4) % 4;
+      for (let t = 0; t < turns; t++) applyQuarterTurn(state, face);
+    }
+
+    const MOVE_FACES = ['R', 'R', 'R', 'L', 'L', 'L', 'U', 'U', 'U', 'D', 'D', 'D', 'F', 'F', 'F', 'B', 'B', 'B'];
+    const MOVE_POWERS = [1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2];
+
+    function applyMoveIndex(state, moveIdx) {
+      moveFace(state, MOVE_FACES[moveIdx], MOVE_POWERS[moveIdx]);
+    }
+
+    function isCrossSolved(state) {
+      for (let slot = 4; slot <= 7; slot++) {
+        if (state.ep[slot] !== slot || state.eo[slot] !== 0) return false;
+      }
+      return true;
+    }
+
+    function crossKey(state) {
+      let key = '';
+      for (const id of WHITE_EDGE_IDS) {
+        const slot = state.ep.indexOf(id);
+        key += `${slot}${state.eo[slot]}|`;
+      }
+      return key;
+    }
+
+    function solveCross(state) {
+      if (isCrossSolved(state)) return [];
+      const queue = [{ state: cloneState(state), moves: [] }];
+      const visited = new Set([crossKey(state)]);
+      let qi = 0;
+
+      while (qi < queue.length) {
+        const { state: cur, moves } = queue[qi++];
+        if (moves.length >= 8) continue;
+
+        for (let m = 0; m < 18; m++) {
+          const next = cloneState(cur);
+          applyMoveIndex(next, m);
+          if (isCrossSolved(next)) return moves.concat(m);
+
+          const key = crossKey(next);
+          if (!visited.has(key)) {
+            visited.add(key);
+            queue.push({ state: next, moves: moves.concat(m) });
+          }
+        }
+      }
+      return null;
+    }
+
+    function scrambleMoveNotation({ face, power }) {
+      if (power === 1) return face;
+      if (power === 2) return `${face}2`;
+      return `${face}'`;
+    }
+
+    function scrambleToNotation(seq) {
+      return seq.map(scrambleMoveNotation).join(' ');
+    }
+
+    function randomScramble(len = 10) {
+      const faces = ['R', 'L', 'U', 'D', 'F', 'B'];
+      const seq = [];
+      let last = '';
+      for (let i = 0; i < len; i++) {
+        let face;
+        do {
+          face = faces[Math.floor(Math.random() * faces.length)];
+        } while (face === last);
+        last = face;
+        const power = [1, 2, 3][Math.floor(Math.random() * 3)];
+        seq.push({ face, power });
+      }
+      return seq;
+    }
+
+    function applyScrambleSeq(state, seq) {
+      for (const { face, power } of seq) moveFace(state, face, power);
+    }
+
+    function generatePuzzle() {
+      let state, solution, scramble;
+      do {
+        state = solvedState();
+        scramble = randomScramble(10);
+        applyScrambleSeq(state, scramble);
+        solution = solveCross(state);
+      } while (!solution || isCrossSolved(state));
+      return { state, solution, scramble };
+    }
+
+    function statesEqual(a, b) {
+      return JSON.stringify(a.ep) === JSON.stringify(b.ep)
+        && JSON.stringify(a.eo) === JSON.stringify(b.eo)
+        && JSON.stringify(a.cp) === JSON.stringify(b.cp)
+        && JSON.stringify(a.co) === JSON.stringify(b.co);
+    }
+
+    function whiteEdgeStickersPhysical(state) {
+      for (const edgeId of WHITE_EDGE_IDS) {
+        const slot = state.ep.indexOf(edgeId);
+        const map = getEdgeStickerMap(edgeId, slot, state.eo[slot]);
+        const colors = new Set(Object.values(map));
+        const expected = new Set(EDGE_COLORS[edgeId]);
+        if (colors.size !== expected.size || ![...expected].every((c) => colors.has(c))) return false;
+      }
+      return true;
+    }
+
+    (function selfTest() {
+      const solved = solvedState();
+      const faces = ['R', 'L', 'U', 'D', 'F', 'B'];
+
+      for (const face of faces) {
+        const inv = cloneState(solved);
+        moveFace(inv, face, 1);
+        moveFace(inv, face, 3);
+        console.assert(statesEqual(inv, solved), `${face} ${face}' = identity`);
+
+        const four = cloneState(solved);
+        for (let i = 0; i < 4; i++) moveFace(four, face, 1);
+        console.assert(statesEqual(four, solved), `${face}^4 = identity`);
+      }
+
+      let stickerFails = 0;
+      const rand = cloneState(solved);
+      const faceList = ['R', 'L', 'U', 'D', 'F', 'B'];
+      for (let i = 0; i < 2000; i++) {
+        const face = faceList[Math.floor(Math.random() * 6)];
+        const power = [1, 2, 3][Math.floor(Math.random() * 3)];
+        moveFace(rand, face, power);
+        if (!whiteEdgeStickersPhysical(rand)) stickerFails++;
+      }
+      console.assert(stickerFails === 0, `white edge stickers (${stickerFails} fails in 2000 random moves)`);
+
+      const afterL = cloneState(solved);
+      moveFace(afterL, 'L', 1);
+      const sol = solveCross(afterL);
+      console.assert(sol && sol.length >= 1, 'L scramble solvable');
+      const verify = cloneState(afterL);
+      sol.forEach((m) => applyMoveIndex(verify, m));
+      console.assert(isCrossSolved(verify), 'L scramble solution verifies');
+      console.log('cube self-test passed');
+    })();
+
+    // ── Three.js scene ──
+    const CUBIE = 0.96;
+    const GAP = 1.02;
+
+    function colorForLetter(letter) {
+      return COL[letter] ?? COL.K;
+    }
+
+    function makeCubieMaterials(colorFn) {
+      const dirs = [
+        [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1],
+      ];
+      return dirs.map(([x, y, z]) =>
+        new THREE.MeshStandardMaterial({
+          color: colorFn(x, y, z),
+          roughness: 0.55,
+          metalness: 0.05,
+        })
+      );
+    }
+
+    function createCenterMesh(face) {
+      const [x, y, z] = CENTER_POS[face];
+      const geo = new THREE.BoxGeometry(CUBIE, CUBIE, CUBIE);
+      const mats = makeCubieMaterials((dx, dy, dz) => {
+        const onFace =
+          (dx === 1 && x === 1) || (dx === -1 && x === -1) ||
+          (dy === 1 && y === 1) || (dy === -1 && y === -1) ||
+          (dz === 1 && z === 1) || (dz === -1 && z === -1);
+        return onFace ? colorForLetter(CENTER_COL[face]) : COL.K;
+      });
+      const mesh = new THREE.Mesh(geo, mats);
+      mesh.position.set(x * GAP, y * GAP, z * GAP);
+      mesh.userData.fixed = true;
+      return mesh;
+    }
+
+    function createEdgeMesh(cubieId) {
+      const geo = new THREE.BoxGeometry(CUBIE, CUBIE, CUBIE);
+      const mesh = new THREE.Mesh(geo, makeCubieMaterials(() => COL.K));
+      mesh.userData.type = 'edge';
+      mesh.userData.cubieId = cubieId;
+      return mesh;
+    }
+
+    function createCornerMesh(cubieId) {
+      const geo = new THREE.BoxGeometry(CUBIE, CUBIE, CUBIE);
+      const mesh = new THREE.Mesh(geo, makeCubieMaterials(() => COL.K));
+      mesh.userData.type = 'corner';
+      mesh.userData.cubieId = cubieId;
+      return mesh;
+    }
+
+    function faceLetterFromNormal(nx, ny, nz) {
+      if (ny === 1) return 'U';
+      if (ny === -1) return 'D';
+      if (nz === 1) return 'F';
+      if (nz === -1) return 'B';
+      if (nx === 1) return 'R';
+      if (nx === -1) return 'L';
+      return null;
+    }
+
+    function resetMeshTransform(mesh) {
+      mesh.position.set(0, 0, 0);
+      mesh.rotation.set(0, 0, 0);
+      mesh.quaternion.identity();
+      mesh.scale.set(1, 1, 1);
+    }
+
+    function updateEdgeMesh(mesh, state) {
+      const edgeId = mesh.userData.cubieId;
+      const slot = state.ep.indexOf(edgeId);
+      const ori = state.eo[slot];
+      const [px, py, pz] = SLOT_POS[slot];
+      resetMeshTransform(mesh);
+      mesh.position.set(px * GAP, py * GAP, pz * GAP);
+
+      const stickers = edgeStickerColors(edgeId, slot, ori);
+
+      const dirs = [
+        [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1],
+      ];
+      dirs.forEach(([dx, dy, dz], i) => {
+        const letter = faceLetterFromNormal(dx, dy, dz);
+        const c = stickers && stickers[letter] ? colorForLetter(stickers[letter]) : COL.K;
+        mesh.material[i].color.setHex(c);
+      });
+    }
+
+    function updateCornerMesh(mesh, state) {
+      const cornerId = mesh.userData.cubieId;
+      const slot = state.cp.indexOf(cornerId);
+      const [px, py, pz] = CORNER_SLOTS[slot];
+      resetMeshTransform(mesh);
+      mesh.position.set(px * GAP, py * GAP, pz * GAP);
+    }
+
+    function syncCenterMeshes() {
+      for (const face of ['U', 'D', 'F', 'B', 'R', 'L']) {
+        const mesh = centerMeshes[face];
+        const [x, y, z] = CENTER_POS[face];
+        resetMeshTransform(mesh);
+        mesh.position.set(x * GAP, y * GAP, z * GAP);
+      }
+    }
+
+    function syncVisuals(state, edgeMeshes, cornerMeshes) {
+      syncCenterMeshes();
+      for (const mesh of edgeMeshes) updateEdgeMesh(mesh, state);
+      for (const mesh of cornerMeshes) updateCornerMesh(mesh, state);
+    }
+
+    // ── App ──
+    const container = document.getElementById('canvas-container');
+    const moveCountEl = document.getElementById('move-count');
+    const stepInfoEl = document.getElementById('step-info');
+    const scrambleNotationEl = document.getElementById('scramble-notation');
+    const statusEl = document.getElementById('status');
+    const btnNext = document.getElementById('btn-next');
+    const btnScramble = document.getElementById('btn-scramble');
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x121218);
+
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+    camera.position.set(4, 3.5, 5);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    function resizeRenderer() {
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+    resizeRenderer();
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enablePan = false;
+    controls.minDistance = 4;
+    controls.maxDistance = 12;
+    controls.target.set(0, 0, 0);
+    controls.update();
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+    const key = new THREE.DirectionalLight(0xffffff, 0.85);
+    key.position.set(5, 8, 6);
+    scene.add(key);
+    const fill = new THREE.DirectionalLight(0xffffff, 0.35);
+    fill.position.set(-4, 2, -3);
+    scene.add(fill);
+
+    const cubeGroup = new THREE.Group();
+    scene.add(cubeGroup);
+
+    const centerMeshes = {};
+    for (const face of ['U', 'D', 'F', 'B', 'R', 'L']) {
+      centerMeshes[face] = createCenterMesh(face);
+      cubeGroup.add(centerMeshes[face]);
+    }
+
+    const edgeMeshes = Array.from({ length: 12 }, (_, id) => {
+      const m = createEdgeMesh(id);
+      cubeGroup.add(m);
+      return m;
+    });
+    const cornerMeshes = Array.from({ length: 8 }, (_, id) => {
+      const m = createCornerMesh(id);
+      cubeGroup.add(m);
+      return m;
+    });
+
+    let cubeState = solvedState();
+    let solution = [];
+    let stepIndex = 0;
+    let animating = false;
+
+    function setButtons() {
+      const solved = isCrossSolved(cubeState);
+      btnNext.disabled = animating || solved || stepIndex >= solution.length;
+      btnScramble.disabled = animating;
+    }
+
+    function updateUI() {
+      const total = solution.length;
+      moveCountEl.textContent = `Optimal cross: ${total} move${total === 1 ? '' : 's'} (HTM)`;
+
+      if (isCrossSolved(cubeState) && stepIndex >= total) {
+        stepInfoEl.textContent = total === 0 ? 'Cross already solved' : `${total} / ${total} — done`;
+        statusEl.textContent = 'Cross solved';
+      } else if (stepIndex === 0) {
+        stepInfoEl.textContent = `0 / ${total} — find the cross`;
+        statusEl.textContent = '';
+      } else {
+        const name = MOVE_NAMES[solution[stepIndex - 1]];
+        stepInfoEl.textContent = `${stepIndex} / ${total} — ${name}`;
+        statusEl.textContent = '';
+      }
+      setButtons();
+    }
+
+    function cubiesInLayer(face) {
+      const [ax, ay, az] = FACE_AXIS[face];
+      const out = [];
+      cubeGroup.children.forEach((child) => {
+        const px = Math.round(child.position.x / GAP);
+        const py = Math.round(child.position.y / GAP);
+        const pz = Math.round(child.position.z / GAP);
+        if (ax !== 0 && px === ax) out.push(child);
+        else if (ay !== 0 && py === ay) out.push(child);
+        else if (az !== 0 && pz === az) out.push(child);
+      });
+      return out;
+    }
+
+    function animateMove(moveIdx, onDone) {
+      const face = MOVE_FACES[moveIdx];
+      const power = MOVE_POWERS[moveIdx];
+      const layer = cubiesInLayer(face);
+      const [ax, ay, az] = FACE_AXIS[face];
+      const axis = new THREE.Vector3(ax, ay, az).normalize();
+      const angle = CW_QUARTER * animationQuarterTurns(power);
+
+      const pivot = new THREE.Object3D();
+      cubeGroup.add(pivot);
+      pivot.updateMatrixWorld(true);
+
+      const worldPos = new THREE.Vector3();
+      layer.forEach((mesh) => {
+        mesh.updateMatrixWorld(true);
+        mesh.getWorldPosition(worldPos);
+        pivot.worldToLocal(worldPos);
+        mesh.position.copy(worldPos);
+        pivot.add(mesh);
+      });
+
+      const duration = 250;
+      const start = performance.now();
+
+      function tick(now) {
+        const t = Math.min((now - start) / duration, 1);
+        const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        pivot.setRotationFromAxisAngle(axis, angle * eased);
+        if (t < 1) {
+          requestAnimationFrame(tick);
+        } else {
+          pivot.setRotationFromAxisAngle(axis, angle);
+          pivot.updateMatrixWorld(true);
+          layer.forEach((mesh) => {
+            cubeGroup.attach(mesh);
+          });
+          cubeGroup.remove(pivot);
+          onDone();
+        }
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function loadPuzzle() {
+      const puzzle = generatePuzzle();
+      cubeState = puzzle.state;
+      solution = puzzle.solution;
+      stepIndex = 0;
+      scrambleNotationEl.textContent = scrambleToNotation(puzzle.scramble);
+      syncVisuals(cubeState, edgeMeshes, cornerMeshes);
+      updateUI();
+    }
+
+    function performNext() {
+      if (animating || isCrossSolved(cubeState) || stepIndex >= solution.length) return;
+
+      animating = true;
+      setButtons();
+      const moveIdx = solution[stepIndex];
+
+      animateMove(moveIdx, () => {
+        applyMoveIndex(cubeState, moveIdx);
+        syncVisuals(cubeState, edgeMeshes, cornerMeshes);
+        stepIndex++;
+        animating = false;
+        updateUI();
+      });
+    }
+
+    btnNext.addEventListener('click', performNext);
+    btnScramble.addEventListener('click', () => {
+      if (animating) return;
+      loadPuzzle();
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        performNext();
+      } else if (e.key === 's' || e.key === 'S') {
+        if (!animating) loadPuzzle();
+      }
+    });
+
+    window.addEventListener('resize', resizeRenderer);
+
+    loadPuzzle();
+
+    function render() {
+      controls.update();
+      renderer.render(scene, camera);
+      requestAnimationFrame(render);
+    }
+    render();
+  </script>
+</body>
+</html>
