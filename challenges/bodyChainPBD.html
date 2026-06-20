@@ -168,7 +168,7 @@
 				} );
 
 				var ground = new THREE.Mesh(
-					new THREE.PlaneBufferGeometry( 20, 20, 1, 1 ),
+					new THREE.PlaneGeometry( 20, 20, 1, 1 ),
 					new THREE.MeshPhongMaterial( { color: 0xa0adaf, shininess: 150 } )
 				);
 
@@ -232,7 +232,7 @@
 
 					// graphics
 
-					let boxVis = new THREE.Mesh(new THREE.BoxBufferGeometry(), new THREE.MeshPhongMaterial({color: 0xf78a1d}));
+					let boxVis = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshPhongMaterial({color: 0xf78a1d}));
 					boxVis.scale.set(size.x, size.y, size.z);
 					boxVis.name = "box " + i;
 					boxVis.layers.enable(1);
