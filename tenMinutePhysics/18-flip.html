@@ -456,10 +456,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 					}
 					else {
 						var offset = component == 0 ? n : 1;
-						var valid0 = this.cellType[nr0] != AIR_CELL || this.cellType[nr0 - offset] != AIR_CELL ? 1.0 : 0.0;
-						var valid1 = this.cellType[nr1] != AIR_CELL || this.cellType[nr1 - offset] != AIR_CELL ? 1.0 : 0.0;
-						var valid2 = this.cellType[nr2] != AIR_CELL || this.cellType[nr2 - offset] != AIR_CELL ? 1.0 : 0.0;
-						var valid3 = this.cellType[nr3] != AIR_CELL || this.cellType[nr3 - offset] != AIR_CELL ? 1.0 : 0.0;
+						var valid0 = this.cellType[nr0] == FLUID_CELL || this.cellType[nr0 - offset] == FLUID_CELL ? 1.0 : 0.0;
+						var valid1 = this.cellType[nr1] == FLUID_CELL || this.cellType[nr1 - offset] == FLUID_CELL ? 1.0 : 0.0;
+						var valid2 = this.cellType[nr2] == FLUID_CELL || this.cellType[nr2 - offset] == FLUID_CELL ? 1.0 : 0.0;
+						var valid3 = this.cellType[nr3] == FLUID_CELL || this.cellType[nr3 - offset] == FLUID_CELL ? 1.0 : 0.0;
 
 						var v = this.particleVel[2 * i + component];
 						var d = valid0 * d0 + valid1 * d1 + valid2 * d2 + valid3 * d3;
