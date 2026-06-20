@@ -8,7 +8,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: system-ui, -apple-system, sans-serif;
-      background: #121218;
+      background: #000;
       color: #e8e8ef;
       overflow: hidden;
       display: flex;
@@ -27,7 +27,7 @@
       justify-content: center;
       gap: 1rem;
       border-right: 1px solid #2a2a35;
-      background: #121218;
+      background: #000;
     }
     h1 {
       font-size: 1rem;
@@ -92,6 +92,12 @@
       color: #fff;
     }
     #btn-next:not(:disabled):hover { background: #5a90ff; }
+    #btn-back {
+      background: #2a2a35;
+      color: #ddd;
+      border: 1px solid #444;
+    }
+    #btn-back:not(:disabled):hover { background: #353545; }
     #btn-scramble {
       background: #2a2a35;
       color: #ddd;
@@ -119,6 +125,7 @@
     </div>
     <div id="status"></div>
     <div class="buttons">
+      <button id="btn-back">Back</button>
       <button id="btn-next">Next</button>
       <button id="btn-scramble">Next scramble</button>
     </div>
@@ -136,16 +143,17 @@
   <script type="module">
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
     // ── Colors (D=white, U=yellow, F=green, R=red, B=blue, L=orange) ──
     const COL = {
-      W: 0xf5f5f5,
-      Y: 0xffd500,
-      G: 0x009b48,
-      R: 0xb71234,
-      B: 0x0046ad,
-      O: 0xff5800,
-      K: 0x111111,
+      W: 0xffffff,
+      Y: 0xffea00,
+      G: 0x00b050,
+      R: 0xef1a1a,
+      B: 0x1565ff,
+      O: 0xff6600,
+      K: 0x333333,
     };
 
     const MOVE_NAMES = [
@@ -158,6 +166,7 @@
     ];
 
     const WHITE_EDGE_IDS = [4, 5, 6, 7];
+    const SCRAMBLE_LEN = 15;
     const EDGE_COLORS = [
       ['Y', 'G'], ['Y', 'O'], ['Y', 'B'], ['Y', 'R'],
       ['W', 'G'], ['W', 'O'], ['W', 'B'], ['W', 'R'],
@@ -339,6 +348,14 @@
       moveFace(state, MOVE_FACES[moveIdx], MOVE_POWERS[moveIdx]);
     }
 
+    function inverseMoveIndex(moveIdx) {
+      const group = Math.floor(moveIdx / 3) * 3;
+      const offset = moveIdx % 3;
+      if (offset === 0) return group + 1;
+      if (offset === 1) return group;
+      return group + 2;
+    }
+
     function isCrossSolved(state) {
       for (let slot = 4; slot <= 7; slot++) {
         if (state.ep[slot] !== slot || state.eo[slot] !== 0) return false;
@@ -346,38 +363,112 @@
       return true;
     }
 
-    function crossKey(state) {
-      let key = '';
-      for (const id of WHITE_EDGE_IDS) {
-        const slot = state.ep.indexOf(id);
-        key += `${slot}${state.eo[slot]}|`;
+    // ── Fast cross solver: 4 white edges → 24⁴ integer BFS (optimal, ~ms) ──
+    const CROSS_SIDE = ['G', 'O', 'B', 'R'];
+    const CROSS_CUBIE = { G: 4, O: 5, B: 6, R: 7 };
+    const CROSS_SOLVED_POS = {
+      G: [0, -1, 1], O: [1, -1, 0], B: [0, -1, -1], R: [-1, -1, 0],
+    };
+    const WHITE_NORMAL = [0, -1, 0];
+
+    const COMBOS = [];
+    const COMBO_INDEX = new Map();
+    for (let slot = 0; slot < 12; slot++) {
+      const pos = SLOT_POS[slot];
+      for (const face of facesForSlot(slot)) {
+        const normal = FACE_TO_DIR[face];
+        const k = `${dirKey(pos)}|${dirKey(normal)}`;
+        COMBO_INDEX.set(k, COMBOS.length);
+        COMBOS.push({ pos, normal });
       }
-      return key;
     }
 
+    function encCross(g, o, b, r) {
+      return (((g * 24 + o) * 24 + b) * 24 + r);
+    }
+
+    const SOLVED_CROSS = encCross(
+      ...CROSS_SIDE.map((c) => COMBO_INDEX.get(`${dirKey(CROSS_SOLVED_POS[c])}|${dirKey(WHITE_NORMAL)}`)),
+    );
+
+    const CROSS_TRANS = Array.from({ length: 18 }, (_, mi) =>
+      COMBOS.map((c) => {
+        const face = MOVE_FACES[mi];
+        if (!inLayer(c.pos, face)) {
+          return COMBO_INDEX.get(`${dirKey(c.pos)}|${dirKey(c.normal)}`);
+        }
+        let pos = c.pos;
+        let normal = c.normal;
+        const turns = ((MOVE_POWERS[mi] % 4) + 4) % 4;
+        for (let t = 0; t < turns; t++) {
+          pos = rotateVector(pos, face, 1);
+          normal = rotateVector(normal, face, 1);
+        }
+        return COMBO_INDEX.get(`${dirKey(pos)}|${dirKey(normal)}`);
+      }),
+    );
+
+    function crossEncoderFromState(state) {
+      const idx = {};
+      for (const color of CROSS_SIDE) {
+        const cubieId = CROSS_CUBIE[color];
+        const slot = state.ep.indexOf(cubieId);
+        const pos = SLOT_POS[slot];
+        const map = getEdgeStickerMap(cubieId, slot, state.eo[slot]);
+        let whiteNormal = null;
+        for (const [dk, col] of Object.entries(map)) {
+          if (col === 'W') whiteNormal = dk.split(',').map(Number);
+        }
+        idx[color] = COMBO_INDEX.get(`${dirKey(pos)}|${dirKey(whiteNormal)}`);
+      }
+      return encCross(idx.G, idx.O, idx.B, idx.R);
+    }
+
+    const CROSS_BFS_N = 24 * 24 * 24 * 24;
+    const crossPrev = new Int32Array(CROSS_BFS_N);
+    const crossMv = new Int8Array(CROSS_BFS_N);
+
     function solveCross(state) {
-      if (isCrossSolved(state)) return [];
-      const queue = [{ state: cloneState(state), moves: [] }];
-      const visited = new Set([crossKey(state)]);
-      let qi = 0;
+      const start = crossEncoderFromState(state);
+      if (start === SOLVED_CROSS) return [];
 
-      while (qi < queue.length) {
-        const { state: cur, moves } = queue[qi++];
-        if (moves.length >= 8) continue;
+      crossPrev.fill(-1);
+      crossMv.fill(0);
+      crossPrev[start] = start;
 
-        for (let m = 0; m < 18; m++) {
-          const next = cloneState(cur);
-          applyMoveIndex(next, m);
-          if (isCrossSolved(next)) return moves.concat(m);
+      const queue = [start];
+      let head = 0;
 
-          const key = crossKey(next);
-          if (!visited.has(key)) {
-            visited.add(key);
-            queue.push({ state: next, moves: moves.concat(m) });
+      while (head < queue.length) {
+        const cur = queue[head++];
+        const r = cur % 24;
+        const b = (cur / 24 | 0) % 24;
+        const o = (cur / 576 | 0) % 24;
+        const g = (cur / 13824 | 0);
+
+        for (let mi = 0; mi < 18; mi++) {
+          const T = CROSS_TRANS[mi];
+          const ncur = encCross(T[g], T[o], T[b], T[r]);
+          if (crossPrev[ncur] !== -1) continue;
+
+          crossPrev[ncur] = cur;
+          crossMv[ncur] = mi;
+
+          if (ncur === SOLVED_CROSS) {
+            const path = [];
+            for (let s = SOLVED_CROSS; s !== start; s = crossPrev[s]) path.push(crossMv[s]);
+            return path.reverse();
           }
+          queue.push(ncur);
         }
       }
       return null;
+    }
+
+    function verifySolution(state, moves) {
+      const s = cloneState(state);
+      for (const m of moves) applyMoveIndex(s, m);
+      return isCrossSolved(s);
     }
 
     function scrambleMoveNotation({ face, power }) {
@@ -390,7 +481,7 @@
       return seq.map(scrambleMoveNotation).join(' ');
     }
 
-    function randomScramble(len = 10) {
+    function randomScramble(len = SCRAMBLE_LEN) {
       const faces = ['R', 'L', 'U', 'D', 'F', 'B'];
       const seq = [];
       let last = '';
@@ -414,7 +505,7 @@
       let state, solution, scramble;
       do {
         state = solvedState();
-        scramble = randomScramble(10);
+        scramble = randomScramble(SCRAMBLE_LEN);
         applyScrambleSeq(state, scramble);
         solution = solveCross(state);
       } while (!solution || isCrossSolved(state));
@@ -465,6 +556,16 @@
       }
       console.assert(stickerFails === 0, `white edge stickers (${stickerFails} fails in 2000 random moves)`);
 
+      let crossFails = 0;
+      for (let i = 0; i < 200; i++) {
+        const st = solvedState();
+        applyScrambleSeq(st, randomScramble(10));
+        if (isCrossSolved(st)) continue;
+        const sol = solveCross(st);
+        if (!sol || !verifySolution(st, sol)) crossFails++;
+      }
+      console.assert(crossFails === 0, `cross solver (${crossFails} fails in 200 scrambles)`);
+
       const afterL = cloneState(solved);
       moveFace(afterL, 'L', 1);
       const sol = solveCross(afterL);
@@ -476,29 +577,41 @@
     })();
 
     // ── Three.js scene ──
-    const CUBIE = 0.96;
+    const CUBIE = 0.99;
     const GAP = 1.02;
+    const CUBIE_RADIUS = 0.06;
+    const CUBIE_SEGMENTS = 2;
+
+    function makeCubieGeometry() {
+      return new RoundedBoxGeometry(CUBIE, CUBIE, CUBIE, CUBIE_SEGMENTS, CUBIE_RADIUS);
+    }
 
     function colorForLetter(letter) {
       return COL[letter] ?? COL.K;
+    }
+
+    function setFaceMaterial(mat, color) {
+      const isSticker = color !== COL.K;
+      mat.color.setHex(color);
+      mat.roughness = isSticker ? 0.1 : 0.35;
+      mat.clearcoat = isSticker ? 1 : 0.15;
+      mat.clearcoatRoughness = isSticker ? 0.04 : 0.25;
     }
 
     function makeCubieMaterials(colorFn) {
       const dirs = [
         [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1],
       ];
-      return dirs.map(([x, y, z]) =>
-        new THREE.MeshStandardMaterial({
-          color: colorFn(x, y, z),
-          roughness: 0.55,
-          metalness: 0.05,
-        })
-      );
+      return dirs.map(([x, y, z]) => {
+        const mat = new THREE.MeshPhysicalMaterial({ metalness: 0 });
+        setFaceMaterial(mat, colorFn(x, y, z));
+        return mat;
+      });
     }
 
     function createCenterMesh(face) {
       const [x, y, z] = CENTER_POS[face];
-      const geo = new THREE.BoxGeometry(CUBIE, CUBIE, CUBIE);
+      const geo = makeCubieGeometry();
       const mats = makeCubieMaterials((dx, dy, dz) => {
         const onFace =
           (dx === 1 && x === 1) || (dx === -1 && x === -1) ||
@@ -513,7 +626,7 @@
     }
 
     function createEdgeMesh(cubieId) {
-      const geo = new THREE.BoxGeometry(CUBIE, CUBIE, CUBIE);
+      const geo = makeCubieGeometry();
       const mesh = new THREE.Mesh(geo, makeCubieMaterials(() => COL.K));
       mesh.userData.type = 'edge';
       mesh.userData.cubieId = cubieId;
@@ -521,7 +634,7 @@
     }
 
     function createCornerMesh(cubieId) {
-      const geo = new THREE.BoxGeometry(CUBIE, CUBIE, CUBIE);
+      const geo = makeCubieGeometry();
       const mesh = new THREE.Mesh(geo, makeCubieMaterials(() => COL.K));
       mesh.userData.type = 'corner';
       mesh.userData.cubieId = cubieId;
@@ -561,7 +674,7 @@
       dirs.forEach(([dx, dy, dz], i) => {
         const letter = faceLetterFromNormal(dx, dy, dz);
         const c = stickers && stickers[letter] ? colorForLetter(stickers[letter]) : COL.K;
-        mesh.material[i].color.setHex(c);
+        setFaceMaterial(mesh.material[i], c);
       });
     }
 
@@ -594,17 +707,20 @@
     const stepInfoEl = document.getElementById('step-info');
     const scrambleNotationEl = document.getElementById('scramble-notation');
     const statusEl = document.getElementById('status');
+    const btnBack = document.getElementById('btn-back');
     const btnNext = document.getElementById('btn-next');
     const btnScramble = document.getElementById('btn-scramble');
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x121218);
+    scene.background = new THREE.Color(0x000000);
 
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-    camera.position.set(4, 3.5, 5);
+    camera.position.set(6, 5.25, 7.5);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.25;
     container.appendChild(renderer.domElement);
 
     function resizeRenderer() {
@@ -618,18 +734,21 @@
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enablePan = false;
-    controls.minDistance = 4;
-    controls.maxDistance = 12;
+    controls.minDistance = 6;
+    controls.maxDistance = 18;
     controls.target.set(0, 0, 0);
     controls.update();
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.65));
-    const key = new THREE.DirectionalLight(0xffffff, 0.85);
-    key.position.set(5, 8, 6);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+    const key = new THREE.DirectionalLight(0xffffff, 1.5);
+    key.position.set(3, 10, 7);
     scene.add(key);
-    const fill = new THREE.DirectionalLight(0xffffff, 0.35);
-    fill.position.set(-4, 2, -3);
+    const fill = new THREE.DirectionalLight(0xffffff, 0.55);
+    fill.position.set(-7, 5, -3);
     scene.add(fill);
+    const rim = new THREE.DirectionalLight(0xffffff, 0.4);
+    rim.position.set(0, 2, -8);
+    scene.add(rim);
 
     const cubeGroup = new THREE.Group();
     scene.add(cubeGroup);
@@ -658,6 +777,7 @@
 
     function setButtons() {
       const solved = isCrossSolved(cubeState);
+      btnBack.disabled = animating || stepIndex === 0;
       btnNext.disabled = animating || solved || stepIndex >= solution.length;
       btnScramble.disabled = animating;
     }
@@ -763,6 +883,23 @@
       });
     }
 
+    function performBack() {
+      if (animating || stepIndex === 0) return;
+
+      animating = true;
+      setButtons();
+      const moveIdx = inverseMoveIndex(solution[stepIndex - 1]);
+
+      animateMove(moveIdx, () => {
+        applyMoveIndex(cubeState, moveIdx);
+        syncVisuals(cubeState, edgeMeshes, cornerMeshes);
+        stepIndex--;
+        animating = false;
+        updateUI();
+      });
+    }
+
+    btnBack.addEventListener('click', performBack);
     btnNext.addEventListener('click', performNext);
     btnScramble.addEventListener('click', () => {
       if (animating) return;
